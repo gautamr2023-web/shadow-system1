@@ -11,6 +11,9 @@
 <title>Shadow System — Hunter Gautam</title>
 <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -22,11 +25,11 @@
 }
 html,body{background:var(--bg);color:var(--text);font-family:var(--font-body);font-size:16px;min-height:100vh;overflow-x:hidden}
 ::-webkit-scrollbar{width:3px}::-webkit-scrollbar-track{background:var(--bg)}::-webkit-scrollbar-thumb{background:var(--accent);border-radius:2px}
-
+ 
 /* SIDEBAR WRAPPER */
 .app{display:flex;flex-direction:row;min-height:100vh}
 .sidebar{position:fixed;top:0;left:0;z-index:200;display:flex;flex-direction:column;background:var(--bg);border-right:1px solid var(--border)}
-
+ 
 /* MOBILE: sidebar = sticky top header + fixed bottom nav */
 @media(max-width:767px){
   .app{flex-direction:column}
@@ -47,7 +50,7 @@ html,body{background:var(--bg);color:var(--text);font-family:var(--font-body);fo
   .nav-btn.active{background:rgba(91,110,245,0.12)}
   .nav-btn svg{width:18px;height:18px}
 }
-
+ 
 /* HEADER PANEL */
 .header-top{display:flex;align-items:center;gap:12px;margin-bottom:10px}
 .rank-badge{width:40px;height:40px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:700;font-family:var(--font-mono);border:1.5px solid;flex-shrink:0;letter-spacing:0}
@@ -74,23 +77,23 @@ html,body{background:var(--bg);color:var(--text);font-family:var(--font-body);fo
 .bar-fill{height:100%;border-radius:2px;transition:width .5s ease}
 .bar-xp .bar-fill{background:linear-gradient(90deg,var(--accent2),var(--accent))}
 .bar-mana .bar-fill{background:linear-gradient(90deg,#0088bb,var(--mana))}
-
+ 
 /* NAV */
 .nav{display:flex}
 .nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;background:none;border:none;color:var(--text3);font-family:var(--font-body);font-size:10px;text-transform:uppercase;letter-spacing:.5px;padding:8px 0;transition:color .2s}
 .nav-btn.active{color:var(--accent)}
 .nav-btn svg{width:20px;height:20px;flex-shrink:0}
-
+ 
 /* MAIN + SECTIONS */
 main{flex:1;width:100%;min-width:0;min-height:0;}
 section{display:none}
 section.active{display:block}
-
+ 
 /* CARDS */
 .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:11px}
 .card-title{font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--text2);margin-bottom:11px}
 .card-title span{color:var(--accent)}
-
+ 
 /* QUESTS */
 .quest-item{display:flex;align-items:center;gap:11px;padding:9px 0;border-bottom:1px solid var(--border)}
 .quest-item:last-child{border-bottom:none}
@@ -101,13 +104,13 @@ section.active{display:block}
 .quest-sub{font-size:11px;color:var(--text2);margin-top:1px}
 .quest-xp{font-family:var(--font-mono);font-size:12px;color:var(--gold);flex-shrink:0}
 .quest-item.done-item .quest-name{color:var(--text3);text-decoration:line-through}
-
+ 
 /* DAILY STATS */
 .ds-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:11px}
 .ds-card{background:var(--bg2);border:1px solid var(--border);border-radius:9px;padding:10px;text-align:center}
 .ds-val{font-family:var(--font-mono);font-size:17px;color:var(--text)}
 .ds-lbl{font-size:10px;color:var(--text2);text-transform:uppercase;letter-spacing:.5px}
-
+ 
 /* TIMER */
 .mode-bar{display:flex;gap:5px;margin-bottom:14px}
 .mode-btn{padding:6px 13px;border-radius:6px;font-family:var(--font-body);font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.8px;cursor:pointer;border:1px solid var(--border2);background:transparent;color:var(--text2);transition:all .2s}
@@ -120,7 +123,7 @@ section.active{display:block}
 .timer-track{fill:none;stroke:rgba(91,110,245,.1)}
 .timer-ring{fill:none;stroke:var(--accent);stroke-linecap:round;transition:stroke-dashoffset 1s linear,stroke .3s}
 .timer-btns{display:flex;gap:9px;justify-content:center;margin-bottom:18px}
-
+ 
 /* BUTTONS */
 .btn{padding:10px 24px;border-radius:8px;font-family:var(--font-body);font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;cursor:pointer;border:none;transition:all .2s}
 .btn-primary{background:var(--accent);color:#fff}
@@ -130,7 +133,7 @@ section.active{display:block}
 .btn-danger{background:transparent;border:1px solid var(--red);color:var(--red)}
 .btn-sm{padding:6px 14px;font-size:12px}
 .num-input{background:var(--bg3);border:1px solid var(--border2);border-radius:6px;color:var(--text);font-family:var(--font-mono);font-size:15px;padding:7px;width:60px;text-align:center;outline:none}
-
+ 
 /* SESSIONS */
 .sess-item{display:flex;align-items:center;gap:11px;padding:8px 0;border-bottom:1px solid var(--border)}
 .sess-item:last-child{border-bottom:none}
@@ -143,12 +146,12 @@ section.active{display:block}
 .sess-name{font-size:13px;font-weight:600}
 .sess-meta{font-size:11px;color:var(--text2)}
 .sess-dur{font-family:var(--font-mono);font-size:13px;color:var(--text2);flex-shrink:0}
-
+ 
 /* TABS */
 .tab-bar{display:flex;gap:4px;margin-bottom:14px;background:var(--bg2);border-radius:8px;padding:4px}
 .tab-btn{flex:1;padding:7px 6px;border-radius:6px;font-family:var(--font-body);font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;cursor:pointer;border:none;background:transparent;color:var(--text2);transition:all .2s}
 .tab-btn.active{background:var(--card2);color:var(--accent)}
-
+ 
 /* FORMS */
 .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:11px}
 .fg{display:flex;flex-direction:column;gap:4px}
@@ -156,7 +159,7 @@ section.active{display:block}
 .fl{font-size:10px;text-transform:uppercase;letter-spacing:.7px;color:var(--text2)}
 .fi{background:var(--bg3);border:1px solid var(--border2);border-radius:6px;color:var(--text);font-family:var(--font-body);font-size:14px;padding:8px 10px;outline:none;width:100%}
 .fi:focus{border-color:var(--accent)}
-
+ 
 /* TEST TABLE */
 .t-table{width:100%;border-collapse:collapse;font-size:13px}
 .t-table th{text-align:left;padding:7px 5px;font-size:10px;text-transform:uppercase;letter-spacing:.7px;color:var(--text2);border-bottom:1px solid var(--border)}
@@ -164,7 +167,7 @@ section.active{display:block}
 .t-table tr:last-child td{border-bottom:none}
 .sc{font-family:var(--font-mono)}
 .sh{color:var(--green)}.sm{color:var(--gold)}.sl{color:var(--red)}
-
+ 
 /* TOPIC CONFIDENCE */
 .topic-item{margin-bottom:9px}
 .topic-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:3px}
@@ -177,7 +180,7 @@ section.active{display:block}
 .acc-avg{font-family:var(--font-mono);font-size:12px;color:var(--text2)}
 .acc-body{display:none;padding:12px 0}
 .acc-body.open{display:block}
-
+ 
 /* WORKOUT */
 .days-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:11px}
 .day-chip{padding:6px 3px;border-radius:6px;text-align:center;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;cursor:pointer;border:1px solid var(--border);color:var(--text2);background:var(--bg2);transition:all .2s}
@@ -192,14 +195,14 @@ section.active{display:block}
 .ex-sets{font-family:var(--font-mono);font-size:11px;color:var(--text2);flex-shrink:0}
 .edit-fi{background:var(--bg3);border:1px solid var(--border2);border-radius:5px;color:var(--text);font-family:var(--font-body);font-size:12px;padding:4px 6px;outline:none}
 .edit-num{background:var(--bg3);border:1px solid var(--border2);border-radius:5px;color:var(--text);font-family:var(--font-mono);font-size:11px;padding:4px 5px;width:36px;text-align:center;outline:none}
-
+ 
 /* ANALYTICS */
 .stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:11px}
 .stat-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:12px}
 .stat-val{font-family:var(--font-mono);font-size:20px;color:var(--text)}
 .stat-lbl{font-size:10px;color:var(--text2);text-transform:uppercase;letter-spacing:.7px;margin-top:2px}
 .chart-wrap{position:relative;height:190px;margin:6px 0}
-
+ 
 /* MISC */
 .empty{text-align:center;padding:22px;color:var(--text3);font-size:13px}
 .toast{position:fixed;top:20px;left:50%;transform:translateX(-50%);background:var(--card2);border:1px solid var(--border2);border-radius:10px;padding:9px 16px;font-size:13px;color:var(--text);z-index:999;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap;max-width:90vw}
@@ -215,7 +218,7 @@ section.active{display:block}
 </head>
 <body>
 <div class="app">
-
+ 
 <!-- SIDEBAR (header panel + nav) -->
 <div class="sidebar">
   <div class="header-panel">
@@ -240,8 +243,13 @@ section.active{display:block}
         <div class="bar-track"><div class="bar-fill" id="mana-bar" style="width:100%"></div></div>
       </div>
     </div>
+    <div id="user-strip" style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);align-items:center;gap:8px;display:none">
+      <img id="user-avatar" style="width:22px;height:22px;border-radius:50%;flex-shrink:0" src="" alt="">
+      <span id="user-name" style="font-size:11px;color:var(--text2);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span>
+      <button onclick="signOutUser()" style="background:none;border:1px solid var(--border);border-radius:5px;color:var(--text3);font-size:10px;padding:3px 7px;cursor:pointer;font-family:var(--font-body);white-space:nowrap">Sign out</button>
+    </div>
   </div>
-
+ 
   <nav class="nav">
     <button class="nav-btn active" onclick="goTo('dashboard',this)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Hub
@@ -260,10 +268,10 @@ section.active{display:block}
     </button>
   </nav>
 </div>
-
+ 
 <!-- MAIN -->
 <main>
-
+ 
 <!-- ====== DASHBOARD ====== -->
 <section id="s-dashboard" class="active">
   <div id="ins-banner" class="ins-banner" style="display:none">
@@ -276,7 +284,7 @@ section.active{display:block}
     </div>
     <button class="ins-close" onclick="this.parentElement.style.display='none'">✕</button>
   </div>
-
+ 
   <div class="card" style="margin-bottom:11px">
     <div style="display:flex;justify-content:space-between;align-items:center">
       <div>
@@ -289,26 +297,26 @@ section.active{display:block}
       </div>
     </div>
   </div>
-
+ 
   <div class="ds-row">
     <div class="ds-card"><div class="ds-val" id="ds-hrs">0h0m</div><div class="ds-lbl">Today</div></div>
     <div class="ds-card"><div class="ds-val" id="ds-xp">+0</div><div class="ds-lbl">XP Today</div></div>
     <div class="ds-card"><div class="ds-val" id="ds-sess">0</div><div class="ds-lbl">Sessions</div></div>
   </div>
-
+ 
   <div class="card">
     <div class="card-title"><span>[ Daily Quests ]</span></div>
     <div id="quest-list"></div>
   </div>
-
+ 
   <div class="card">
     <div class="card-title"><span>[ Gate Status ]</span></div>
     <div id="gates-overview"></div>
   </div>
-
+ 
   <div id="penalty-zone"></div>
 </section>
-
+ 
 <!-- ====== STUDY ====== -->
 <section id="s-study">
   <div class="mode-bar">
@@ -316,7 +324,7 @@ section.active{display:block}
     <button class="mode-btn" onclick="setMode('stopwatch',this)">Stopwatch</button>
     <button class="mode-btn" onclick="setMode('countdown',this)">Countdown</button>
   </div>
-
+ 
   <div id="cd-set-row" class="cd-row" style="display:none">
     <span style="font-size:12px;color:var(--text2)">Set:</span>
     <input id="cd-h" type="number" class="num-input" value="0" min="0" max="9" style="width:52px">
@@ -325,14 +333,14 @@ section.active{display:block}
     <span style="color:var(--text2);font-family:var(--font-mono)">m</span>
     <button class="btn btn-ghost btn-sm" onclick="applyCd()">Set</button>
   </div>
-
+ 
   <div class="subj-row">
     <button class="subj-btn active" onclick="setSub('physics',this)">PHY</button>
     <button class="subj-btn" onclick="setSub('chemistry',this)">CHE</button>
     <button class="subj-btn" onclick="setSub('maths',this)">MAT</button>
     <button class="subj-btn" onclick="setSub('other',this)">OTH</button>
   </div>
-
+ 
   <div class="timer-wrap">
     <svg width="200" height="200" viewBox="0 0 200 200">
       <circle class="timer-track" cx="100" cy="100" r="88" stroke-width="6"/>
@@ -347,24 +355,24 @@ section.active{display:block}
         style="font-family:'Share Tech Mono',monospace;font-size:11px;fill:#8888bb">Session 1 / 4</text>
     </svg>
   </div>
-
+ 
   <div class="timer-btns">
     <button class="btn btn-primary" id="t-toggle" onclick="toggleTimer()">Start</button>
     <button class="btn btn-ghost" onclick="resetTimer()">Reset</button>
     <button class="btn btn-danger" onclick="manualLog()">Log</button>
   </div>
-
+ 
   <div style="text-align:center;font-size:12px;color:var(--text2);margin-bottom:14px">
     Mana: <span id="mana-study" style="color:var(--mana);font-family:var(--font-mono)">100</span>/100
     <button class="mana-restore-btn" onclick="restoreMana()">+Restore (rest)</button>
   </div>
-
+ 
   <div class="card">
     <div class="card-title"><span>[ Today's Sessions ]</span></div>
     <div id="sess-log"></div>
   </div>
 </section>
-
+ 
 <!-- ====== TESTS ====== -->
 <section id="s-tests">
   <div class="tab-bar">
@@ -372,7 +380,7 @@ section.active{display:block}
     <button class="tab-btn" onclick="setTTab('topics',this)">Confidence</button>
     <button class="tab-btn" onclick="setTTab('marks',this)">JEE Marks</button>
   </div>
-
+ 
   <!-- Weekly Tests -->
   <div id="tt-weekly">
     <div class="card">
@@ -398,12 +406,12 @@ section.active{display:block}
       <div id="test-hist"></div>
     </div>
   </div>
-
+ 
   <!-- Topic Confidence -->
   <div id="tt-topics" style="display:none">
     <div id="topic-acc"></div>
   </div>
-
+ 
   <!-- JEE Marks -->
   <div id="tt-marks" style="display:none">
     <div class="card">
@@ -424,7 +432,7 @@ section.active{display:block}
     </div>
   </div>
 </section>
-
+ 
 <!-- ====== WORKOUT ====== -->
 <section id="s-workout">
   <div class="card">
@@ -438,7 +446,7 @@ section.active{display:block}
     <div id="wo-log"></div>
   </div>
 </section>
-
+ 
 <!-- ====== ANALYTICS ====== -->
 <section id="s-analytics">
   <div class="stat-grid">
@@ -464,11 +472,23 @@ section.active{display:block}
     <div id="chronicle"></div>
   </div>
 </section>
-
+ 
 </main>
 </div>
+<!-- LOGIN OVERLAY -->
+<div id="login-screen" style="position:fixed;inset:0;z-index:999;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px">
+  <div style="font-family:var(--font-mono);font-size:40px;color:var(--accent);margin-bottom:8px">⚔</div>
+  <div style="font-size:22px;font-weight:700;margin-bottom:4px">Shadow System</div>
+  <div style="font-size:12px;color:var(--text2);letter-spacing:2px;text-transform:uppercase;margin-bottom:32px">JEE Hunter Dashboard</div>
+  <button onclick="signInGoogle()" style="display:flex;align-items:center;gap:12px;background:var(--card2);border:1px solid var(--border2);border-radius:10px;padding:14px 24px;cursor:pointer;color:var(--text);font-family:var(--font-body);font-size:15px;font-weight:600">
+    <svg width="20" height="20" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+    Continue with Google
+  </button>
+  <div style="font-size:11px;color:var(--text3);margin-top:20px;text-align:center">Your data syncs across all devices.<br>Use different accounts for testing vs real use.</div>
+</div>
+ 
 <div class="toast" id="toast"></div>
-
+ 
 <script>
 // ═══════════════════════════ DATA ═══════════════════════════
 const RANKS=[
@@ -515,21 +535,102 @@ const DEF={
   workout:{plan:JSON.parse(JSON.stringify(DEF_PLAN)),logs:[]},
   jeeTarget:250,
 };
-
+ 
 let S;
+let db,auth,currentUser=null;
+let saveTimer=null;
+ 
+// ── Firebase init ──
+const firebaseConfig={
+  apiKey:"AIzaSyDWmh7WLL_a3eCbcnh3hKL2ZgqTex_SYWM",
+  authDomain:"shadow-system-dd646.firebaseapp.com",
+  projectId:"shadow-system-dd646",
+  storageBucket:"shadow-system-dd646.firebasestorage.app",
+  messagingSenderId:"886579810658",
+  appId:"1:886579810658:web:e0c694a325316cae5cdc3b"
+};
+firebase.initializeApp(firebaseConfig);
+auth=firebase.auth();
+db=firebase.firestore();
+ 
+function signInGoogle(){
+  const provider=new firebase.auth.GoogleAuthProvider();
+  auth.signInWithPopup(provider).catch(e=>showToast('Sign in failed: '+e.message));
+}
+function signOutUser(){
+  if(confirm('Sign out?')){auth.signOut();}
+}
+ 
+// ── Data helpers ──
+function defState(){return JSON.parse(JSON.stringify(DEF));}
+ 
 function loadS(){
-  try{S=JSON.parse(localStorage.getItem('ss_v2'))||JSON.parse(JSON.stringify(DEF));}
-  catch(e){S=JSON.parse(JSON.stringify(DEF));}
+  try{S=JSON.parse(localStorage.getItem('ss_v2'))||defState();}
+  catch(e){S=defState();}
   if(!S.topics)S.topics=JSON.parse(JSON.stringify(DEF.topics));
   if(!S.workout)S.workout={plan:JSON.parse(JSON.stringify(DEF_PLAN)),logs:[]};
   if(!S.jeeTarget)S.jeeTarget=250;
   if(!S.hunter.startDate)S.hunter.startDate=new Date().toISOString().split('T')[0];
   if(S.hunter.mana===undefined)S.hunter.mana=100;
 }
-function save(){localStorage.setItem('ss_v2',JSON.stringify(S));}
+ 
+function save(){
+  localStorage.setItem('ss_v2',JSON.stringify(S));
+  if(currentUser){
+    clearTimeout(saveTimer);
+    saveTimer=setTimeout(()=>{
+      db.collection('users').doc(currentUser.uid)
+        .collection('shadow').doc('progress')
+        .set(JSON.parse(JSON.stringify(S)))
+        .catch(e=>console.warn('Cloud save failed',e));
+    },1500);
+  }
+}
+ 
+async function loadFromCloud(uid){
+  try{
+    const doc=await db.collection('users').doc(uid)
+      .collection('shadow').doc('progress').get();
+    if(doc.exists){
+      S=doc.data();
+      // ensure all keys exist
+      if(!S.topics)S.topics=JSON.parse(JSON.stringify(DEF.topics));
+      if(!S.workout)S.workout={plan:JSON.parse(JSON.stringify(DEF_PLAN)),logs:[]};
+      if(!S.jeeTarget)S.jeeTarget=250;
+      if(!S.hunter.startDate)S.hunter.startDate=new Date().toISOString().split('T')[0];
+      if(S.hunter.mana===undefined)S.hunter.mana=100;
+      localStorage.setItem('ss_v2',JSON.stringify(S));
+    } else {
+      loadS();// first time for this account
+    }
+  } catch(e){
+    loadS();// offline fallback
+    showToast('Offline — using local data');
+  }
+}
+ 
+// ── Auth state ──
+auth.onAuthStateChanged(async user=>{
+  if(user){
+    currentUser=user;
+    document.getElementById('login-screen').style.display='none';
+    // show user strip
+    const strip=document.getElementById('user-strip');
+    strip.style.display='flex';
+    document.getElementById('user-name').textContent=user.displayName||user.email;
+    if(user.photoURL)document.getElementById('user-avatar').src=user.photoURL;
+    // load data then init app
+    await loadFromCloud(user.uid);
+    initApp();
+  } else {
+    currentUser=null;
+    document.getElementById('login-screen').style.display='flex';
+    document.getElementById('user-strip').style.display='none';
+  }
+});
 function today(){return new Date().toISOString().split('T')[0];}
 function fmtDate(d){return new Date(d).toLocaleDateString('en-IN',{day:'numeric',month:'short'});}
-
+ 
 // Streak
 function checkStreak(){
   const t=today(),last=S.hunter.lastDate;
@@ -554,11 +655,11 @@ function checkStreak(){
     save();
   }
 }
-
+ 
 // Rank
 function getRank(xp){for(let i=RANKS.length-1;i>=0;i--)if(xp>=RANKS[i].min)return RANKS[i];return RANKS[0];}
 function getRankProg(xp){const r=getRank(xp);if(r.max===Infinity)return{pct:100};return{pct:Math.min(100,Math.round((xp-r.min)/(r.max-r.min)*100)),next:r.max};}
-
+ 
 function updateHeader(){
   const{xp,mana,streak}=S.hunter;
   const rk=getRank(xp),prog=getRankProg(xp);
@@ -572,7 +673,7 @@ function updateHeader(){
   document.getElementById('hunter-class').textContent=rk.r==='S'||rk.r==='SS'||rk.r==='SSS'?'Shadow Monarch':rk.r==='A'?'Elite Hunter':rk.r==='B'||rk.r==='C'?'Awakened Hunter':'Shadow Warrior';
   const ms=document.getElementById('mana-study');if(ms)ms.textContent=mana;
 }
-
+ 
 // ═══════════════════════════ NAV ═══════════════════════════
 function goTo(name,btn){
   document.querySelectorAll('section').forEach(s=>s.classList.remove('active'));
@@ -585,7 +686,7 @@ function goTo(name,btn){
   if(name==='workout')renderWorkout();
   if(name==='analytics')setTimeout(renderCharts,60);
 }
-
+ 
 // ═══════════════════════════ DASHBOARD ═══════════════════════════
 function renderDash(){
   updateHeader();
@@ -606,7 +707,7 @@ function renderDash(){
   renderGates();
   renderPenalty();
 }
-
+ 
 function renderQuests(){
   const t=today();
   const comp=S.questComp[t]||{};
@@ -631,7 +732,7 @@ function renderQuests(){
   });
   document.getElementById('quest-list').innerHTML=html;
 }
-
+ 
 function tQ(id){
   const t=today();if(!S.questComp[t])S.questComp[t]={};
   const q=QUESTS.find(q=>q.id===id);if(!q||q.auto)return;
@@ -641,7 +742,7 @@ function tQ(id){
   else S.hunter.xp=Math.max(0,S.hunter.xp-q.xp);
   save();renderDash();
 }
-
+ 
 function renderGates(){
   const subjs=['physics','chemistry','maths'];
   const lbl={physics:'Physics',chemistry:'Chemistry',maths:'Maths'};
@@ -663,7 +764,7 @@ function renderGates(){
   });
   document.getElementById('gates-overview').innerHTML=html;
 }
-
+ 
 function renderPenalty(){
   const t=today();
   const comp=S.questComp[t]||{};
@@ -679,12 +780,12 @@ function renderPenalty(){
     </div>`;
   } else pz.innerHTML='';
 }
-
+ 
 // ═══════════════════════════ TIMER ═══════════════════════════
 const CIRC=2*Math.PI*88;
 let tMode='pomodoro',tRunning=false,tSecs=25*60,tTotal=25*60,tInterval=null;
 let pomoPhase='focus',pomoCount=0,studySub='physics',elapsed=0,pauseCount=0;
-
+ 
 function setMode(m,el){
   if(tRunning)resetTimer();
   tMode=m;
@@ -696,13 +797,13 @@ function setMode(m,el){
   else{tSecs=25*60;tTotal=25*60;}
   updateTimerUI();
 }
-
+ 
 function setSub(s,el){
   studySub=s;
   document.querySelectorAll('.subj-btn').forEach(b=>b.classList.remove('active'));
   el.classList.add('active');
 }
-
+ 
 function applyCd(){
   const h=parseInt(document.getElementById('cd-h').value)||0;
   const m=parseInt(document.getElementById('cd-m').value)||0;
@@ -710,7 +811,7 @@ function applyCd(){
   if(tRunning)resetTimer();
   updateTimerUI();
 }
-
+ 
 function toggleTimer(){
   if(tRunning){
     clearInterval(tInterval);tRunning=false;pauseCount++;
@@ -721,13 +822,13 @@ function toggleTimer(){
     tInterval=setInterval(tick,1000);
   }
 }
-
+ 
 function tick(){
   if(tMode==='stopwatch'){tSecs++;elapsed++;}
   else{if(tSecs<=0){handleEnd();return;}tSecs--;elapsed++;}
   updateTimerUI();
 }
-
+ 
 function handleEnd(){
   clearInterval(tInterval);tRunning=false;
   document.getElementById('t-toggle').textContent='Start';
@@ -750,7 +851,7 @@ function handleEnd(){
   }
   updateTimerUI();
 }
-
+ 
 function updateTimerUI(){
   const ring=document.getElementById('t-ring');
   const pct=tMode==='stopwatch'?1:tTotal>0?tSecs/tTotal:0;
@@ -766,7 +867,7 @@ function updateTimerUI(){
   document.getElementById('t-meta').textContent=tMode==='pomodoro'?'Session '+(Math.floor(pomoCount)+1)+' / 4':{physics:'Physics',chemistry:'Chemistry',maths:'Maths',other:'Other'}[studySub];
   const ms=document.getElementById('mana-study');if(ms)ms.textContent=S.hunter.mana;
 }
-
+ 
 function resetTimer(){
   clearInterval(tInterval);tRunning=false;elapsed=0;pauseCount=0;
   document.getElementById('t-toggle').textContent='Start';
@@ -775,7 +876,7 @@ function resetTimer(){
   else applyCd();
   updateTimerUI();
 }
-
+ 
 function manualLog(){
   const mins=Math.round(elapsed/60);
   if(mins<1){showToast('Start timer first! Min 1 minute.');return;}
@@ -783,7 +884,7 @@ function manualLog(){
   showToast('Logged '+mins+'m! +'+Math.round(mins*.5)+' XP');
   elapsed=0;pauseCount=0;
 }
-
+ 
 function autoLog(mins,sub,mode){
   if(mins<1)return;
   const eff=Math.max(10,Math.round(100-pauseCount*8));
@@ -799,12 +900,12 @@ function autoLog(mins,sub,mode){
   if(tMins>=120&&!comp.q1){comp.q1=true;S.hunter.xp+=50;S.questComp[t]=comp;save();showToast('Quest done: 2h study! +50 XP 🔥');updateHeader();}
   if(mode==='pomodoro'&&mins>=25&&!comp.q2){comp.q2=true;S.hunter.xp+=25;S.questComp[t]=comp;save();updateHeader();}
 }
-
+ 
 function restoreMana(){
   S.hunter.mana=Math.min(100,S.hunter.mana+30);save();updateHeader();
   showToast('Mana restored +30 🌙 (take a break!)');
 }
-
+ 
 function renderSessLog(){
   const sess=S.sessions.filter(s=>s.date===today()).reverse();
   if(!sess.length){document.getElementById('sess-log').innerHTML='<div class="empty">No sessions yet. Start studying! ⚔️</div>';return;}
@@ -821,7 +922,7 @@ function renderSessLog(){
   });
   document.getElementById('sess-log').innerHTML=html;
 }
-
+ 
 // ═══════════════════════════ TESTS ═══════════════════════════
 function setTTab(t,el){
   ['weekly','topics','marks'].forEach(x=>{
@@ -832,7 +933,7 @@ function setTTab(t,el){
   if(t==='topics')renderTopics();
   if(t==='marks')renderJeeMks();
 }
-
+ 
 function addTest(){
   const date=document.getElementById('t-date').value;
   if(!date){showToast('Select a date first');return;}
@@ -849,7 +950,7 @@ function addTest(){
   showToast('Test logged! +'+xpB+' XP');
   renderTests();
 }
-
+ 
 function renderTests(){
   document.getElementById('t-date').value=today();
   const tests=[...S.tests].reverse();
@@ -868,7 +969,7 @@ function renderTests(){
   html+='</tbody></table></div>';
   document.getElementById('test-hist').innerHTML=html;
 }
-
+ 
 function renderTopics(){
   const subjs=['physics','chemistry','maths'];
   const lbl={physics:'⚡ Physics',chemistry:'🧪 Chemistry',maths:'📐 Maths'};
@@ -896,9 +997,9 @@ function renderTopics(){
   });
   document.getElementById('topic-acc').innerHTML=html;
 }
-
+ 
 function toggleAcc(id){document.getElementById(id).classList.toggle('open');}
-
+ 
 function upConf(s,i,v,sl){
   S.topics[s][i].conf=parseInt(v);
   const c=v>=80?'var(--green)':v>=50?'var(--gold)':'var(--red)';
@@ -906,7 +1007,7 @@ function upConf(s,i,v,sl){
   const el=document.getElementById('tp-'+s+'-'+i);
   if(el){el.textContent=v+'%';el.style.color=c;}
 }
-
+ 
 function renderJeeMks(){
   document.getElementById('jee-tgt').value=S.jeeTarget;
   const tests=S.tests;
@@ -959,16 +1060,16 @@ function renderJeeMks(){
     document.getElementById('weak-chapters').innerHTML=wh;
   }
 }
-
+ 
 function saveJeeTgt(){
   const v=parseInt(document.getElementById('jee-tgt').value);
   if(v>0){S.jeeTarget=v;save();renderJeeMks();showToast('Target: '+v+' marks set');}
 }
-
+ 
 // ═══════════════════════════ WORKOUT ═══════════════════════════
 let selDay=DAYS_ORDER[new Date().getDay()===0?6:new Date().getDay()-1];
 let editMode=false;
-
+ 
 function renderWorkout(){
   const dg=document.getElementById('days-grid');
   let gh='';
@@ -983,9 +1084,9 @@ function renderWorkout(){
   renderDayView();
   renderWoLog();
 }
-
+ 
 function selD(d){selDay=d;renderWorkout();}
-
+ 
 function renderDayView(){
   const plan=S.workout.plan[selDay];
   const log=S.workout.logs.find(l=>l.date===today()&&l.day===selDay);
@@ -1023,7 +1124,7 @@ function renderDayView(){
   html+='</div>';
   document.getElementById('day-view').innerHTML=html;
 }
-
+ 
 function togEx(i){
   const t=today();
   let log=S.workout.logs.find(l=>l.date===t&&l.day===selDay);
@@ -1039,7 +1140,7 @@ function togEx(i){
   }
   save();renderWorkout();
 }
-
+ 
 function toggleEdit(){
   editMode=!editMode;
   document.getElementById('edit-btn').textContent=editMode?'Save Plan':'Edit Plan';
@@ -1048,7 +1149,7 @@ function toggleEdit(){
 }
 function rmEx(i){S.workout.plan[selDay].exercises.splice(i,1);renderDayView();}
 function addEx(){S.workout.plan[selDay].exercises.push({name:'New Exercise',sets:3,reps:'10'});renderDayView();}
-
+ 
 function renderWoLog(){
   const logs=[...S.workout.logs].reverse().slice(0,7);
   if(!logs.length){document.getElementById('wo-log').innerHTML='<div class="empty">No workouts logged yet. 💪</div>';return;}
@@ -1065,7 +1166,7 @@ function renderWoLog(){
   });
   document.getElementById('wo-log').innerHTML=html;
 }
-
+ 
 // ═══════════════════════════ ANALYTICS ═══════════════════════════
 let chS=null,chT=null,chC=null;
 function renderCharts(){
@@ -1121,7 +1222,7 @@ function renderCharts(){
   },options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right',labels:{color:gc.tc,font:{size:12}}}}}});
   renderChronicle();
 }
-
+ 
 function renderChronicle(){
   const wMins=S.sessions.filter(s=>{const d=new Date(s.date),n=new Date();return(n-d)/86400000<=7;}).reduce((a,s)=>a+s.min,0);
   const weak=[...S.topics.physics,...S.topics.chemistry,...S.topics.maths].filter(t=>t.conf<40);
@@ -1139,14 +1240,14 @@ function renderChronicle(){
   ];
   document.getElementById('chronicle').innerHTML=lines.map(l=>`<div class="report-line">${l}</div>`).join('');
 }
-
+ 
 // ═══════════════════════════ UTILS ═══════════════════════════
 function showToast(msg){
   const t=document.getElementById('toast');
   t.textContent=msg;t.classList.add('show');
   clearTimeout(t._to);t._to=setTimeout(()=>t.classList.remove('show'),2600);
 }
-
+ 
 // ═══════════════════════════ PWA ═══════════════════════════
 function makeIcon(size){
   const c=document.createElement('canvas');c.width=c.height=size;
@@ -1180,11 +1281,13 @@ function setupPWA(){
     document.getElementById('ins-banner').style.display='flex';
   }
 }
-
+ 
 // ═══════════════════════════ INIT ═══════════════════════════
-loadS();checkStreak();setupPWA();
-updateTimerUI();renderDash();renderSessLog();renderTests();renderWorkout();
-document.getElementById('t-date').value=today();
+function initApp(){
+  checkStreak();setupPWA();
+  updateTimerUI();renderDash();renderSessLog();renderTests();renderWorkout();
+  document.getElementById('t-date').value=today();
+}
 </script>
 </body>
 </html>
