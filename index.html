@@ -608,7 +608,9 @@ function signInGoogle(){
   const p=new firebase.auth.GoogleAuthProvider();
   auth.signInWithPopup(p).catch(e=>showToast('Sign in failed: '+e.message));
 }
-function signOutUser(){if(confirm('Sign out?'))auth.signOut();}
+function signOutUser(){
+  if(confirm('Sign out?')){S=null;auth.signOut();}
+}
  
 function defState(){return JSON.parse(JSON.stringify(DEF));}
 function ensureKeys(){
@@ -621,26 +623,35 @@ function ensureKeys(){
   if(!S.sessions)S.sessions=[];
   if(!S.tests)S.tests=[];
 }
-function loadLocal(){
-  try{S=JSON.parse(localStorage.getItem('ss_v3'))||defState();}catch(e){S=defState();}
-  ensureKeys();
-}
 function save(){
-  localStorage.setItem('ss_v3',JSON.stringify(S));
-  if(currentUser){
-    clearTimeout(saveTimer);
-    saveTimer=setTimeout(()=>{
-      db.collection('users').doc(currentUser.uid).collection('shadow').doc('progress')
-        .set(JSON.parse(JSON.stringify(S))).catch(e=>console.warn('cloud save',e));
-    },1500);
-  }
+  if(!currentUser)return;
+  localStorage.setItem('ss_v3_'+currentUser.uid,JSON.stringify(S));
+  clearTimeout(saveTimer);
+  saveTimer=setTimeout(()=>{
+    db.collection('users').doc(currentUser.uid).collection('shadow').doc('progress')
+      .set(JSON.parse(JSON.stringify(S))).catch(e=>console.warn('cloud save',e));
+  },1500);
 }
 async function loadFromCloud(uid){
   try{
     const doc=await db.collection('users').doc(uid).collection('shadow').doc('progress').get();
-    if(doc.exists){S=doc.data();ensureKeys();localStorage.setItem('ss_v3',JSON.stringify(S));}
-    else loadLocal();
-  }catch(e){loadLocal();showToast('Offline — using local data');}
+    if(doc.exists){
+      S=doc.data();ensureKeys();
+      localStorage.setItem('ss_v3_'+uid,JSON.stringify(S));
+    } else {
+      // New account — check its own local cache, else fresh start
+      try{S=JSON.parse(localStorage.getItem('ss_v3_'+uid))||defState();}
+      catch(e){S=defState();}
+      ensureKeys();
+      showToast('Welcome, new hunter! 🗡️');
+    }
+  }catch(e){
+    // Offline — use only this account's own local cache
+    try{S=JSON.parse(localStorage.getItem('ss_v3_'+uid))||defState();}
+    catch(e2){S=defState();}
+    ensureKeys();
+    showToast('Offline — using local data');
+  }
 }
  
 auth.onAuthStateChanged(async user=>{
