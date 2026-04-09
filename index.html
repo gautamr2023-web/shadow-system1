@@ -27,7 +27,7 @@
 }
 html,body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:100vh;overflow-x:hidden}
 ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
- 
+
 /* ── LAYOUT ── */
 .app-shell{display:grid;min-height:100vh}
 @media(max-width:899px){
@@ -46,7 +46,7 @@ html,body{background:var(--bg);color:var(--text);font-family:var(--font);min-hei
   .right-panel{grid-column:3;grid-row:1;overflow-y:auto;background:var(--bg2);border-left:1px solid var(--border);padding:24px 18px}
   .bottom-nav{display:none}
 }
- 
+
 /* ── TOP BAR (mobile) ── */
 .top-bar{padding:12px 16px;display:flex;flex-wrap:wrap;align-items:center;gap:10px}
 .tb-rank{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;font-family:var(--mono);border:1.5px solid;flex-shrink:0}
@@ -63,7 +63,7 @@ html,body{background:var(--bg);color:var(--text);font-family:var(--font);min-hei
 .bar-fill{height:100%;border-radius:2px;transition:width .5s}
 .bar-xp .bar-fill{background:linear-gradient(90deg,var(--accent2),var(--accent))}
 .bar-mana .bar-fill{background:linear-gradient(90deg,#0077aa,var(--mana))}
- 
+
 /* ── LEFT NAV ── */
 .left-nav .logo{font-family:var(--mono);font-size:18px;color:var(--accent);margin-bottom:20px}
 .nav-btn{width:52px;height:52px;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:pointer;background:none;border:none;color:var(--text3);transition:all .2s;position:relative}
@@ -75,13 +75,13 @@ html,body{background:var(--bg);color:var(--text);font-family:var(--font);min-hei
 .nav-spacer{flex:1}
 .nav-avatar{width:36px;height:36px;border-radius:50%;object-fit:cover;cursor:pointer;border:1.5px solid var(--border2)}
 .nav-avatar-ph{width:36px;height:36px;border-radius:50%;background:var(--card2);border:1.5px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--text2);cursor:pointer}
- 
+
 /* ── BOTTOM NAV ── */
 .bottom-nav{display:flex;padding:4px 0}
 .bnav-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;background:none;border:none;color:var(--text3);font-family:var(--font);font-size:9px;text-transform:uppercase;letter-spacing:.5px;font-weight:600;padding:8px 0;transition:color .2s}
 .bnav-btn svg{width:22px;height:22px}
 .bnav-btn.active{color:var(--accent)}
- 
+
 /* ── RIGHT PANEL ── */
 .rp-section{margin-bottom:22px}
 .rp-title{font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--text3);margin-bottom:11px;font-weight:700}
@@ -114,18 +114,18 @@ html,body{background:var(--bg);color:var(--text);font-family:var(--font);min-hei
 .rp-user img{width:28px;height:28px;border-radius:50%;flex-shrink:0}
 .rp-user-name{flex:1;font-size:12px;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .rp-signout{background:none;border:1px solid var(--border);border-radius:5px;color:var(--text3);font-size:10px;padding:3px 8px;cursor:pointer;font-family:var(--font)}
- 
+
 /* ── SECTIONS ── */
 section{display:none}
 section.active{display:block}
 .sec-title{font-size:22px;font-weight:700;margin-bottom:6px}
 .sec-sub{font-size:13px;color:var(--text2);margin-bottom:20px}
- 
+
 /* ── CARDS ── */
 .card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:18px;margin-bottom:14px}
 .card-hdr{font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:var(--text2);margin-bottom:14px;font-weight:700}
 .card-hdr .hl{color:var(--accent)}
- 
+
 /* ── DASH ── */
 .dash-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
 .dstat{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px 10px;text-align:center}
@@ -138,7 +138,7 @@ section.active{display:block}
 .mob-day{flex:1;background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px;text-align:center}
 .mob-day-n{font-size:26px;font-weight:700}
 .mob-day-l{font-size:10px;color:var(--text2)}
- 
+
 /* ── QUESTS ── */
 .quest-item{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--border)}
 .quest-item:last-child{border:none}
@@ -149,7 +149,7 @@ section.active{display:block}
 .qsub{font-size:11px;color:var(--text2);margin-top:1px}
 .qxp{font-family:var(--mono);font-size:13px;color:var(--gold);flex-shrink:0}
 .quest-item.done-item .qname{color:var(--text3);text-decoration:line-through}
- 
+
 /* ── TIMER ── */
 .timer-modes{display:flex;gap:6px;margin-bottom:18px}
 .tmode-btn{flex:1;padding:10px 6px;border-radius:var(--radius-sm);font-family:var(--font);font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;cursor:pointer;border:1px solid var(--border2);background:transparent;color:var(--text2);transition:all .2s}
@@ -163,7 +163,7 @@ section.active{display:block}
 .timer-btns{display:flex;gap:10px;justify-content:center;margin-bottom:20px}
 .mana-row{text-align:center;font-size:13px;color:var(--text2);margin-bottom:20px}
 .mana-restore{background:none;border:1px solid var(--mana);color:var(--mana);border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer;font-family:var(--font);margin-left:8px}
- 
+
 /* ── BUTTONS ── */
 .btn{padding:11px 26px;border-radius:var(--radius-sm);font-family:var(--font);font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;cursor:pointer;border:none;transition:all .2s}
 .btn-primary{background:var(--accent);color:#fff}
@@ -172,7 +172,7 @@ section.active{display:block}
 .btn-ghost:hover{border-color:var(--text2);color:var(--text)}
 .btn-danger{background:transparent;border:1px solid var(--red);color:var(--red)}
 .btn-sm{padding:7px 16px;font-size:12px}
- 
+
 /* ── SESSIONS ── */
 .sess-item{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--border)}
 .sess-item:last-child{border:none}
@@ -185,12 +185,12 @@ section.active{display:block}
 .sess-name{font-size:14px;font-weight:600}
 .sess-meta{font-size:11px;color:var(--text2)}
 .sess-dur{font-family:var(--mono);font-size:13px;color:var(--text2);flex-shrink:0;text-align:right}
- 
+
 /* ── TABS ── */
 .tab-bar{display:flex;gap:4px;margin-bottom:16px;background:var(--bg2);border-radius:var(--radius-sm);padding:4px}
 .tab-btn{flex:1;padding:8px 6px;border-radius:6px;font-family:var(--font);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;cursor:pointer;border:none;background:transparent;color:var(--text2);transition:all .2s}
 .tab-btn.active{background:var(--card2);color:var(--accent)}
- 
+
 /* ── FORMS ── */
 .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
 .fg{display:flex;flex-direction:column;gap:4px}
@@ -198,14 +198,14 @@ section.active{display:block}
 .fl{font-size:10px;text-transform:uppercase;letter-spacing:.7px;color:var(--text2);font-weight:700}
 .fi{background:var(--bg3);border:1px solid var(--border2);border-radius:var(--radius-sm);color:var(--text);font-family:var(--font);font-size:14px;padding:10px 12px;outline:none;width:100%}
 .fi:focus{border-color:var(--accent)}
- 
+
 /* ── TABLE ── */
 .t-table{width:100%;border-collapse:collapse;font-size:13px}
 .t-table th{text-align:left;padding:8px 6px;font-size:10px;text-transform:uppercase;letter-spacing:.7px;color:var(--text2);border-bottom:1px solid var(--border)}
 .t-table td{padding:9px 6px;border-bottom:1px solid var(--border)}
 .t-table tr:last-child td{border:none}
 .sc{font-family:var(--mono)}.sh{color:var(--green)}.sm{color:var(--gold)}.sl{color:var(--red)}
- 
+
 /* ── TOPICS ── */
 .acc-hdr{display:flex;align-items:center;justify-content:space-between;padding:13px 0;cursor:pointer;border-bottom:1px solid var(--border)}
 .acc-title{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.8px}
@@ -218,7 +218,7 @@ section.active{display:block}
 .topic-pct{font-family:var(--mono);font-size:12px}
 .conf-slider{width:100%;height:5px;border-radius:3px;-webkit-appearance:none;appearance:none;outline:none;cursor:pointer}
 .conf-slider::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:var(--accent);cursor:pointer}
- 
+
 /* ── WORKOUT ── */
 .days-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;margin-bottom:14px}
 .day-chip{padding:8px 2px;border-radius:7px;text-align:center;font-size:10px;font-weight:700;text-transform:uppercase;cursor:pointer;border:1px solid var(--border);color:var(--text2);background:var(--bg2);transition:all .2s}
@@ -233,7 +233,7 @@ section.active{display:block}
 .ex-sets{font-family:var(--mono);font-size:11px;color:var(--text2)}
 .edit-fi{background:var(--bg3);border:1px solid var(--border2);border-radius:5px;color:var(--text);font-family:var(--font);font-size:12px;padding:5px 7px;outline:none}
 .edit-num{background:var(--bg3);border:1px solid var(--border2);border-radius:5px;color:var(--text);font-family:var(--mono);font-size:11px;padding:5px;width:38px;text-align:center;outline:none}
- 
+
 /* ── ANALYTICS ── */
 .stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
 .stat-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px}
@@ -242,7 +242,7 @@ section.active{display:block}
 .chart-wrap{position:relative;height:200px;margin:6px 0}
 .pb-wrap{height:6px;background:rgba(255,255,255,.05);border-radius:3px;overflow:hidden;position:relative}
 .pb-fill{height:100%;border-radius:3px;transition:width .5s}
- 
+
 /* ── MISC ── */
 .empty{text-align:center;padding:24px;color:var(--text3);font-size:13px}
 .report-line{font-size:13px;color:var(--text2);margin-bottom:9px;padding-left:12px;border-left:2px solid var(--accent);line-height:1.5}
@@ -262,7 +262,7 @@ section.active{display:block}
 </head>
 <body>
 <div class="app-shell">
- 
+
 <!-- LEFT NAV (desktop) -->
 <nav class="left-nav" id="left-nav">
   <div class="logo">⚔</div>
@@ -287,9 +287,13 @@ section.active{display:block}
     <span>Stats</span>
   </button>
   <div class="nav-spacer"></div>
+  <button class="nav-btn" onclick="goTo('settings',this)" style="margin-bottom:8px">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+    <span>Settings</span>
+  </button>
   <div id="nav-avatar-wrap" onclick="signOutUser()" style="cursor:pointer"></div>
 </nav>
- 
+
 <!-- TOP BAR (mobile) -->
 <div class="top-bar">
   <div id="tb-rank-badge" class="tb-rank rank-E">E</div>
@@ -312,10 +316,10 @@ section.active{display:block}
     </div>
   </div>
 </div>
- 
+
 <!-- MAIN -->
 <main class="main-content">
- 
+
 <section id="s-dashboard" class="active">
   <div id="ins-banner" class="ins-banner" style="display:none">
     <div style="flex:1">
@@ -343,7 +347,7 @@ section.active{display:block}
   </div>
   <div id="penalty-zone"></div>
 </section>
- 
+
 <section id="s-study">
   <div class="sec-title">Study Timer</div>
   <div class="sec-sub">Track your focus sessions and earn XP</div>
@@ -394,7 +398,7 @@ section.active{display:block}
     <div id="sess-log"></div>
   </div>
 </section>
- 
+
 <section id="s-tests">
   <div class="sec-title">Tests &amp; Confidence</div>
   <div class="tab-bar">
@@ -440,7 +444,7 @@ section.active{display:block}
     <div class="card"><div class="card-hdr"><span class="hl">Weak Chapters</span></div><div id="weak-chapters"></div></div>
   </div>
 </section>
- 
+
 <section id="s-workout">
   <div class="sec-title">Training Grounds</div>
   <div class="card">
@@ -451,23 +455,107 @@ section.active{display:block}
   <button class="btn btn-ghost" id="edit-btn" onclick="toggleEdit()" style="width:100%;margin-bottom:14px">Edit Plan</button>
   <div class="card"><div class="card-hdr"><span class="hl">Recent Logs</span></div><div id="wo-log"></div></div>
 </section>
- 
+
 <section id="s-analytics">
   <div class="sec-title">Analytics</div>
-  <div class="stat-grid">
+  <div class="stat-grid" style="grid-template-columns:repeat(2,1fr)">
     <div class="stat-card"><div class="stat-val" id="an-hrs">0h</div><div class="stat-lbl">Total Study</div></div>
     <div class="stat-card"><div class="stat-val" id="an-avg">0h</div><div class="stat-lbl">Daily Avg (7d)</div></div>
     <div class="stat-card"><div class="stat-val" id="an-qr">0%</div><div class="stat-lbl">Quest Rate</div></div>
     <div class="stat-card"><div class="stat-val" id="an-cf">0%</div><div class="stat-lbl">Avg Confidence</div></div>
+    <div class="stat-card"><div class="stat-val" id="an-prod">0%</div><div class="stat-lbl">Productivity</div></div>
+    <div class="stat-card"><div class="stat-val" id="an-xptot">0</div><div class="stat-lbl">Total XP</div></div>
   </div>
-  <div class="card"><div class="card-hdr"><span class="hl">Study Hours — Last 7 Days</span></div><div class="chart-wrap"><canvas id="ch-study"></canvas></div></div>
-  <div class="card"><div class="card-hdr"><span class="hl">Test Score Trend</span></div><div class="chart-wrap"><canvas id="ch-tests"></canvas></div></div>
-  <div class="card"><div class="card-hdr"><span class="hl">Subject Confidence</span></div><div class="chart-wrap" style="height:180px"><canvas id="ch-conf"></canvas></div></div>
-  <div class="card"><div class="card-hdr"><span class="hl">Shadow Chronicle</span></div><div id="chronicle"></div></div>
+
+  <div class="card">
+    <div class="card-hdr"><span class="hl">Daily Study Time — Last 14 Days</span></div>
+    <div class="chart-wrap" style="height:210px"><canvas id="ch-study"></canvas></div>
+  </div>
+
+  <div class="card">
+    <div class="card-hdr"><span class="hl">Productivity Score — Last 7 Days</span>
+      <span style="font-size:11px;color:var(--text2);font-weight:400;margin-left:8px">efficiency × hours</span>
+    </div>
+    <div class="chart-wrap" style="height:180px"><canvas id="ch-prod"></canvas></div>
+  </div>
+
+  <div class="card">
+    <div class="card-hdr"><span class="hl">XP Earned Per Day — Last 14 Days</span></div>
+    <div class="chart-wrap" style="height:180px"><canvas id="ch-xp"></canvas></div>
+  </div>
+
+  <div class="card">
+    <div class="card-hdr"><span class="hl">Test Score Trend</span></div>
+    <div class="chart-wrap" style="height:200px"><canvas id="ch-tests"></canvas></div>
+  </div>
+
+  <div class="card">
+    <div class="card-hdr"><span class="hl">Subject Confidence Overview</span></div>
+    <div id="conf-bars"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-hdr"><span class="hl">Study Streak Heatmap — Last 28 Days</span></div>
+    <div id="heatmap" style="display:flex;flex-wrap:wrap;gap:4px;padding:4px 0"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-hdr"><span class="hl">Shadow Chronicle</span></div>
+    <div id="chronicle"></div>
+  </div>
 </section>
- 
+
+<section id="s-settings">
+  <div class="sec-title">Settings</div>
+  <div class="card">
+    <div class="card-hdr"><span class="hl">Hunter Profile</span></div>
+    <div class="fg" style="margin-bottom:14px">
+      <label class="fl">Hunter Name</label>
+      <input type="text" class="fi" id="set-name" placeholder="Gautam">
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-hdr"><span class="hl">Exam Date</span></div>
+    <div style="font-size:12px;color:var(--text2);margin-bottom:12px">Set your JEE Advanced date. The countdown on your dashboard uses this.</div>
+    <div class="fg" style="margin-bottom:14px">
+      <label class="fl">JEE Advanced Date</label>
+      <input type="date" class="fi" id="set-jeedate">
+    </div>
+    <div style="font-size:12px;color:var(--text2);margin-bottom:6px">Common dates: JEE Adv 2026 → May 18, 2026 &nbsp;|&nbsp; JEE Adv 2027 → ~May 2027</div>
+  </div>
+  <div class="card">
+    <div class="card-hdr"><span class="hl">Daily Goals</span></div>
+    <div class="fg" style="margin-bottom:14px">
+      <label class="fl">Daily Study Goal (hours)</label>
+      <input type="number" class="fi" id="set-goal" min="1" max="16" style="max-width:120px">
+      <div style="font-size:11px;color:var(--text2);margin-top:5px">Used in productivity score and daily progress tracking</div>
+    </div>
+    <div class="fg" style="margin-bottom:14px">
+      <label class="fl">JEE Target Marks</label>
+      <input type="number" class="fi" id="set-marks" min="0" max="360" style="max-width:120px">
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-hdr"><span class="hl">About Confidence Sliders</span></div>
+    <div style="font-size:13px;color:var(--text2);line-height:1.8">
+      Go to <b style="color:var(--text)">Tests → Confidence</b> tab. You'll see all your JEE topics listed under Physics, Chemistry and Maths.<br><br>
+      For each topic, drag the slider to show how confident you feel:<br>
+      <span style="color:var(--red)">■</span> <b style="color:var(--text)">0–39%</b> — Not studied / very weak<br>
+      <span style="color:var(--gold)">■</span> <b style="color:var(--text)">40–79%</b> — Studied but needs revision<br>
+      <span style="color:var(--green)">■</span> <b style="color:var(--text)">80–100%</b> — Strong, mostly done<br><br>
+      The app uses these to show your weakest topics in the JEE Marks section so you know where to focus next.
+    </div>
+  </div>
+  <button class="btn btn-primary" onclick="saveSettings()" style="width:100%;margin-bottom:14px">Save Settings</button>
+  <div class="card" style="border-color:rgba(255,59,92,.2)">
+    <div class="card-hdr"><span style="color:var(--red)">Danger Zone</span></div>
+    <div style="font-size:12px;color:var(--text2);margin-bottom:12px">Reset all your progress data. This cannot be undone.</div>
+    <button class="btn btn-danger btn-sm" onclick="resetAllData()">Reset All Progress</button>
+  </div>
+</section>
+
 </main>
- 
+
 <!-- RIGHT PANEL (desktop) -->
 <aside class="right-panel">
   <div class="rp-section">
@@ -511,7 +599,7 @@ section.active{display:block}
     </div>
   </div>
 </aside>
- 
+
 <!-- BOTTOM NAV (mobile) -->
 <nav class="bottom-nav">
   <button class="bnav-btn active" onclick="goTo('dashboard',this)">
@@ -529,10 +617,13 @@ section.active{display:block}
   <button class="bnav-btn" onclick="goTo('analytics',this)">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>Stats
   </button>
+  <button class="bnav-btn" onclick="goTo('settings',this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>Set
+  </button>
 </nav>
- 
+
 </div>
- 
+
 <!-- LOGIN -->
 <div id="login-screen" style="position:fixed;inset:0;z-index:999;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center">
   <div style="font-family:var(--mono);font-size:52px;color:var(--accent);margin-bottom:12px">⚔</div>
@@ -544,9 +635,9 @@ section.active{display:block}
   </button>
   <div style="font-size:12px;color:var(--text3);margin-top:24px;line-height:1.9">Your data syncs across all devices.<br>Use a different Google account for testing vs real use.</div>
 </div>
- 
+
 <div class="toast" id="toast"></div>
- 
+
 <script>
 // DATA
 const RANKS=[
@@ -581,16 +672,21 @@ const DEF={
   hunter:{xp:0,mana:100,streak:0,lastDate:null,startDate:new Date().toISOString().split('T')[0]},
   questComp:{},sessions:[],tests:[],
   topics:{
-    physics:JEE_TOPICS.physics.map((n,i)=>({id:'p'+i,name:n,conf:0})),
-    chemistry:JEE_TOPICS.chemistry.map((n,i)=>({id:'c'+i,name:n,conf:0})),
-    maths:JEE_TOPICS.maths.map((n,i)=>({id:'m'+i,name:n,conf:0})),
+    physics:JEE_TOPICS.physics.map((n,i)=>({id:'p'+i,name:n,conf:50})),
+    chemistry:JEE_TOPICS.chemistry.map((n,i)=>({id:'c'+i,name:n,conf:50})),
+    maths:JEE_TOPICS.maths.map((n,i)=>({id:'m'+i,name:n,conf:50})),
   },
   workout:{plan:JSON.parse(JSON.stringify(DEF_PLAN)),logs:[]},
   jeeTarget:250,
+  settings:{
+    jeeDate:'2027-05-18',
+    dailyGoalHours:4,
+    hunterName:'Gautam',
+  },
 };
- 
+
 let S,db,auth,currentUser=null,saveTimer=null;
- 
+
 // FIREBASE
 const firebaseConfig={
   apiKey:"AIzaSyDWmh7WLL_a3eCbcnh3hKL2ZgqTex_SYWM",
@@ -603,7 +699,7 @@ const firebaseConfig={
 firebase.initializeApp(firebaseConfig);
 auth=firebase.auth();
 db=firebase.firestore();
- 
+
 function signInGoogle(){
   const p=new firebase.auth.GoogleAuthProvider();
   auth.signInWithPopup(p).catch(e=>showToast('Sign in failed: '+e.message));
@@ -611,7 +707,7 @@ function signInGoogle(){
 function signOutUser(){
   if(confirm('Sign out?')){S=null;auth.signOut();}
 }
- 
+
 function defState(){return JSON.parse(JSON.stringify(DEF));}
 function ensureKeys(){
   if(!S.topics)S.topics=JSON.parse(JSON.stringify(DEF.topics));
@@ -622,6 +718,10 @@ function ensureKeys(){
   if(!S.questComp)S.questComp={};
   if(!S.sessions)S.sessions=[];
   if(!S.tests)S.tests=[];
+  if(!S.settings)S.settings={jeeDate:'2027-05-18',dailyGoalHours:4,hunterName:'Gautam'};
+  if(!S.settings.jeeDate)S.settings.jeeDate='2027-05-18';
+  if(!S.settings.dailyGoalHours)S.settings.dailyGoalHours=4;
+  if(!S.settings.hunterName)S.settings.hunterName='Gautam';
 }
 function save(){
   if(!currentUser)return;
@@ -653,7 +753,7 @@ async function loadFromCloud(uid){
     showToast('Offline — using local data');
   }
 }
- 
+
 auth.onAuthStateChanged(async user=>{
   if(user){
     currentUser=user;
@@ -672,7 +772,7 @@ auth.onAuthStateChanged(async user=>{
     document.getElementById('rp-user-strip').style.display='none';
   }
 });
- 
+
 // UTILS
 function today(){return new Date().toISOString().split('T')[0];}
 function fmtDate(d){return new Date(d).toLocaleDateString('en-IN',{day:'numeric',month:'short'});}
@@ -683,7 +783,7 @@ function showToast(msg){
   t.textContent=msg;t.classList.add('show');
   clearTimeout(t._to);t._to=setTimeout(()=>t.classList.remove('show'),2800);
 }
- 
+
 // STREAK
 function checkStreak(){
   const t=today(),last=S.hunter.lastDate;
@@ -695,19 +795,19 @@ function checkStreak(){
     S.hunter.lastDate=t;save();
   }
 }
- 
+
 // RANK
 function getRank(xp){for(let i=RANKS.length-1;i>=0;i--)if(xp>=RANKS[i].min)return RANKS[i];return RANKS[0];}
 function getRankProg(xp){const r=getRank(xp);if(r.max===Infinity)return{pct:100};return{pct:Math.min(100,Math.round((xp-r.min)/(r.max-r.min)*100))};}
 function getClass(r){return r==='S'||r==='SS'||r==='SSS'?'Shadow Monarch':r==='A'?'Elite Hunter':r==='B'||r==='C'?'Awakened Hunter':'Shadow Warrior';}
- 
+
 function updateHeader(){
   const{xp,mana,streak}=S.hunter;
   const rk=getRank(xp),prog=getRankProg(xp);
   const cls='rank-'+rk.r,hc=getClass(rk.r);
   const start=new Date(S.hunter.startDate),now=new Date();
   const dayN=Math.max(1,Math.floor((now-start)/86400000)+1);
-  const jee=new Date('2026-05-18');
+  const jee=new Date(S.settings.jeeDate||'2027-05-18');
   const dLeft=Math.max(0,Math.ceil((jee-now)/86400000));
   // mobile
   const tb=document.getElementById('tb-rank-badge');if(tb){tb.textContent=rk.r;tb.className='tb-rank '+cls;}
@@ -722,7 +822,7 @@ function updateHeader(){
   el('rp-jee-days',dLeft);
   const ms=document.getElementById('mana-study');if(ms)ms.textContent=mana;
 }
- 
+
 // NAV
 function goTo(name,btn){
   document.querySelectorAll('section').forEach(s=>s.classList.remove('active'));
@@ -734,8 +834,11 @@ function goTo(name,btn){
   if(name==='tests')renderTests();
   if(name==='workout')renderWorkout();
   if(name==='analytics')setTimeout(renderCharts,60);
+  if(name==='settings')renderSettings();
 }
- 
+  if(name==='analytics')setTimeout(renderCharts,60);
+}
+
 // DASHBOARD
 function renderDash(){
   updateHeader();
@@ -746,7 +849,7 @@ function renderDash(){
   el('ds-xp','+'+tXP);el('ds-sess',tSess.length);
   renderQuests();renderGates();renderPenalty();
 }
- 
+
 function renderQuests(){
   const t=today(),comp=S.questComp[t]||{};
   const tSess=S.sessions.filter(s=>s.date===t);
@@ -758,7 +861,7 @@ function renderQuests(){
   S.questComp[t]=comp;if(changed){save();updateHeader();}
   const done=Object.values(comp).filter(Boolean).length;
   const earned=QUESTS.filter(q=>comp[q.id]).reduce((a,q)=>a+q.xp,0);
- 
+
   function mkQ(prefix,chkCls,itemCls){
     let h=`<div style="display:flex;justify-content:space-between;margin-bottom:10px;font-size:12px;color:var(--text2)"><span>${done}/${QUESTS.length} done</span><span style="color:var(--gold)">+${earned} XP earned</span></div>`;
     QUESTS.forEach(q=>{
@@ -779,7 +882,7 @@ function renderQuests(){
   const ql=document.getElementById('quest-list');if(ql)ql.innerHTML=mkQ('m','qchk','quest-item');
   const rql=document.getElementById('rp-quest-list');if(rql)rql.innerHTML=mkQ('r','rp-qchk','rp-quest-item');
 }
- 
+
 function tQ(id){
   const t=today();if(!S.questComp[t])S.questComp[t]={};
   const q=QUESTS.find(q=>q.id===id);if(!q||q.auto)return;
@@ -789,7 +892,7 @@ function tQ(id){
   else S.hunter.xp=Math.max(0,S.hunter.xp-q.xp);
   save();renderDash();
 }
- 
+
 function renderGates(){
   const subjs=['physics','chemistry','maths'];
   const lbl={physics:'Physics',chemistry:'Chemistry',maths:'Maths'};
@@ -800,13 +903,16 @@ function renderGates(){
     const avg=Math.round(tp.reduce((a,t)=>a+t.conf,0)/tp.length);
     const cleared=tp.filter(t=>t.conf>=80).length;
     const weak=tp.filter(t=>t.conf<40).length;
+    // Only show warning if user has actually set some topics (not all at default 50)
+    const hasCustom=tp.some(t=>t.conf!==50);
     main+=`<div style="margin-bottom:14px">
       <div style="display:flex;justify-content:space-between;margin-bottom:5px">
         <span style="font-weight:700;font-size:14px">${lbl[s]}</span>
         <span style="font-family:var(--mono);font-size:11px;color:var(--text2)">${cleared}/${tp.length} cleared · ${avg}%</span>
       </div>
       <div class="pb-wrap"><div class="pb-fill" style="width:${avg}%;background:${col[s]}"></div></div>
-      ${weak>0?`<div style="font-size:11px;color:var(--red);margin-top:3px">⚠ ${weak} topics below 40%</div>`:''}
+      ${hasCustom&&weak>0?`<div style="font-size:11px;color:var(--red);margin-top:3px">⚠ ${weak} topics below 40%</div>`:''}
+      ${!hasCustom?`<div style="font-size:11px;color:var(--text3);margin-top:3px">Set your confidence in Tests → Confidence</div>`:''}
     </div>`;
     rp+=`<div class="rp-gate-row">
       <div class="rp-gate-hdr"><span class="rp-gate-name">${lbl[s]}</span><span class="rp-gate-pct">${cleared}/${tp.length} · ${avg}%</span></div>
@@ -816,7 +922,7 @@ function renderGates(){
   const go=document.getElementById('gates-overview');if(go)go.innerHTML=main;
   const rg=document.getElementById('rp-gates');if(rg)rg.innerHTML=rp;
 }
- 
+
 function renderPenalty(){
   const t=today(),comp=S.questComp[t]||{};
   const done=Object.values(comp).filter(Boolean).length;
@@ -825,12 +931,12 @@ function renderPenalty(){
     pz.innerHTML=`<div style="background:rgba(255,59,92,.07);border:1px solid rgba(255,59,92,.22);border-radius:var(--radius-sm);padding:14px;display:flex;gap:12px;align-items:center;margin-top:4px"><span style="font-size:22px;flex-shrink:0">⚠</span><div><div style="font-size:13px;color:var(--red);font-weight:700">Penalty Warning</div><div style="font-size:12px;color:var(--text2);margin-top:2px">Only ${done}/5 quests done. Complete before midnight.</div></div></div>`;
   }else pz.innerHTML='';
 }
- 
+
 // TIMER
 const CIRC=2*Math.PI*106;
 let tMode='pomodoro',tRunning=false,tSecs=25*60,tTotal=25*60,tInterval=null;
 let pomoPhase='focus',pomoCount=0,studySub='physics',elapsed=0,pauseCount=0;
- 
+
 function setMode(m,btn){
   if(tRunning)resetTimer();
   tMode=m;
@@ -921,7 +1027,7 @@ function renderSessLog(){
   });
   document.getElementById('sess-log').innerHTML=h;
 }
- 
+
 // TESTS
 function setTTab(t,btn){
   ['weekly','topics','marks'].forEach(x=>document.getElementById('tt-'+x).style.display=x===t?'block':'none');
@@ -999,7 +1105,7 @@ function renderJeeMks(){
   else{let wh='<div style="font-size:12px;color:var(--text2);margin-bottom:10px">Prioritise these for quick score gains:</div>';weak.forEach(t=>{wh+=`<div style="display:flex;align-items:center;gap:9px;margin-bottom:9px"><div style="width:6px;height:6px;border-radius:50%;background:var(--red);flex-shrink:0"></div><span style="font-size:13px;flex:1">${t.name}</span><span style="font-family:var(--mono);font-size:11px;color:var(--red)">${t.conf}%</span></div>`;});document.getElementById('weak-chapters').innerHTML=wh;}
 }
 function saveJeeTgt(){const v=parseInt(document.getElementById('jee-tgt').value);if(v>0){S.jeeTarget=v;save();renderJeeMks();showToast('Target set: '+v+' marks');}}
- 
+
 // WORKOUT
 let selDay=DAYS_ORDER[new Date().getDay()===0?6:new Date().getDay()-1];
 let editMode=false;
@@ -1063,53 +1169,139 @@ function renderWoLog(){
   });
   document.getElementById('wo-log').innerHTML=h;
 }
- 
+
 // ANALYTICS
-let chS=null,chT=null,chC=null;
+let chS=null,chT=null,chProd=null,chXP=null;
 function renderCharts(){
+  const gc={tc:'rgba(224,227,244,.7)',gr:'rgba(255,255,255,.04)'};
   const totalMins=S.sessions.reduce((a,s)=>a+s.min,0);
   el('an-hrs',(totalMins/60).toFixed(1)+'h');
   const last7=[];for(let i=6;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);last7.push(d.toISOString().split('T')[0]);}
+  const last14=[];for(let i=13;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);last14.push(d.toISOString().split('T')[0]);}
   const avg7=last7.map(d=>S.sessions.filter(s=>s.date===d).reduce((a,s)=>a+s.min,0)/60);
   el('an-avg',(avg7.reduce((a,v)=>a+v,0)/7).toFixed(1)+'h');
   let qT=0,qD=0;last7.forEach(d=>{const c=S.questComp[d]||{};qT+=QUESTS.length;qD+=Object.values(c).filter(Boolean).length;});
   el('an-qr',qT>0?Math.round(qD/qT*100)+'%':'0%');
   const allT=[...S.topics.physics,...S.topics.chemistry,...S.topics.maths];
   el('an-cf',Math.round(allT.reduce((a,t)=>a+t.conf,0)/allT.length)+'%');
-  const gc={tc:'rgba(224,227,244,.7)',gr:'rgba(255,255,255,.04)'};
+  el('an-xptot',S.hunter.xp);
+  // Productivity = (daily mins / goal mins) * avg efficiency capped at 100
+  const goalMins=(S.settings.dailyGoalHours||4)*60;
+  const prod7=last7.map(d=>{
+    const sess=S.sessions.filter(s=>s.date===d);
+    if(!sess.length)return 0;
+    const mins=sess.reduce((a,s)=>a+s.min,0);
+    const avgEff=sess.reduce((a,s)=>a+(s.eff||100),0)/sess.length;
+    return Math.min(100,Math.round((mins/goalMins)*avgEff));
+  });
+  el('an-prod',Math.round(prod7.reduce((a,v)=>a+v,0)/7)+'%');
+
+  // 1. Study hours last 14 days stacked bar
   if(chS)chS.destroy();
   chS=new Chart(document.getElementById('ch-study').getContext('2d'),{type:'bar',data:{
-    labels:last7.map(d=>new Date(d).toLocaleDateString('en-IN',{weekday:'short'})),
+    labels:last14.map(d=>new Date(d).toLocaleDateString('en-IN',{weekday:'short',day:'numeric'})),
     datasets:[
-      {label:'Physics',data:last7.map(d=>+(S.sessions.filter(s=>s.date===d&&s.sub==='physics').reduce((a,s)=>a+s.min,0)/60).toFixed(1)),backgroundColor:'rgba(91,110,245,.7)',borderRadius:4},
-      {label:'Chemistry',data:last7.map(d=>+(S.sessions.filter(s=>s.date===d&&s.sub==='chemistry').reduce((a,s)=>a+s.min,0)/60).toFixed(1)),backgroundColor:'rgba(0,214,143,.7)',borderRadius:4},
-      {label:'Maths',data:last7.map(d=>+(S.sessions.filter(s=>s.date===d&&s.sub==='maths').reduce((a,s)=>a+s.min,0)/60).toFixed(1)),backgroundColor:'rgba(244,196,48,.7)',borderRadius:4},
-    ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:gc.tc,font:{size:11}}}},scales:{x:{stacked:true,ticks:{color:gc.tc,font:{size:10}},grid:{color:gc.gr}},y:{stacked:true,ticks:{color:gc.tc,font:{size:10}},grid:{color:gc.gr}}}}
+      {label:'Physics',data:last14.map(d=>+(S.sessions.filter(s=>s.date===d&&s.sub==='physics').reduce((a,s)=>a+s.min,0)/60).toFixed(1)),backgroundColor:'rgba(91,110,245,.75)',borderRadius:3},
+      {label:'Chemistry',data:last14.map(d=>+(S.sessions.filter(s=>s.date===d&&s.sub==='chemistry').reduce((a,s)=>a+s.min,0)/60).toFixed(1)),backgroundColor:'rgba(0,214,143,.75)',borderRadius:3},
+      {label:'Maths',data:last14.map(d=>+(S.sessions.filter(s=>s.date===d&&s.sub==='maths').reduce((a,s)=>a+s.min,0)/60).toFixed(1)),backgroundColor:'rgba(244,196,48,.75)',borderRadius:3},
+      {label:'Other',data:last14.map(d=>+(S.sessions.filter(s=>s.date===d&&s.sub==='other').reduce((a,s)=>a+s.min,0)/60).toFixed(1)),backgroundColor:'rgba(150,150,150,.5)',borderRadius:3},
+    ]},options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{labels:{color:gc.tc,font:{size:11}}},annotation:{annotations:{goal:{type:'line',yMin:S.settings.dailyGoalHours,yMax:S.settings.dailyGoalHours,borderColor:'rgba(244,196,48,.4)',borderWidth:1,borderDash:[4,4]}}}},
+      scales:{x:{stacked:true,ticks:{color:gc.tc,font:{size:9}},grid:{color:gc.gr}},y:{stacked:true,ticks:{color:gc.tc,font:{size:10}},grid:{color:gc.gr},title:{display:true,text:'hours',color:gc.tc,font:{size:10}}}}}
   });
+
+  // 2. Productivity score line
+  if(chProd)chProd.destroy();
+  chProd=new Chart(document.getElementById('ch-prod').getContext('2d'),{type:'line',data:{
+    labels:last7.map(d=>new Date(d).toLocaleDateString('en-IN',{weekday:'short'})),
+    datasets:[{
+      label:'Productivity %',
+      data:prod7,
+      borderColor:'#7c5ef5',
+      backgroundColor:'rgba(124,94,245,.12)',
+      fill:true,tension:.4,pointRadius:5,
+      pointBackgroundColor:prod7.map(v=>v>=80?'#00d68f':v>=50?'#f4c430':'#ff3b5c'),
+      pointBorderColor:'transparent',
+    }]},options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false}},
+      scales:{x:{ticks:{color:gc.tc,font:{size:10}},grid:{color:gc.gr}},
+        y:{min:0,max:100,ticks:{color:gc.tc,font:{size:10},callback:v=>v+'%'},grid:{color:gc.gr}}}}
+  });
+
+  // 3. XP earned per day
+  if(chXP)chXP.destroy();
+  const xpPerDay=last14.map(d=>S.sessions.filter(s=>s.date===d).reduce((a,s)=>a+(s.xp||0),0));
+  chXP=new Chart(document.getElementById('ch-xp').getContext('2d'),{type:'bar',data:{
+    labels:last14.map(d=>new Date(d).toLocaleDateString('en-IN',{weekday:'short',day:'numeric'})),
+    datasets:[{
+      label:'XP',data:xpPerDay,
+      backgroundColor:xpPerDay.map(v=>v>0?'rgba(244,196,48,.75)':'rgba(244,196,48,.15)'),
+      borderRadius:4,
+    }]},options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false}},
+      scales:{x:{ticks:{color:gc.tc,font:{size:9}},grid:{color:gc.gr}},y:{ticks:{color:gc.tc,font:{size:10}},grid:{color:gc.gr}}}}
+  });
+
+  // 4. Test score trend
   if(chT)chT.destroy();
-  const tests=S.tests.slice(-8);
+  const tests=S.tests.slice(-10);
+  const testWrap=document.getElementById('ch-tests');
   if(tests.length>=2){
-    chT=new Chart(document.getElementById('ch-tests').getContext('2d'),{type:'line',data:{
+    chT=new Chart(testWrap.getContext('2d'),{type:'line',data:{
       labels:tests.map(t=>fmtDate(t.date)),
       datasets:[
         {label:'Physics',data:tests.map(t=>t.phy),borderColor:'#5b6ef5',backgroundColor:'transparent',tension:.3,pointRadius:4,pointBackgroundColor:'#5b6ef5'},
         {label:'Chemistry',data:tests.map(t=>t.che),borderColor:'#00d68f',backgroundColor:'transparent',tension:.3,pointRadius:4,pointBackgroundColor:'#00d68f'},
         {label:'Maths',data:tests.map(t=>t.mat),borderColor:'#f4c430',backgroundColor:'transparent',tension:.3,pointRadius:4,pointBackgroundColor:'#f4c430'},
+        {label:'Total',data:tests.map(t=>t.total),borderColor:'rgba(255,255,255,.3)',backgroundColor:'transparent',tension:.3,borderDash:[4,4],pointRadius:3,pointBackgroundColor:'rgba(255,255,255,.5)'},
       ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:gc.tc,font:{size:11}}}},scales:{x:{ticks:{color:gc.tc,font:{size:10}},grid:{color:gc.gr}},y:{ticks:{color:gc.tc,font:{size:10}},grid:{color:gc.gr}}}}
     });
-  }else{document.getElementById('ch-tests').parentElement.innerHTML='<div class="empty">Log at least 2 tests to see the trend.</div>';}
-  if(chC)chC.destroy();
-  const confD=[
-    {s:'Physics',v:Math.round(S.topics.physics.reduce((a,t)=>a+t.conf,0)/S.topics.physics.length)},
-    {s:'Chemistry',v:Math.round(S.topics.chemistry.reduce((a,t)=>a+t.conf,0)/S.topics.chemistry.length)},
-    {s:'Maths',v:Math.round(S.topics.maths.reduce((a,t)=>a+t.conf,0)/S.topics.maths.length)},
-  ];
-  chC=new Chart(document.getElementById('ch-conf').getContext('2d'),{type:'doughnut',data:{
-    labels:confD.map(d=>d.s+' ('+d.v+'%)'),
-    datasets:[{data:confD.map(d=>Math.max(d.v,1)),backgroundColor:['rgba(91,110,245,.8)','rgba(0,214,143,.8)','rgba(244,196,48,.8)'],borderWidth:0}]
-  },options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right',labels:{color:gc.tc,font:{size:12}}}}}});
+  }else{testWrap.parentElement.innerHTML='<div class="card-hdr"><span class="hl">Test Score Trend</span></div><div class="empty">Log at least 2 tests to see trend.</div>';}
+
+  // 5. Confidence bars (cleaner than doughnut)
+  const subjs=['physics','chemistry','maths'];
+  const col={physics:'var(--accent)',chemistry:'var(--green)',maths:'var(--gold)'};
+  const lbl={physics:'Physics',chemistry:'Chemistry',maths:'Maths'};
+  let cbh='';
+  subjs.forEach(s=>{
+    const tp=S.topics[s];
+    const avg=Math.round(tp.reduce((a,t)=>a+t.conf,0)/tp.length);
+    const strong=tp.filter(t=>t.conf>=80).length;
+    const mid=tp.filter(t=>t.conf>=40&&t.conf<80).length;
+    const weak=tp.filter(t=>t.conf<40).length;
+    cbh+=`<div style="margin-bottom:16px">
+      <div style="display:flex;justify-content:space-between;margin-bottom:5px">
+        <span style="font-weight:700;font-size:14px">${lbl[s]}</span>
+        <span style="font-family:var(--mono);font-size:12px;color:${col[s]}">${avg}%</span>
+      </div>
+      <div style="height:10px;border-radius:5px;overflow:hidden;display:flex;background:rgba(255,255,255,.05)">
+        <div style="width:${Math.round(strong/tp.length*100)}%;background:#00d68f;transition:width .5s"></div>
+        <div style="width:${Math.round(mid/tp.length*100)}%;background:#f4c430;transition:width .5s"></div>
+        <div style="width:${Math.round(weak/tp.length*100)}%;background:#ff3b5c;transition:width .5s"></div>
+      </div>
+      <div style="display:flex;gap:14px;margin-top:5px;font-size:11px;color:var(--text2)">
+        <span style="color:#00d68f">■ Strong: ${strong}</span>
+        <span style="color:#f4c430">■ Mid: ${mid}</span>
+        <span style="color:#ff3b5c">■ Weak: ${weak}</span>
+      </div>
+    </div>`;
+  });
+  document.getElementById('conf-bars').innerHTML=cbh;
+
+  // 6. Heatmap last 28 days
+  const last28=[];for(let i=27;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);last28.push(d.toISOString().split('T')[0]);}
+  const hm=document.getElementById('heatmap');
+  hm.innerHTML=last28.map(d=>{
+    const mins=S.sessions.filter(s=>s.date===d).reduce((a,s)=>a+s.min,0);
+    const pct=Math.min(1,mins/(goalMins));
+    const bg=mins===0?'rgba(255,255,255,.05)':pct>=1?'#00d68f':pct>=.5?'#5b6ef5':'rgba(91,110,245,.35)';
+    const short=new Date(d).toLocaleDateString('en-IN',{month:'short',day:'numeric'});
+    return `<div title="${short}: ${Math.round(mins/60*10)/10}h" style="width:28px;height:28px;border-radius:5px;background:${bg};flex-shrink:0"></div>`;
+  }).join('');
+
   renderChronicle();
 }
+
 function renderChronicle(){
   const wMins=S.sessions.filter(s=>{const d=new Date(s.date),n=new Date();return(n-d)/86400000<=7;}).reduce((a,s)=>a+s.min,0);
   const weak=[...S.topics.physics,...S.topics.chemistry,...S.topics.maths].filter(t=>t.conf<40);
@@ -1117,17 +1309,42 @@ function renderChronicle(){
   const tests=S.tests.slice(-2);
   const testL=tests.length>=2?(tests[1].total>tests[0].total?'improving ↑':'dropped ↓ since last test'):'No tests logged this week.';
   const rk=getRank(S.hunter.xp);
+  const name=S.settings.hunterName||'Gautam';
   const lines=[
-    `Hunter Gautam — Rank ${rk.r} — ${S.hunter.xp} total XP.`,
+    `Hunter ${name} — Rank ${rk.r} — ${S.hunter.xp} total XP.`,
     `${(wMins/60).toFixed(1)}h studied in the last 7 days.`,
     tests.length>=2?`Test scores ${testL}.`:testL,
     weak.length>0?`${weak.length} topics below 40% — focus these first.`:'All topics above 40%. Solid foundation.',
-    strong.length>0?`${strong.length} topics mastered (80%+). Well done.`:'No topics mastered yet — push those sliders up.',
+    strong.length>0?`${strong.length} topics mastered (80%+). Well done.`:'No topics mastered yet — push those confidence sliders up.',
     S.hunter.streak>=3?`${S.hunter.streak}-day streak active. The shadow army grows. 🔥`:'Build your streak. Consistency is the path to S-rank.',
   ];
   document.getElementById('chronicle').innerHTML=lines.map(l=>`<div class="report-line">${l}</div>`).join('');
 }
- 
+
+// SETTINGS
+function renderSettings(){
+  const s=S.settings;
+  document.getElementById('set-name').value=s.hunterName||'Gautam';
+  document.getElementById('set-jeedate').value=s.jeeDate||'2027-05-18';
+  document.getElementById('set-goal').value=s.dailyGoalHours||4;
+  document.getElementById('set-marks').value=S.jeeTarget||250;
+}
+function saveSettings(){
+  S.settings.hunterName=document.getElementById('set-name').value||'Gautam';
+  S.settings.jeeDate=document.getElementById('set-jeedate').value||'2027-05-18';
+  S.settings.dailyGoalHours=parseInt(document.getElementById('set-goal').value)||4;
+  S.jeeTarget=parseInt(document.getElementById('set-marks').value)||250;
+  save();updateHeader();renderDash();
+  showToast('Settings saved ✓');
+}
+function resetAllData(){
+  if(confirm('Reset ALL progress? This cannot be undone.')){
+    S=defState();save();
+    showToast('Progress reset. Starting fresh 🗡️');
+    initApp();
+  }
+}
+
 // PWA
 function makeIcon(size){
   const c=document.createElement('canvas');c.width=c.height=size;
@@ -1146,7 +1363,7 @@ function setupPWA(){
   if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
   if(!window.matchMedia('(display-mode: standalone)').matches)document.getElementById('ins-banner').style.display='flex';
 }
- 
+
 // INIT
 function initApp(){
   checkStreak();setupPWA();
