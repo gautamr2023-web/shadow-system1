@@ -640,6 +640,11 @@ section.active{display:block}
 <div class="toast" id="toast"></div>
 
 <script>
+window.onerror=function(msg,src,line,col,err){
+  const e=document.getElementById('signin-error');
+  if(e)e.textContent='JS Error: '+msg+' (line '+line+')';
+  return false;
+};
 // DATA
 const RANKS=[
   {r:'E',min:0,max:500},{r:'D',min:500,max:1500},{r:'C',min:1500,max:3500},
@@ -702,14 +707,25 @@ auth=firebase.auth();
 db=firebase.firestore();
 
 function signInGoogle(){
-  const provider=new firebase.auth.GoogleAuthProvider();
-  document.getElementById('signin-btn').textContent='Redirecting...';
-  document.getElementById('signin-btn').disabled=true;
-  auth.signInWithRedirect(provider).catch(e=>{
+  try{
+    if(typeof firebase==='undefined'){
+      document.getElementById('signin-error').textContent='Error: Firebase failed to load. Check your internet connection.';
+      return;
+    }
+    if(!auth){
+      document.getElementById('signin-error').textContent='Error: Auth not initialized. Reload the page.';
+      return;
+    }
+    const provider=new firebase.auth.GoogleAuthProvider();
+    document.getElementById('signin-btn').textContent='Opening Google...';
+    document.getElementById('signin-btn').disabled=true;
+    document.getElementById('signin-error').textContent='';
+    auth.signInWithRedirect(provider);
+  }catch(e){
     document.getElementById('signin-error').textContent='Error: '+e.message;
     document.getElementById('signin-btn').textContent='Continue with Google';
     document.getElementById('signin-btn').disabled=false;
-  });
+  }
 }
 function signOutUser(){
   if(confirm('Sign out?')){S=null;auth.signOut();}
