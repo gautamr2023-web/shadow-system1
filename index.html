@@ -693,18 +693,48 @@ const DEF={
 
 let S,db,auth,currentUser=null,saveTimer=null;
 
-// FIREBASE
-const firebaseConfig={
-  apiKey:"AIzaSyDWmh7WLL_a3eCbcnh3hKL2ZgqTex_SYWM",
-  authDomain:"shadow-system-dd646.firebaseapp.com",
-  projectId:"shadow-system-dd646",
-  storageBucket:"shadow-system-dd646.firebasestorage.app",
-  messagingSenderId:"886579810658",
-  appId:"1:886579810658:web:e0c694a325316cae5cdc3b"
-};
-firebase.initializeApp(firebaseConfig);
-auth=firebase.auth();
-db=firebase.firestore();
+// Defer all Firebase work until page fully loaded
+window.addEventListener('load',function(){
+  try{
+    const firebaseConfig={
+      apiKey:"AIzaSyDWmh7WLL_a3eCbcnh3hKL2ZgqTex_SYWM",
+      authDomain:"shadow-system-dd646.firebaseapp.com",
+      projectId:"shadow-system-dd646",
+      storageBucket:"shadow-system-dd646.firebasestorage.app",
+      messagingSenderId:"886579810658",
+      appId:"1:886579810658:web:e0c694a325316cae5cdc3b"
+    };
+    firebase.initializeApp(firebaseConfig);
+    auth=firebase.auth();
+    db=firebase.firestore();
+
+    // Handle redirect result (after Google sign-in redirect)
+    auth.getRedirectResult().catch(e=>{
+      document.getElementById('signin-error').textContent='Sign-in error: '+e.message;
+    });
+
+    auth.onAuthStateChanged(async user=>{
+      if(user){
+        currentUser=user;
+        document.getElementById('login-screen').style.display='none';
+        document.getElementById('rp-user-strip').style.display='block';
+        document.getElementById('rp-avatar').src=user.photoURL||'';
+        document.getElementById('rp-user-name').textContent=user.displayName||user.email;
+        const aw=document.getElementById('nav-avatar-wrap');
+        if(user.photoURL)aw.innerHTML=`<img src="${user.photoURL}" class="nav-avatar" title="Sign out">`;
+        else aw.innerHTML=`<div class="nav-avatar-ph">${(user.displayName||'?')[0]}</div>`;
+        await loadFromCloud(user.uid);
+        initApp();
+      }else{
+        currentUser=null;
+        document.getElementById('login-screen').style.display='flex';
+        document.getElementById('rp-user-strip').style.display='none';
+      }
+    });
+  }catch(e){
+    document.getElementById('signin-error').textContent='Init error: '+e.message;
+  }
+});
 
 function signInGoogle(){
   try{
@@ -730,15 +760,6 @@ function signInGoogle(){
 function signOutUser(){
   if(confirm('Sign out?')){S=null;auth.signOut();}
 }
-
-// Check redirect result on page load
-auth.getRedirectResult().then(result=>{
-  if(result&&result.user){
-    // handled by onAuthStateChanged
-  }
-}).catch(e=>{
-  document.getElementById('signin-error').textContent='Sign-in error: '+e.message;
-});
 
 function defState(){return JSON.parse(JSON.stringify(DEF));}
 function ensureKeys(){
@@ -785,25 +806,6 @@ async function loadFromCloud(uid){
     showToast('Offline — using local data');
   }
 }
-
-auth.onAuthStateChanged(async user=>{
-  if(user){
-    currentUser=user;
-    document.getElementById('login-screen').style.display='none';
-    document.getElementById('rp-user-strip').style.display='block';
-    document.getElementById('rp-avatar').src=user.photoURL||'';
-    document.getElementById('rp-user-name').textContent=user.displayName||user.email;
-    const aw=document.getElementById('nav-avatar-wrap');
-    if(user.photoURL)aw.innerHTML=`<img src="${user.photoURL}" class="nav-avatar" title="Sign out">`;
-    else aw.innerHTML=`<div class="nav-avatar-ph">${(user.displayName||'?')[0]}</div>`;
-    await loadFromCloud(user.uid);
-    initApp();
-  }else{
-    currentUser=null;
-    document.getElementById('login-screen').style.display='flex';
-    document.getElementById('rp-user-strip').style.display='none';
-  }
-});
 
 // UTILS
 function today(){return new Date().toISOString().split('T')[0];}
