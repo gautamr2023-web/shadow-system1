@@ -701,12 +701,23 @@ auth=firebase.auth();
 db=firebase.firestore();
 
 function signInGoogle(){
-  const p=new firebase.auth.GoogleAuthProvider();
-  auth.signInWithPopup(p).catch(e=>showToast('Sign in failed: '+e.message));
+  const provider=new firebase.auth.GoogleAuthProvider();
+  const isMobile=/iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+  if(isMobile){
+    auth.signInWithRedirect(provider).catch(e=>showToast('Sign in failed: '+e.message));
+  } else {
+    auth.signInWithPopup(provider).catch(e=>{
+      // Popup blocked — fall back to redirect
+      auth.signInWithRedirect(provider);
+    });
+  }
 }
 function signOutUser(){
   if(confirm('Sign out?')){S=null;auth.signOut();}
 }
+
+// Handle redirect result when page loads after Google redirect
+auth.getRedirectResult().catch(e=>console.warn('redirect result error',e));
 
 function defState(){return JSON.parse(JSON.stringify(DEF));}
 function ensureKeys(){
