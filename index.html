@@ -287,7 +287,11 @@ section.active{display:block}
     <span>Stats</span>
   </button>
   <div class="nav-spacer"></div>
-  <div id="nav-avatar-wrap" onclick="signOutUser()" style="cursor:pointer"></div>
+  <button class="nav-btn" onclick="goTo('settings',this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+    <span>Setup</span>
+  </button>
+  <div id="nav-avatar-wrap" onclick="goTo('settings',document.querySelector('.nav-btn:last-of-type'))" style="cursor:pointer;margin-top:8px"></div>
 </nav>
 
 <!-- TOP BAR (mobile) -->
@@ -326,7 +330,7 @@ section.active{display:block}
   </div>
   <div class="mob-dash-top">
     <div class="mob-day"><div class="mob-day-n" id="mob-day-n">1</div><div class="mob-day-l">Day</div></div>
-    <div class="mob-jee-days"><div class="mob-jee-n" id="mob-jee-n">—</div><div class="mob-jee-l">Days to JEE Adv.</div></div>
+    <div class="mob-jee-days"><div class="mob-jee-n" id="mob-jee-n">—</div><div class="mob-jee-l exam-label-display">Days to JEE Adv.</div></div>
   </div>
   <div class="dash-stats">
     <div class="dstat"><div class="dstat-val" id="ds-hrs">0h0m</div><div class="dstat-lbl">Today</div></div>
@@ -458,12 +462,196 @@ section.active{display:block}
     <div class="stat-card"><div class="stat-val" id="an-hrs">0h</div><div class="stat-lbl">Total Study</div></div>
     <div class="stat-card"><div class="stat-val" id="an-avg">0h</div><div class="stat-lbl">Daily Avg (7d)</div></div>
     <div class="stat-card"><div class="stat-val" id="an-qr">0%</div><div class="stat-lbl">Quest Rate</div></div>
-    <div class="stat-card"><div class="stat-val" id="an-cf">0%</div><div class="stat-lbl">Avg Confidence</div></div>
+    <div class="stat-card"><div class="stat-val" id="an-streak">0</div><div class="stat-lbl">Best Streak</div></div>
   </div>
-  <div class="card"><div class="card-hdr"><span class="hl">Study Hours — Last 7 Days</span></div><div class="chart-wrap"><canvas id="ch-study"></canvas></div></div>
-  <div class="card"><div class="card-hdr"><span class="hl">Test Score Trend</span></div><div class="chart-wrap"><canvas id="ch-tests"></canvas></div></div>
-  <div class="card"><div class="card-hdr"><span class="hl">Subject Confidence</span></div><div class="chart-wrap" style="height:180px"><canvas id="ch-conf"></canvas></div></div>
+
+  <!-- Productivity Score -->
+  <div class="card">
+    <div class="card-hdr"><span class="hl">📈 Productivity Score — Last 14 Days</span></div>
+    <div style="font-size:11px;color:var(--text2);margin-bottom:8px">Combines study hours + quest completion + consistency. Higher = better grind.</div>
+    <div class="chart-wrap" style="height:180px"><canvas id="ch-productivity"></canvas></div>
+  </div>
+
+  <!-- Study hours per day -->
+  <div class="card">
+    <div class="card-hdr"><span class="hl">⏱ Study Hours — Last 7 Days</span></div>
+    <div class="chart-wrap" style="height:220px"><canvas id="ch-study"></canvas></div>
+  </div>
+
+  <!-- Cumulative Study -->
+  <div class="card">
+    <div class="card-hdr"><span class="hl">📚 Cumulative Study Hours</span></div>
+    <div style="font-size:11px;color:var(--text2);margin-bottom:8px">Total hours stacked up over time — watch it climb.</div>
+    <div class="chart-wrap" style="height:180px"><canvas id="ch-cumulative"></canvas></div>
+  </div>
+
+  <!-- Subject split pie -->
+  <div class="card">
+    <div class="card-hdr"><span class="hl">🔬 Subject Time Split (All Time)</span></div>
+    <div class="chart-wrap" style="height:200px"><canvas id="ch-split"></canvas></div>
+  </div>
+
+  <!-- Test trend -->
+  <div class="card">
+    <div class="card-hdr"><span class="hl">📝 Test Score Trend</span></div>
+    <div class="chart-wrap" style="height:200px"><canvas id="ch-tests"></canvas></div>
+  </div>
+
+  <!-- Weekly heatmap -->
+  <div class="card">
+    <div class="card-hdr"><span class="hl">🗓 Study Heatmap — Last 5 Weeks</span></div>
+    <div id="ch-heatmap" style="margin-top:8px"></div>
+  </div>
+
+  <!-- Chronicle -->
   <div class="card"><div class="card-hdr"><span class="hl">Shadow Chronicle</span></div><div id="chronicle"></div></div>
+</section>
+
+<!-- SETTINGS SECTION -->
+<section id="s-settings">
+  <div class="sec-title">⚙ Setup</div>
+  <div class="sec-sub">Customize everything to match your prep.</div>
+
+  <!-- Account -->
+  <div class="card">
+    <div class="card-hdr"><span class="hl">Account</span></div>
+    <div id="settings-account-info" style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
+      <div id="s-avatar" style="width:44px;height:44px;border-radius:50%;background:var(--card2);border:2px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:18px;color:var(--text2)">?</div>
+      <div>
+        <div id="s-user-name" style="font-size:15px;font-weight:700">Not signed in</div>
+        <div id="s-user-email" style="font-size:11px;color:var(--text2)">Sign in to sync across devices</div>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn btn-ghost btn-sm" onclick="signInGoogle()" id="s-signin-btn">Sign In with Google</button>
+      <button class="btn btn-danger btn-sm" onclick="signOutUser()" id="s-signout-btn" style="display:none">Sign Out</button>
+    </div>
+    <div style="font-size:11px;color:var(--text3);margin-top:10px">💡 Tip: Sign in with a different Google account to switch profiles. Your data is stored per account.</div>
+  </div>
+
+  <!-- Hunter Name -->
+  <div class="card">
+    <div class="card-hdr"><span class="hl">Hunter Identity</span></div>
+    <div class="form-grid" style="grid-template-columns:1fr">
+      <div class="fg">
+        <label class="fl">Hunter Name</label>
+        <input type="text" class="fi" id="s-hunter-name" placeholder="Your name" value="Gautam">
+      </div>
+    </div>
+    <button class="btn btn-primary btn-sm" onclick="saveHunterName()">Update Name</button>
+  </div>
+
+  <!-- JEE Exam Settings -->
+  <div class="card">
+    <div class="card-hdr"><span class="hl">Exam Target</span></div>
+    <div class="form-grid">
+      <div class="fg">
+        <label class="fl">Exam Name</label>
+        <select class="fi" id="s-exam-type" onchange="updateExamFields()">
+          <option value="jee-adv">JEE Advanced</option>
+          <option value="jee-main">JEE Main</option>
+          <option value="custom">Custom Exam</option>
+        </select>
+      </div>
+      <div class="fg">
+        <label class="fl">Exam Date</label>
+        <input type="date" class="fi" id="s-exam-date">
+      </div>
+      <div class="fg full" id="s-custom-exam-row" style="display:none">
+        <label class="fl">Exam Name (Custom)</label>
+        <input type="text" class="fi" id="s-custom-exam-name" placeholder="e.g. BITSAT">
+      </div>
+    </div>
+    <div style="font-size:11px;color:var(--text2);margin-bottom:10px" id="s-exam-hint">JEE Advanced 2026 is on <b style="color:var(--gold)">18 May 2026</b>. You can set a custom date if your board exam or target is different.</div>
+    <button class="btn btn-primary btn-sm" onclick="saveExamSettings()">Save Exam Date</button>
+  </div>
+
+  <!-- Class / Starting point -->
+  <div class="card">
+    <div class="card-hdr"><span class="hl">Current Status</span></div>
+    <div class="form-grid">
+      <div class="fg">
+        <label class="fl">Currently in</label>
+        <select class="fi" id="s-class">
+          <option value="11">Class 11</option>
+          <option value="12" selected>Class 12</option>
+          <option value="dropper">Dropper Year</option>
+        </select>
+      </div>
+      <div class="fg">
+        <label class="fl">Start Date (of this prep)</label>
+        <input type="date" class="fi" id="s-start-date">
+      </div>
+    </div>
+    <button class="btn btn-primary btn-sm" onclick="saveStatusSettings()">Save</button>
+  </div>
+
+  <!-- Daily Goals -->
+  <div class="card">
+    <div class="card-hdr"><span class="hl">Daily Goals</span></div>
+    <div style="font-size:12px;color:var(--text2);margin-bottom:14px">These define what "a good day" looks like for you. Quests auto-check based on these.</div>
+    <div class="form-grid">
+      <div class="fg">
+        <label class="fl">Study Goal (hours)</label>
+        <input type="number" class="fi" id="s-goal-study" value="6" min="1" max="16" step="0.5">
+      </div>
+      <div class="fg">
+        <label class="fl">Study Goal for Quest (hrs)</label>
+        <input type="number" class="fi" id="s-goal-quest" value="2" min="1" max="12" step="0.5">
+      </div>
+    </div>
+    <div style="font-size:11px;color:var(--text2);margin-bottom:12px">Quest "Study 2+ hours" will trigger at whatever hours you set above (quest goal).</div>
+    <button class="btn btn-primary btn-sm" onclick="saveDailyGoals()">Save Goals</button>
+  </div>
+
+  <!-- Custom Quests -->
+  <div class="card">
+    <div class="card-hdr"><span class="hl">Daily Quests</span></div>
+    <div style="font-size:12px;color:var(--text2);margin-bottom:12px">Edit your daily mission list. Auto quests (📡) are tracked automatically. Manual ones (✋) you check off yourself.</div>
+    <div id="s-quest-editor"></div>
+    <div style="display:flex;gap:8px;margin-top:10px">
+      <button class="btn btn-ghost btn-sm" onclick="addCustomQuest()">+ Add Quest</button>
+      <button class="btn btn-primary btn-sm" onclick="saveQuests()">Save Quests</button>
+    </div>
+  </div>
+
+  <!-- Confidence Guide -->
+  <div class="card">
+    <div class="card-hdr"><span class="hl">📊 How Confidence Works</span></div>
+    <div style="font-size:13px;color:var(--text2);line-height:1.7">
+      <p style="margin-bottom:8px">Go to <b style="color:var(--text)">Tests → Confidence tab</b> to rate each topic.</p>
+      <div style="display:grid;gap:6px">
+        <div style="display:flex;gap:10px;align-items:center;background:rgba(255,59,92,.07);border:1px solid rgba(255,59,92,.2);border-radius:8px;padding:8px 12px">
+          <span style="font-family:var(--mono);color:var(--red);font-size:15px;min-width:40px">0-39%</span>
+          <span><b style="color:var(--red)">Danger Zone</b> — Haven't studied / very confused. These topics need urgent attention.</span>
+        </div>
+        <div style="display:flex;gap:10px;align-items:center;background:rgba(244,196,48,.07);border:1px solid rgba(244,196,48,.2);border-radius:8px;padding:8px 12px">
+          <span style="font-family:var(--mono);color:var(--gold);font-size:15px;min-width:40px">40-69%</span>
+          <span><b style="color:var(--gold)">Learning</b> — Know the basics but need more practice. Keep revising.</span>
+        </div>
+        <div style="display:flex;gap:10px;align-items:center;background:rgba(0,214,143,.07);border:1px solid rgba(0,214,143,.2);border-radius:8px;padding:8px 12px">
+          <span style="font-family:var(--mono);color:var(--green);font-size:15px;min-width:40px">70-89%</span>
+          <span><b style="color:var(--green)">Strong</b> — Can solve most problems. One more revision should nail it.</span>
+        </div>
+        <div style="display:flex;gap:10px;align-items:center;background:rgba(91,110,245,.1);border:1px solid rgba(91,110,245,.25);border-radius:8px;padding:8px 12px">
+          <span style="font-family:var(--mono);color:var(--accent);font-size:15px;min-width:40px">90-100%</span>
+          <span><b style="color:var(--accent)">Mastered</b> — Fully confident. Can teach this topic. Gate cleared! ⚡</span>
+        </div>
+      </div>
+      <p style="margin-top:10px;font-size:11px">Slide the bar after each revision session. Be honest — the system only helps if you reflect accurately.</p>
+    </div>
+  </div>
+
+  <!-- Danger zone -->
+  <div class="card" style="border-color:rgba(255,59,92,.2)">
+    <div class="card-hdr"><span style="color:var(--red)">Danger Zone</span></div>
+    <div style="font-size:12px;color:var(--text2);margin-bottom:12px">These actions are irreversible. Think twice.</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn btn-danger btn-sm" onclick="confirmReset('sessions')">Clear Study Logs</button>
+      <button class="btn btn-danger btn-sm" onclick="confirmReset('tests')">Clear Test History</button>
+      <button class="btn btn-danger btn-sm" onclick="confirmReset('all')">Reset Everything</button>
+    </div>
+  </div>
 </section>
 
 </main>
@@ -492,7 +680,7 @@ section.active{display:block}
     </div>
     <div class="rp-days-jee">
       <div class="rp-days-n" id="rp-jee-days">—</div>
-      <div class="rp-days-l">Days to JEE Advanced</div>
+      <div class="rp-days-l" id="rp-days-label">Days to JEE Advanced</div>
     </div>
   </div>
   <div class="rp-section">
@@ -528,6 +716,9 @@ section.active{display:block}
   </button>
   <button class="bnav-btn" onclick="goTo('analytics',this)">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>Stats
+  </button>
+  <button class="bnav-btn" onclick="goTo('settings',this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>Setup
   </button>
 </nav>
 
@@ -578,7 +769,7 @@ const DEF_PLAN={
   sunday:{name:'Rest',active:false,exercises:[]},
 };
 const DEF={
-  hunter:{xp:0,mana:100,streak:0,lastDate:null,startDate:new Date().toISOString().split('T')[0]},
+  hunter:{xp:0,mana:100,streak:0,lastDate:null,startDate:new Date().toISOString().split('T')[0],name:'Gautam'},
   questComp:{},sessions:[],tests:[],
   topics:{
     physics:JEE_TOPICS.physics.map((n,i)=>({id:'p'+i,name:n,conf:0})),
@@ -587,6 +778,11 @@ const DEF={
   },
   workout:{plan:JSON.parse(JSON.stringify(DEF_PLAN)),logs:[]},
   jeeTarget:250,
+  examDate:'2026-05-18',
+  examName:'JEE Advanced',
+  classYear:'12',
+  goals:{studyHours:6,questStudyHours:2},
+  customQuests:null,
 };
 
 let S,db,auth,currentUser=null,saveTimer=null;
@@ -620,6 +816,12 @@ function ensureKeys(){
   if(!S.questComp)S.questComp={};
   if(!S.sessions)S.sessions=[];
   if(!S.tests)S.tests=[];
+  if(!S.examDate)S.examDate='2026-05-18';
+  if(!S.examName)S.examName='JEE Advanced';
+  if(!S.classYear)S.classYear='12';
+  if(!S.goals)S.goals={studyHours:6,questStudyHours:2};
+  if(!S.hunter.name)S.hunter.name='Gautam';
+  if(S.customQuests===undefined)S.customQuests=null;
 }
 function loadLocal(){
   try{S=JSON.parse(localStorage.getItem('ss_v3'))||defState();}catch(e){S=defState();}
@@ -651,14 +853,23 @@ auth.onAuthStateChanged(async user=>{
     document.getElementById('rp-avatar').src=user.photoURL||'';
     document.getElementById('rp-user-name').textContent=user.displayName||user.email;
     const aw=document.getElementById('nav-avatar-wrap');
-    if(user.photoURL)aw.innerHTML=`<img src="${user.photoURL}" class="nav-avatar" title="Sign out">`;
-    else aw.innerHTML=`<div class="nav-avatar-ph">${(user.displayName||'?')[0]}</div>`;
+    if(user.photoURL)aw.innerHTML=`<img src="${user.photoURL}" class="nav-avatar" title="Settings" onclick="goTo('settings',null)">`;
+    else aw.innerHTML=`<div class="nav-avatar-ph" onclick="goTo('settings',null)">${(user.displayName||'?')[0]}</div>`;
+    // Update settings UI
+    const sa=document.getElementById('s-avatar');
+    if(sa){if(user.photoURL)sa.innerHTML=`<img src="${user.photoURL}" style="width:44px;height:44px;border-radius:50%">`;else sa.textContent=(user.displayName||'?')[0];}
+    const sn=document.getElementById('s-user-name');if(sn)sn.textContent=user.displayName||'Signed In';
+    const se=document.getElementById('s-user-email');if(se)se.textContent=user.email||'';
+    const sib=document.getElementById('s-signin-btn');if(sib)sib.style.display='none';
+    const sob=document.getElementById('s-signout-btn');if(sob)sob.style.display='';
     await loadFromCloud(user.uid);
     initApp();
   }else{
     currentUser=null;
     document.getElementById('login-screen').style.display='flex';
     document.getElementById('rp-user-strip').style.display='none';
+    const sib=document.getElementById('s-signin-btn');if(sib)sib.style.display='';
+    const sob=document.getElementById('s-signout-btn');if(sob)sob.style.display='none';
   }
 });
 
@@ -691,13 +902,18 @@ function getRankProg(xp){const r=getRank(xp);if(r.max===Infinity)return{pct:100}
 function getClass(r){return r==='S'||r==='SS'||r==='SSS'?'Shadow Monarch':r==='A'?'Elite Hunter':r==='B'||r==='C'?'Awakened Hunter':'Shadow Warrior';}
 
 function updateHeader(){
-  const{xp,mana,streak}=S.hunter;
+  const{xp,mana,streak,name}=S.hunter;
   const rk=getRank(xp),prog=getRankProg(xp);
   const cls='rank-'+rk.r,hc=getClass(rk.r);
   const start=new Date(S.hunter.startDate),now=new Date();
   const dayN=Math.max(1,Math.floor((now-start)/86400000)+1);
-  const jee=new Date('2026-05-18');
-  const dLeft=Math.max(0,Math.ceil((jee-now)/86400000));
+  const examD=new Date(S.examDate||'2026-05-18');
+  const dLeft=Math.max(0,Math.ceil((examD-now)/86400000));
+  const hunterName=name||'Gautam';
+  // update name displays
+  document.querySelectorAll('.hunter-name-display').forEach(el=>el.textContent='Hunter '+hunterName);
+  // update exam label
+  document.querySelectorAll('.exam-label-display').forEach(el=>el.textContent='Days to '+(S.examName||'JEE Adv.'));
   // mobile
   const tb=document.getElementById('tb-rank-badge');if(tb){tb.textContent=rk.r;tb.className='tb-rank '+cls;}
   el('tb-class',hc);el('tb-streak',streak);el('tb-xp-val',xp+' XP');el('tb-mana-val',mana);
@@ -710,6 +926,8 @@ function updateHeader(){
   setW('rp-xp-bar',prog.pct);setW('rp-mana-bar',mana);
   el('rp-jee-days',dLeft);
   const ms=document.getElementById('mana-study');if(ms)ms.textContent=mana;
+  // update exam day label on right panel
+  const rdl=document.getElementById('rp-days-label');if(rdl)rdl.textContent='Days to '+(S.examName||'JEE Advanced');
 }
 
 // NAV
@@ -723,6 +941,7 @@ function goTo(name,btn){
   if(name==='tests')renderTests();
   if(name==='workout')renderWorkout();
   if(name==='analytics')setTimeout(renderCharts,60);
+  if(name==='settings')renderSettings();
 }
 
 // DASHBOARD
@@ -736,13 +955,26 @@ function renderDash(){
   renderQuests();renderGates();renderPenalty();
 }
 
+function getActiveQuests(){
+  if(S.customQuests&&S.customQuests.length>0)return S.customQuests;
+  const goalH=S.goals&&S.goals.questStudyHours?S.goals.questStudyHours:2;
+  return[
+    {id:'q1',name:`Study ${goalH}+ hours`,desc:`Active sessions today`,xp:50,auto:true},
+    {id:'q2',name:'Complete a Pomodoro',desc:'Finish one 25-min block',xp:25,auto:true},
+    {id:'q3',name:'Log workout',desc:'Train body and mind',xp:30,auto:false},
+    {id:'q4',name:'Update confidence',desc:'Review a topic below 50%',xp:20,auto:false},
+    {id:'q5',name:'No mindless scrolling',desc:'Honor quest',xp:20,auto:false},
+  ];
+}
 function renderQuests(){
+  const QUESTS=getActiveQuests();
+  const goalH=S.goals&&S.goals.questStudyHours?S.goals.questStudyHours:2;
   const t=today(),comp=S.questComp[t]||{};
   const tSess=S.sessions.filter(s=>s.date===t);
   const tMins=tSess.reduce((a,s)=>a+s.min,0);
   const hasP=tSess.some(s=>s.mode==='pomodoro'&&s.min>=25);
   let changed=false;
-  if(tMins>=120&&!comp.q1){comp.q1=true;S.hunter.xp+=50;changed=true;}
+  if(tMins>=(goalH*60)&&!comp.q1){comp.q1=true;S.hunter.xp+=50;changed=true;}
   if(hasP&&!comp.q2){comp.q2=true;S.hunter.xp+=25;changed=true;}
   S.questComp[t]=comp;if(changed){save();updateHeader();}
   const done=Object.values(comp).filter(Boolean).length;
@@ -758,7 +990,7 @@ function renderQuests(){
         </div>
         <div style="flex:1;min-width:0">
           <div class="${prefix}-qname${d?' done':''}" style="font-size:${prefix==='m'?'14':'13'}px;font-weight:600${d?';text-decoration:line-through;color:var(--text3)':''}">${q.name}</div>
-          <div style="font-size:11px;color:var(--text2);margin-top:1px">${q.desc}${q.auto?' · auto':''}</div>
+          <div style="font-size:11px;color:var(--text2);margin-top:1px">${q.desc}${q.auto?' · 📡 auto':' · ✋ manual'}</div>
         </div>
         <div style="font-family:var(--mono);font-size:${prefix==='m'?'13':'11'}px;color:var(--gold);flex-shrink:0">+${q.xp}</div>
       </div>`;
@@ -770,6 +1002,7 @@ function renderQuests(){
 }
 
 function tQ(id){
+  const QUESTS=getActiveQuests();
   const t=today();if(!S.questComp[t])S.questComp[t]={};
   const q=QUESTS.find(q=>q.id===id);if(!q||q.auto)return;
   const was=S.questComp[t][id];
@@ -894,7 +1127,8 @@ function autoLog(mins,sub,mode){
   save();updateHeader();renderSessLog();
   const t=today(),comp=S.questComp[t]||{};
   const tM=S.sessions.filter(s=>s.date===t).reduce((a,s)=>a+s.min,0);
-  if(tM>=120&&!comp.q1){comp.q1=true;S.hunter.xp+=50;S.questComp[t]=comp;save();showToast('Quest done: 2h study! +50 XP 🔥');updateHeader();}
+  const goalMins=(S.goals&&S.goals.questStudyHours?S.goals.questStudyHours:2)*60;
+  if(tM>=goalMins&&!comp.q1){comp.q1=true;S.hunter.xp+=50;S.questComp[t]=comp;save();showToast('Quest done: study goal hit! +50 XP 🔥');updateHeader();}
   if(mode==='pomodoro'&&mins>=25&&!comp.q2){comp.q2=true;S.hunter.xp+=25;S.questComp[t]=comp;save();updateHeader();}
 }
 function restoreMana(){S.hunter.mana=Math.min(100,S.hunter.mana+30);save();updateHeader();showToast('Mana +30 🌙 — take a real break!');}
@@ -1054,29 +1288,89 @@ function renderWoLog(){
 }
 
 // ANALYTICS
-let chS=null,chT=null,chC=null;
+let chS=null,chT=null,chProd=null,chCum=null,chSplit=null;
 function renderCharts(){
   const totalMins=S.sessions.reduce((a,s)=>a+s.min,0);
   el('an-hrs',(totalMins/60).toFixed(1)+'h');
   const last7=[];for(let i=6;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);last7.push(d.toISOString().split('T')[0]);}
   const avg7=last7.map(d=>S.sessions.filter(s=>s.date===d).reduce((a,s)=>a+s.min,0)/60);
   el('an-avg',(avg7.reduce((a,v)=>a+v,0)/7).toFixed(1)+'h');
+  const QUESTS=getActiveQuests();
   let qT=0,qD=0;last7.forEach(d=>{const c=S.questComp[d]||{};qT+=QUESTS.length;qD+=Object.values(c).filter(Boolean).length;});
   el('an-qr',qT>0?Math.round(qD/qT*100)+'%':'0%');
-  const allT=[...S.topics.physics,...S.topics.chemistry,...S.topics.maths];
-  el('an-cf',Math.round(allT.reduce((a,t)=>a+t.conf,0)/allT.length)+'%');
+  el('an-streak',S.hunter.streak);
   const gc={tc:'rgba(224,227,244,.7)',gr:'rgba(255,255,255,.04)'};
+
+  // PRODUCTIVITY CHART (last 14 days)
+  const last14=[];for(let i=13;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);last14.push(d.toISOString().split('T')[0]);}
+  const prodScores=last14.map(d=>{
+    const dayMins=S.sessions.filter(s=>s.date===d).reduce((a,s)=>a+s.min,0);
+    const studyScore=Math.min(100,Math.round(dayMins/(S.goals.studyHours*60)*60));
+    const comp=S.questComp[d]||{};const questDone=Object.values(comp).filter(Boolean).length;
+    const questScore=Math.round(questDone/QUESTS.length*40);
+    return Math.min(100,studyScore+questScore);
+  });
+  if(chProd)chProd.destroy();
+  chProd=new Chart(document.getElementById('ch-productivity').getContext('2d'),{type:'line',data:{
+    labels:last14.map(d=>{const dt=new Date(d);return dt.getDate()+'/'+(dt.getMonth()+1);}),
+    datasets:[{
+      label:'Productivity',data:prodScores,
+      borderColor:'#a855f7',backgroundColor:'rgba(168,85,247,.15)',
+      fill:true,tension:.4,pointRadius:3,pointBackgroundColor:prodScores.map(v=>v>=70?'#00d68f':v>=40?'#f4c430':'#ff3b5c'),
+      pointBorderWidth:0,borderWidth:2,
+    }]
+  },options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`Score: ${ctx.raw}/100`}}},scales:{x:{ticks:{color:gc.tc,font:{size:9}},grid:{color:gc.gr}},y:{min:0,max:100,ticks:{color:gc.tc,font:{size:10},callback:v=>v+'%'},grid:{color:gc.gr}}}}});
+
+  // STUDY HOURS BAR (last 7)
   if(chS)chS.destroy();
   chS=new Chart(document.getElementById('ch-study').getContext('2d'),{type:'bar',data:{
     labels:last7.map(d=>new Date(d).toLocaleDateString('en-IN',{weekday:'short'})),
     datasets:[
-      {label:'Physics',data:last7.map(d=>+(S.sessions.filter(s=>s.date===d&&s.sub==='physics').reduce((a,s)=>a+s.min,0)/60).toFixed(1)),backgroundColor:'rgba(91,110,245,.7)',borderRadius:4},
-      {label:'Chemistry',data:last7.map(d=>+(S.sessions.filter(s=>s.date===d&&s.sub==='chemistry').reduce((a,s)=>a+s.min,0)/60).toFixed(1)),backgroundColor:'rgba(0,214,143,.7)',borderRadius:4},
-      {label:'Maths',data:last7.map(d=>+(S.sessions.filter(s=>s.date===d&&s.sub==='maths').reduce((a,s)=>a+s.min,0)/60).toFixed(1)),backgroundColor:'rgba(244,196,48,.7)',borderRadius:4},
-    ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:gc.tc,font:{size:11}}}},scales:{x:{stacked:true,ticks:{color:gc.tc,font:{size:10}},grid:{color:gc.gr}},y:{stacked:true,ticks:{color:gc.tc,font:{size:10}},grid:{color:gc.gr}}}}
+      {label:'Physics',data:last7.map(d=>+(S.sessions.filter(s=>s.date===d&&s.sub==='physics').reduce((a,s)=>a+s.min,0)/60).toFixed(1)),backgroundColor:'rgba(91,110,245,.8)',borderRadius:4},
+      {label:'Chemistry',data:last7.map(d=>+(S.sessions.filter(s=>s.date===d&&s.sub==='chemistry').reduce((a,s)=>a+s.min,0)/60).toFixed(1)),backgroundColor:'rgba(0,214,143,.8)',borderRadius:4},
+      {label:'Maths',data:last7.map(d=>+(S.sessions.filter(s=>s.date===d&&s.sub==='maths').reduce((a,s)=>a+s.min,0)/60).toFixed(1)),backgroundColor:'rgba(244,196,48,.8)',borderRadius:4},
+      {label:'Other',data:last7.map(d=>+(S.sessions.filter(s=>s.date===d&&s.sub==='other').reduce((a,s)=>a+s.min,0)/60).toFixed(1)),backgroundColor:'rgba(150,150,200,.6)',borderRadius:4},
+    ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:gc.tc,font:{size:11}}}},scales:{x:{stacked:true,ticks:{color:gc.tc,font:{size:10}},grid:{color:gc.gr}},y:{stacked:true,ticks:{color:gc.tc,font:{size:10}},grid:{color:gc.gr},title:{display:true,text:'Hours',color:gc.tc,font:{size:10}}}}}
   });
+
+  // CUMULATIVE STUDY
+  if(chCum)chCum.destroy();
+  const sortedSess=[...S.sessions].sort((a,b)=>a.date.localeCompare(b.date));
+  const cumDates=[],cumHrs=[];let running=0;
+  if(sortedSess.length>0){
+    const first=sortedSess[0].date,lastDate=today();
+    const d=new Date(first);
+    while(d.toISOString().split('T')[0]<=lastDate){
+      const ds=d.toISOString().split('T')[0];
+      running+=S.sessions.filter(s=>s.date===ds).reduce((a,s)=>a+s.min,0)/60;
+      cumDates.push(new Date(d).getDate()+'/'+(new Date(d).getMonth()+1));
+      cumHrs.push(+running.toFixed(1));
+      d.setDate(d.getDate()+1);
+    }
+  }
+  if(chCum)chCum.destroy();
+  if(cumDates.length>1){
+    chCum=new Chart(document.getElementById('ch-cumulative').getContext('2d'),{type:'line',data:{
+      labels:cumDates,
+      datasets:[{label:'Total Hours',data:cumHrs,borderColor:'#00d68f',backgroundColor:'rgba(0,214,143,.1)',fill:true,tension:.4,pointRadius:0,borderWidth:2}]
+    },options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:gc.tc,font:{size:9},maxTicksLimit:10},grid:{color:gc.gr}},y:{ticks:{color:gc.tc,font:{size:10}},grid:{color:gc.gr},title:{display:true,text:'Cumulative Hours',color:gc.tc,font:{size:10}}}}}});
+  }else{document.getElementById('ch-cumulative').parentElement.innerHTML='<div class="empty">Log sessions to see your cumulative progress.</div>';}
+
+  // SUBJECT SPLIT PIE
+  const subMins={physics:0,chemistry:0,maths:0,other:0};
+  S.sessions.forEach(s=>{if(subMins[s.sub]!==undefined)subMins[s.sub]+=s.min;else subMins.other+=s.min;});
+  if(chSplit)chSplit.destroy();
+  if(Object.values(subMins).some(v=>v>0)){
+    chSplit=new Chart(document.getElementById('ch-split').getContext('2d'),{type:'doughnut',data:{
+      labels:['Physics','Chemistry','Maths','Other'],
+      datasets:[{data:[subMins.physics/60,subMins.chemistry/60,subMins.maths/60,subMins.other/60].map(v=>+v.toFixed(1)),
+        backgroundColor:['rgba(91,110,245,.85)','rgba(0,214,143,.85)','rgba(244,196,48,.85)','rgba(150,150,200,.6)'],borderWidth:0}]
+    },options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right',labels:{color:gc.tc,font:{size:12}}},tooltip:{callbacks:{label:ctx=>`${ctx.label}: ${ctx.raw}h`}}}}});
+  }else{document.getElementById('ch-split').parentElement.innerHTML='<div class="empty">No sessions logged yet.</div>';}
+
+  // TEST TREND
   if(chT)chT.destroy();
-  const tests=S.tests.slice(-8);
+  const tests=S.tests.slice(-10);
   if(tests.length>=2){
     chT=new Chart(document.getElementById('ch-tests').getContext('2d'),{type:'line',data:{
       labels:tests.map(t=>fmtDate(t.date)),
@@ -1084,21 +1378,46 @@ function renderCharts(){
         {label:'Physics',data:tests.map(t=>t.phy),borderColor:'#5b6ef5',backgroundColor:'transparent',tension:.3,pointRadius:4,pointBackgroundColor:'#5b6ef5'},
         {label:'Chemistry',data:tests.map(t=>t.che),borderColor:'#00d68f',backgroundColor:'transparent',tension:.3,pointRadius:4,pointBackgroundColor:'#00d68f'},
         {label:'Maths',data:tests.map(t=>t.mat),borderColor:'#f4c430',backgroundColor:'transparent',tension:.3,pointRadius:4,pointBackgroundColor:'#f4c430'},
+        {label:'Total',data:tests.map(t=>t.total),borderColor:'rgba(255,255,255,.4)',backgroundColor:'transparent',tension:.3,pointRadius:3,borderDash:[4,3]},
       ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:gc.tc,font:{size:11}}}},scales:{x:{ticks:{color:gc.tc,font:{size:10}},grid:{color:gc.gr}},y:{ticks:{color:gc.tc,font:{size:10}},grid:{color:gc.gr}}}}
     });
-  }else{document.getElementById('ch-tests').parentElement.innerHTML='<div class="empty">Log at least 2 tests to see the trend.</div>';}
-  if(chC)chC.destroy();
-  const confD=[
-    {s:'Physics',v:Math.round(S.topics.physics.reduce((a,t)=>a+t.conf,0)/S.topics.physics.length)},
-    {s:'Chemistry',v:Math.round(S.topics.chemistry.reduce((a,t)=>a+t.conf,0)/S.topics.chemistry.length)},
-    {s:'Maths',v:Math.round(S.topics.maths.reduce((a,t)=>a+t.conf,0)/S.topics.maths.length)},
-  ];
-  chC=new Chart(document.getElementById('ch-conf').getContext('2d'),{type:'doughnut',data:{
-    labels:confD.map(d=>d.s+' ('+d.v+'%)'),
-    datasets:[{data:confD.map(d=>Math.max(d.v,1)),backgroundColor:['rgba(91,110,245,.8)','rgba(0,214,143,.8)','rgba(244,196,48,.8)'],borderWidth:0}]
-  },options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right',labels:{color:gc.tc,font:{size:12}}}}}});
+  }else{const ce=document.getElementById('ch-tests');if(ce)ce.parentElement.innerHTML='<div class="empty">Log at least 2 tests to see the trend.</div>';}
+
+  // HEATMAP
+  renderHeatmap();
   renderChronicle();
 }
+
+function renderHeatmap(){
+  const hm=document.getElementById('ch-heatmap');if(!hm)return;
+  const days=35;const cells=[];
+  for(let i=days-1;i>=0;i--){
+    const d=new Date();d.setDate(d.getDate()-i);
+    const ds=d.toISOString().split('T')[0];
+    const mins=S.sessions.filter(s=>s.date===ds).reduce((a,s)=>a+s.min,0);
+    const hrs=mins/60;
+    const intensity=hrs===0?0:hrs<1?1:hrs<2?2:hrs<4?3:4;
+    const colors=['rgba(255,255,255,.04)','rgba(91,110,245,.25)','rgba(91,110,245,.5)','rgba(91,110,245,.75)','rgba(91,110,245,1)'];
+    cells.push({ds,hrs,intensity,color:colors[intensity],label:d.toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short'})});
+  }
+  const weeks=[];for(let i=0;i<5;i++)weeks.push(cells.slice(i*7,(i+1)*7));
+  const dayLabels=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  hm.innerHTML=`
+    <div style="font-size:10px;color:var(--text3);margin-bottom:8px">Each cell = 1 day. Darker = more hours studied.</div>
+    <div style="overflow-x:auto">
+    <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;min-width:280px">
+      ${dayLabels.map(dl=>`<div style="text-align:center;font-size:9px;color:var(--text3);padding:2px">${dl}</div>`).join('')}
+      ${cells.map(c=>`<div title="${c.label}: ${c.hrs.toFixed(1)}h" style="height:32px;border-radius:4px;background:${c.color};border:1px solid rgba(91,110,245,.1);display:flex;align-items:center;justify-content:center;font-size:9px;color:${c.intensity>2?'rgba(255,255,255,.7)':'var(--text3)'}">
+        ${c.hrs>0?c.hrs.toFixed(1):''}
+      </div>`).join('')}
+    </div></div>
+    <div style="display:flex;align-items:center;gap:8px;margin-top:10px;font-size:10px;color:var(--text3)">
+      Less
+      ${['rgba(255,255,255,.04)','rgba(91,110,245,.25)','rgba(91,110,245,.5)','rgba(91,110,245,.75)','rgba(91,110,245,1)'].map(c=>`<div style="width:14px;height:14px;border-radius:3px;background:${c};border:1px solid rgba(91,110,245,.15)"></div>`).join('')}
+      More
+    </div>`;
+}
+
 function renderChronicle(){
   const wMins=S.sessions.filter(s=>{const d=new Date(s.date),n=new Date();return(n-d)/86400000<=7;}).reduce((a,s)=>a+s.min,0);
   const weak=[...S.topics.physics,...S.topics.chemistry,...S.topics.maths].filter(t=>t.conf<40);
@@ -1106,15 +1425,133 @@ function renderChronicle(){
   const tests=S.tests.slice(-2);
   const testL=tests.length>=2?(tests[1].total>tests[0].total?'improving ↑':'dropped ↓ since last test'):'No tests logged this week.';
   const rk=getRank(S.hunter.xp);
+  const hunterName=S.hunter.name||'Gautam';
   const lines=[
-    `Hunter Gautam — Rank ${rk.r} — ${S.hunter.xp} total XP.`,
+    `Hunter ${hunterName} — Rank ${rk.r} — ${S.hunter.xp} total XP.`,
     `${(wMins/60).toFixed(1)}h studied in the last 7 days.`,
     tests.length>=2?`Test scores ${testL}.`:testL,
-    weak.length>0?`${weak.length} topics below 40% — focus these first.`:'All topics above 40%. Solid foundation.',
+    weak.length>0?`${weak.length} topics below 40% confidence — focus these first.`:'All topics above 40%. Solid foundation.',
     strong.length>0?`${strong.length} topics mastered (80%+). Well done.`:'No topics mastered yet — push those sliders up.',
     S.hunter.streak>=3?`${S.hunter.streak}-day streak active. The shadow army grows. 🔥`:'Build your streak. Consistency is the path to S-rank.',
   ];
   document.getElementById('chronicle').innerHTML=lines.map(l=>`<div class="report-line">${l}</div>`).join('');
+}
+
+// SETTINGS
+function renderSettings(){
+  // Exam fields
+  const ed=document.getElementById('s-exam-date');if(ed)ed.value=S.examDate||'2026-05-18';
+  const et=document.getElementById('s-exam-type');
+  if(et){
+    if(S.examName==='JEE Advanced')et.value='jee-adv';
+    else if(S.examName==='JEE Main')et.value='jee-main';
+    else et.value='custom';
+  }
+  const sd=document.getElementById('s-start-date');if(sd)sd.value=S.hunter.startDate||today();
+  const sc=document.getElementById('s-class');if(sc)sc.value=S.classYear||'12';
+  const gsh=document.getElementById('s-goal-study');if(gsh)gsh.value=S.goals&&S.goals.studyHours?S.goals.studyHours:6;
+  const gqh=document.getElementById('s-goal-quest');if(gqh)gqh.value=S.goals&&S.goals.questStudyHours?S.goals.questStudyHours:2;
+  const hn=document.getElementById('s-hunter-name');if(hn)hn.value=S.hunter.name||'Gautam';
+  renderQuestEditor();
+}
+
+function updateExamFields(){
+  const et=document.getElementById('s-exam-type');
+  const cr=document.getElementById('s-custom-exam-row');
+  const hint=document.getElementById('s-exam-hint');
+  const ed=document.getElementById('s-exam-date');
+  if(et.value==='jee-adv'){ed.value='2026-05-18';if(cr)cr.style.display='none';if(hint)hint.innerHTML='JEE Advanced 2026 is on <b style="color:var(--gold)">18 May 2026</b>.';}
+  else if(et.value==='jee-main'){ed.value='2026-01-22';if(cr)cr.style.display='none';if(hint)hint.innerHTML='JEE Main Session 1 2026 is around <b style="color:var(--gold)">Jan 22, 2026</b>. Adjust as needed.';}
+  else{if(cr)cr.style.display='';if(hint)hint.innerHTML='Enter your custom exam name and date.';}
+}
+
+function saveExamSettings(){
+  const et=document.getElementById('s-exam-type').value;
+  const ed=document.getElementById('s-exam-date').value;
+  if(!ed){showToast('Please pick an exam date');return;}
+  S.examDate=ed;
+  if(et==='jee-adv')S.examName='JEE Advanced';
+  else if(et==='jee-main')S.examName='JEE Main';
+  else{const cn=document.getElementById('s-custom-exam-name').value.trim();S.examName=cn||'Exam';}
+  save();updateHeader();
+  showToast('Exam date saved! ✅ Countdown updated.');
+}
+
+function saveStatusSettings(){
+  const sd=document.getElementById('s-start-date').value;
+  const sc=document.getElementById('s-class').value;
+  if(sd)S.hunter.startDate=sd;
+  S.classYear=sc;
+  save();updateHeader();
+  showToast('Status saved! ✅');
+}
+
+function saveDailyGoals(){
+  const gsh=parseFloat(document.getElementById('s-goal-study').value)||6;
+  const gqh=parseFloat(document.getElementById('s-goal-quest').value)||2;
+  S.goals={studyHours:gsh,questStudyHours:gqh};
+  save();
+  showToast(`Goals saved! Study ${gsh}h, Quest at ${gqh}h. ✅`);
+}
+
+function saveHunterName(){
+  const hn=document.getElementById('s-hunter-name').value.trim();
+  if(!hn){showToast('Enter a name first');return;}
+  S.hunter.name=hn;
+  save();updateHeader();
+  showToast('Name updated to '+hn+' ⚡');
+}
+
+function renderQuestEditor(){
+  const QUESTS=getActiveQuests();
+  const qe=document.getElementById('s-quest-editor');if(!qe)return;
+  let h='';
+  QUESTS.forEach((q,i)=>{
+    h+=`<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border)">
+      <input class="fi" style="flex:1;font-size:13px;padding:7px 10px" value="${q.name}" id="sq-name-${i}">
+      <input class="fi" style="width:50px;font-size:12px;padding:7px 8px;font-family:var(--mono)" type="number" value="${q.xp}" id="sq-xp-${i}" min="5" max="200">
+      <select class="fi" style="width:72px;font-size:11px;padding:6px" id="sq-auto-${i}">
+        <option value="false"${!q.auto?' selected':''}>✋</option>
+        <option value="true"${q.auto?' selected':''}>📡</option>
+      </select>
+      <button style="background:none;border:none;color:var(--red);cursor:pointer;font-size:16px;flex-shrink:0" onclick="removeQuest(${i})">✕</button>
+    </div>`;
+  });
+  if(!h)h='<div class="empty">No quests. Add some below.</div>';
+  qe.innerHTML=h;
+}
+
+function addCustomQuest(){
+  const QUESTS=getActiveQuests();
+  QUESTS.push({id:'cq'+Date.now(),name:'New Quest',desc:'Custom',xp:20,auto:false});
+  S.customQuests=QUESTS;
+  renderQuestEditor();
+}
+
+function removeQuest(i){
+  const QUESTS=getActiveQuests();
+  QUESTS.splice(i,1);
+  S.customQuests=QUESTS;
+  renderQuestEditor();
+}
+
+function saveQuests(){
+  const QUESTS=getActiveQuests();
+  const saved=QUESTS.map((q,i)=>({
+    ...q,
+    name:document.getElementById('sq-name-'+i)?.value||q.name,
+    xp:parseInt(document.getElementById('sq-xp-'+i)?.value)||q.xp,
+    auto:document.getElementById('sq-auto-'+i)?.value==='true',
+  }));
+  S.customQuests=saved;
+  save();
+  showToast('Quests saved! ✅');
+}
+
+function confirmReset(type){
+  if(type==='sessions'){if(!confirm('Clear all study logs? This cannot be undone.'))return;S.sessions=[];save();showToast('Study logs cleared.');}
+  else if(type==='tests'){if(!confirm('Clear all test history?'))return;S.tests=[];save();showToast('Test history cleared.');}
+  else if(type==='all'){if(!confirm('RESET EVERYTHING? XP, sessions, tests, confidence — all gone.'))return;const nm=S.hunter.name;S=defState();S.hunter.name=nm;save();initApp();showToast('Full reset done. Starting fresh ⚔');goTo('dashboard',null);}
 }
 
 // PWA
