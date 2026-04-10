@@ -430,7 +430,10 @@ section.active{display:block}
       <div id="test-hist"></div>
     </div>
   </div>
-  <div id="tt-topics" style="display:none"><div id="topic-acc"></div></div>
+  <div id="tt-topics" style="display:none">
+    <div id="conf-overview"></div>
+    <div id="topic-acc"></div>
+  </div>
   <div id="tt-marks" style="display:none">
     <div class="card">
       <div class="card-hdr"><span class="hl">JEE Target</span></div>
@@ -753,9 +756,12 @@ const QUESTS=[
   {id:'q5',name:'No mindless scrolling',desc:'Honor quest',xp:20,auto:false},
 ];
 const JEE_TOPICS={
-  physics:['Electric Charges & Fields','Electrostatic Potential','Current Electricity','Moving Charges & Magnetism','Magnetism & Matter','Electromagnetic Induction','Alternating Current','EM Waves','Ray Optics','Wave Optics','Dual Nature of Radiation','Atoms','Nuclei','Semiconductors'],
-  chemistry:['Solid State','Solutions','Electrochemistry','Chemical Kinetics','Surface Chemistry','Isolation of Elements','p-Block Elements','d & f Block Elements','Coordination Compounds','Haloalkanes & Haloarenes','Alcohols, Phenols & Ethers','Aldehydes & Ketones','Carboxylic Acids','Amines','Biomolecules','Polymers','Chemistry in Everyday Life'],
-  maths:['Relations & Functions','Inverse Trig. Functions','Matrices','Determinants','Continuity & Differentiability','Application of Derivatives','Integrals','Application of Integrals','Differential Equations','Vector Algebra','Three-D Geometry','Linear Programming','Probability'],
+  physics11:['Physical World & Measurement','Kinematics','Laws of Motion','Work, Energy & Power','Rotational Motion','Gravitation','Properties of Bulk Matter','Thermodynamics','Kinetic Theory of Gases','Oscillations (SHM)','Waves & Sound'],
+  physics12:['Electric Charges & Fields','Electrostatic Potential & Capacitance','Current Electricity','Moving Charges & Magnetism','Magnetism & Matter','Electromagnetic Induction','Alternating Current','EM Waves','Ray Optics','Wave Optics','Dual Nature of Radiation','Atoms','Nuclei','Semiconductor Electronics'],
+  chemistry11:['Some Basic Concepts','Structure of Atom','Classification & Periodicity','Chemical Bonding','States of Matter','Thermodynamics (Chem)','Equilibrium','Redox Reactions','Hydrogen & s-Block','p-Block Gr 13-14','Organic Basics & IUPAC','Hydrocarbons','Environmental Chemistry'],
+  chemistry12:['Solid State','Solutions','Electrochemistry','Chemical Kinetics','Surface Chemistry','Isolation of Elements','p-Block Gr 15-18','d & f Block Elements','Coordination Compounds','Haloalkanes & Haloarenes','Alcohols, Phenols & Ethers','Aldehydes & Ketones','Carboxylic Acids','Amines','Biomolecules','Polymers','Chemistry in Everyday Life'],
+  maths11:['Sets','Relations & Functions (11)','Trigonometric Functions','Complex Numbers','Quadratic Equations','Linear Inequalities','Permutations & Combinations','Binomial Theorem','Sequences & Series','Straight Lines','Conic Sections','3D Intro','Limits & Derivatives','Statistics','Probability (11)'],
+  maths12:['Relations & Functions (12)','Inverse Trig. Functions','Matrices','Determinants','Continuity & Differentiability','Application of Derivatives','Integrals','Application of Integrals','Differential Equations','Vector Algebra','Three-D Geometry','Linear Programming','Probability (12)'],
 };
 const DAYS_ORDER=['monday','tuesday','wednesday','thursday','friday','saturday','sunday'];
 const DAYS_S={monday:'Mon',tuesday:'Tue',wednesday:'Wed',thursday:'Thu',friday:'Fri',saturday:'Sat',sunday:'Sun'};
@@ -772,9 +778,12 @@ const DEF={
   hunter:{xp:0,mana:100,streak:0,lastDate:null,startDate:new Date().toISOString().split('T')[0],name:'Gautam'},
   questComp:{},sessions:[],tests:[],
   topics:{
-    physics:JEE_TOPICS.physics.map((n,i)=>({id:'p'+i,name:n,conf:0})),
-    chemistry:JEE_TOPICS.chemistry.map((n,i)=>({id:'c'+i,name:n,conf:0})),
-    maths:JEE_TOPICS.maths.map((n,i)=>({id:'m'+i,name:n,conf:0})),
+    physics11:JEE_TOPICS.physics11.map((n,i)=>({id:'p11_'+i,name:n,conf:0})),
+    physics12:JEE_TOPICS.physics12.map((n,i)=>({id:'p12_'+i,name:n,conf:0})),
+    chemistry11:JEE_TOPICS.chemistry11.map((n,i)=>({id:'c11_'+i,name:n,conf:0})),
+    chemistry12:JEE_TOPICS.chemistry12.map((n,i)=>({id:'c12_'+i,name:n,conf:0})),
+    maths11:JEE_TOPICS.maths11.map((n,i)=>({id:'m11_'+i,name:n,conf:0})),
+    maths12:JEE_TOPICS.maths12.map((n,i)=>({id:'m12_'+i,name:n,conf:0})),
   },
   workout:{plan:JSON.parse(JSON.stringify(DEF_PLAN)),logs:[]},
   jeeTarget:250,
@@ -809,6 +818,20 @@ function signOutUser(){if(confirm('Sign out?'))auth.signOut();}
 function defState(){return JSON.parse(JSON.stringify(DEF));}
 function ensureKeys(){
   if(!S.topics)S.topics=JSON.parse(JSON.stringify(DEF.topics));
+  // Migrate old single-key topics to class-split format
+  if(S.topics.physics&&!S.topics.physics12){
+    // Old format — migrate class 12 data, create empty class 11
+    S.topics.physics12=S.topics.physics;
+    S.topics.chemistry12=S.topics.chemistry||[];
+    S.topics.maths12=S.topics.maths||[];
+    delete S.topics.physics;delete S.topics.chemistry;delete S.topics.maths;
+  }
+  if(!S.topics.physics11)S.topics.physics11=JEE_TOPICS.physics11.map((n,i)=>({id:'p11_'+i,name:n,conf:0}));
+  if(!S.topics.physics12)S.topics.physics12=JEE_TOPICS.physics12.map((n,i)=>({id:'p12_'+i,name:n,conf:0}));
+  if(!S.topics.chemistry11)S.topics.chemistry11=JEE_TOPICS.chemistry11.map((n,i)=>({id:'c11_'+i,name:n,conf:0}));
+  if(!S.topics.chemistry12)S.topics.chemistry12=JEE_TOPICS.chemistry12.map((n,i)=>({id:'c12_'+i,name:n,conf:0}));
+  if(!S.topics.maths11)S.topics.maths11=JEE_TOPICS.maths11.map((n,i)=>({id:'m11_'+i,name:n,conf:0}));
+  if(!S.topics.maths12)S.topics.maths12=JEE_TOPICS.maths12.map((n,i)=>({id:'m12_'+i,name:n,conf:0}));
   if(!S.workout)S.workout={plan:JSON.parse(JSON.stringify(DEF_PLAN)),logs:[]};
   if(!S.jeeTarget)S.jeeTarget=250;
   if(!S.hunter.startDate)S.hunter.startDate=new Date().toISOString().split('T')[0];
@@ -1018,16 +1041,22 @@ function renderGates(){
   const col={physics:'var(--accent)',chemistry:'var(--green)',maths:'var(--gold)'};
   let main='',rp='';
   subjs.forEach(s=>{
-    const tp=S.topics[s];
-    const avg=Math.round(tp.reduce((a,t)=>a+t.conf,0)/tp.length);
+    const tp=[...(S.topics[s+'11']||[]),...(S.topics[s+'12']||[])];
+    const avg=tp.length?Math.round(tp.reduce((a,t)=>a+t.conf,0)/tp.length):0;
     const cleared=tp.filter(t=>t.conf>=80).length;
     const weak=tp.filter(t=>t.conf<40).length;
+    const avg11=S.topics[s+'11']?.length?Math.round(S.topics[s+'11'].reduce((a,t)=>a+t.conf,0)/S.topics[s+'11'].length):0;
+    const avg12=S.topics[s+'12']?.length?Math.round(S.topics[s+'12'].reduce((a,t)=>a+t.conf,0)/S.topics[s+'12'].length):0;
     main+=`<div style="margin-bottom:14px">
       <div style="display:flex;justify-content:space-between;margin-bottom:5px">
         <span style="font-weight:700;font-size:14px">${lbl[s]}</span>
         <span style="font-family:var(--mono);font-size:11px;color:var(--text2)">${cleared}/${tp.length} cleared · ${avg}%</span>
       </div>
       <div class="pb-wrap"><div class="pb-fill" style="width:${avg}%;background:${col[s]}"></div></div>
+      <div style="display:flex;gap:12px;margin-top:4px">
+        <span style="font-size:10px;color:var(--text3)">Cl.11: <span style="color:var(--text2)">${avg11}%</span></span>
+        <span style="font-size:10px;color:var(--text3)">Cl.12: <span style="color:var(--text2)">${avg12}%</span></span>
+      </div>
       ${weak>0?`<div style="font-size:11px;color:var(--red);margin-top:3px">⚠ ${weak} topics below 40%</div>`:''}
     </div>`;
     rp+=`<div class="rp-gate-row">
@@ -1177,28 +1206,124 @@ function renderTests(){
   h+='</tbody></table></div>';document.getElementById('test-hist').innerHTML=h;
 }
 function renderTopics(){
-  const subjs=['physics','chemistry','maths'];
-  const lbl={physics:'⚡ Physics',chemistry:'🧪 Chemistry',maths:'📐 Maths'};
   const col={physics:'var(--accent)',chemistry:'var(--green)',maths:'var(--gold)'};
+
+  // Overview strip
+  const allT=[...(S.topics.physics11||[]),...(S.topics.physics12||[]),...(S.topics.chemistry11||[]),...(S.topics.chemistry12||[]),...(S.topics.maths11||[]),...(S.topics.maths12||[])];
+  const danger=allT.filter(t=>t.conf<40).length;
+  const learning=allT.filter(t=>t.conf>=40&&t.conf<70).length;
+  const strong=allT.filter(t=>t.conf>=70&&t.conf<90).length;
+  const mastered=allT.filter(t=>t.conf>=90).length;
+  const notStarted=allT.filter(t=>t.conf===0).length;
+  const ovEl=document.getElementById('conf-overview');
+  if(ovEl){ovEl.innerHTML=`
+    <div class="card" style="margin-bottom:12px">
+      <div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--text3);margin-bottom:10px;font-weight:700">Overall Confidence — ${allT.length} Topics</div>
+      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:12px">
+        <div style="text-align:center;background:rgba(150,150,150,.06);border:1px solid rgba(150,150,150,.15);border-radius:8px;padding:8px 4px">
+          <div style="font-family:var(--mono);font-size:18px;color:#888">${notStarted}</div>
+          <div style="font-size:9px;color:var(--text3);margin-top:2px">Not started</div>
+        </div>
+        <div style="text-align:center;background:rgba(255,59,92,.06);border:1px solid rgba(255,59,92,.2);border-radius:8px;padding:8px 4px">
+          <div style="font-family:var(--mono);font-size:18px;color:var(--red)">${danger}</div>
+          <div style="font-size:9px;color:var(--text3);margin-top:2px">Danger</div>
+        </div>
+        <div style="text-align:center;background:rgba(244,196,48,.06);border:1px solid rgba(244,196,48,.2);border-radius:8px;padding:8px 4px">
+          <div style="font-family:var(--mono);font-size:18px;color:var(--gold)">${learning}</div>
+          <div style="font-size:9px;color:var(--text3);margin-top:2px">Learning</div>
+        </div>
+        <div style="text-align:center;background:rgba(0,214,143,.06);border:1px solid rgba(0,214,143,.2);border-radius:8px;padding:8px 4px">
+          <div style="font-family:var(--mono);font-size:18px;color:var(--green)">${strong}</div>
+          <div style="font-size:9px;color:var(--text3);margin-top:2px">Strong</div>
+        </div>
+        <div style="text-align:center;background:rgba(91,110,245,.08);border:1px solid rgba(91,110,245,.25);border-radius:8px;padding:8px 4px">
+          <div style="font-family:var(--mono);font-size:18px;color:var(--accent)">${mastered}</div>
+          <div style="font-size:9px;color:var(--text3);margin-top:2px">Mastered</div>
+        </div>
+      </div>
+      <div style="font-size:11px;color:var(--text2)">💡 Slide each topic to rate your confidence. Be honest — over-rating is the #1 mistake. Tap a subject below to expand.</div>
+    </div>`;}
+
+  const subjectGroups=[
+    {key:'physics', label:'⚡ Physics', color:'var(--accent)'},
+    {key:'chemistry', label:'🧪 Chemistry', color:'var(--green)'},
+    {key:'maths', label:'📐 Maths', color:'var(--gold)'},
+  ];
   let h='';
-  subjs.forEach(s=>{
-    const tp=S.topics[s];
-    const avg=Math.round(tp.reduce((a,t)=>a+t.conf,0)/tp.length);
-    h+=`<div class="card" style="margin-bottom:12px"><div class="acc-hdr" onclick="toggleAcc('ac-${s}')"><span class="acc-title" style="color:${col[s]}">${lbl[s]}</span><span class="acc-avg">${avg}% avg ▾</span></div><div class="acc-body" id="ac-${s}">`;
-    tp.forEach((t,i)=>{
+  subjectGroups.forEach(sg=>{
+    const tp11=S.topics[sg.key+'11']||[];
+    const tp12=S.topics[sg.key+'12']||[];
+    const allT=[...tp11,...tp12];
+    const overallAvg=allT.length?Math.round(allT.reduce((a,t)=>a+t.conf,0)/allT.length):0;
+    const avg11=tp11.length?Math.round(tp11.reduce((a,t)=>a+t.conf,0)/tp11.length):0;
+    const avg12=tp12.length?Math.round(tp12.reduce((a,t)=>a+t.conf,0)/tp12.length):0;
+
+    h+=`<div class="card" style="margin-bottom:14px">
+      <div class="acc-hdr" onclick="toggleAcc('ac-${sg.key}')">
+        <span class="acc-title" style="color:${sg.color}">${sg.label}</span>
+        <span class="acc-avg">${overallAvg}% overall ▾</span>
+      </div>
+      <div class="acc-body" id="ac-${sg.key}">
+        <!-- Class 11 Block -->
+        <div style="margin-bottom:16px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;padding:7px 10px;background:rgba(255,255,255,.03);border-radius:8px;border-left:3px solid ${sg.color}40">
+            <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:${sg.color}">Class 11</span>
+            <span style="font-family:var(--mono);font-size:11px;color:var(--text2)">${tp11.filter(t=>t.conf>=80).length}/${tp11.length} cleared · ${avg11}%</span>
+          </div>`;
+    tp11.forEach((t,i)=>{
       const c=t.conf>=80?'var(--green)':t.conf>=50?'var(--gold)':'var(--red)';
-      h+=`<div class="topic-item"><div class="topic-hdr"><span class="topic-name">${t.name}</span><span class="topic-pct" id="tp-${s}-${i}" style="color:${c}">${t.conf}%</span></div><input type="range" class="conf-slider" value="${t.conf}" min="0" max="100" style="background:linear-gradient(to right,${c} ${t.conf}%,rgba(255,255,255,.07) ${t.conf}%)" oninput="upConf('${s}',${i},this.value,this)" onchange="save()"></div>`;
+      const badge=t.conf>=80?'✓':t.conf>=50?'~':'!';
+      h+=`<div class="topic-item">
+        <div class="topic-hdr">
+          <span class="topic-name">${t.name}</span>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="font-size:10px;font-weight:700;color:${c};background:${c}18;padding:1px 6px;border-radius:4px">${badge}</span>
+            <span class="topic-pct" id="tp-${sg.key}11-${i}" style="color:${c}">${t.conf}%</span>
+          </div>
+        </div>
+        <input type="range" class="conf-slider" value="${t.conf}" min="0" max="100"
+          style="background:linear-gradient(to right,${c} ${t.conf}%,rgba(255,255,255,.07) ${t.conf}%)"
+          oninput="upConf('${sg.key}11',${i},this.value,this)" onchange="save()">
+      </div>`;
     });
-    h+=`</div></div>`;
+    h+=`</div>
+        <!-- Class 12 Block -->
+        <div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;padding:7px 10px;background:rgba(255,255,255,.03);border-radius:8px;border-left:3px solid ${sg.color}">
+            <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:${sg.color}">Class 12</span>
+            <span style="font-family:var(--mono);font-size:11px;color:var(--text2)">${tp12.filter(t=>t.conf>=80).length}/${tp12.length} cleared · ${avg12}%</span>
+          </div>`;
+    tp12.forEach((t,i)=>{
+      const c=t.conf>=80?'var(--green)':t.conf>=50?'var(--gold)':'var(--red)';
+      const badge=t.conf>=80?'✓':t.conf>=50?'~':'!';
+      h+=`<div class="topic-item">
+        <div class="topic-hdr">
+          <span class="topic-name">${t.name}</span>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="font-size:10px;font-weight:700;color:${c};background:${c}18;padding:1px 6px;border-radius:4px">${badge}</span>
+            <span class="topic-pct" id="tp-${sg.key}12-${i}" style="color:${c}">${t.conf}%</span>
+          </div>
+        </div>
+        <input type="range" class="conf-slider" value="${t.conf}" min="0" max="100"
+          style="background:linear-gradient(to right,${c} ${t.conf}%,rgba(255,255,255,.07) ${t.conf}%)"
+          oninput="upConf('${sg.key}12',${i},this.value,this)" onchange="save()">
+      </div>`;
+    });
+    h+=`</div></div></div>`;
   });
   document.getElementById('topic-acc').innerHTML=h;
 }
 function toggleAcc(id){document.getElementById(id).classList.toggle('open');}
 function upConf(s,i,v,sl){
+  if(!S.topics[s])return;
   S.topics[s][i].conf=parseInt(v);
   const c=v>=80?'var(--green)':v>=50?'var(--gold)':'var(--red)';
   sl.style.background=`linear-gradient(to right,${c} ${v}%,rgba(255,255,255,.07) ${v}%)`;
   const e=document.getElementById('tp-'+s+'-'+i);if(e){e.textContent=v+'%';e.style.color=c;}
+  // update badge
+  const badge=v>=80?'✓':v>=50?'~':'!';
+  const bEl=sl.previousElementSibling?.querySelector('span:first-child');
+  if(bEl&&bEl.style){bEl.textContent=badge;bEl.style.color=c;bEl.style.background=c+'18';}
 }
 function renderJeeMks(){
   document.getElementById('jee-tgt').value=S.jeeTarget;
@@ -1217,7 +1342,7 @@ function renderJeeMks(){
   let ah='';
   subs.forEach(s=>{const p=Math.round(s.v/sMax*100);ah+=`<div style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px"><span style="font-weight:700">${s.n}</span><span style="font-family:var(--mono);color:${s.c}">${s.v}/${sMax}</span></div><div class="pb-wrap"><div class="pb-fill" style="width:${p}%;background:${s.c}"></div></div></div>`;});
   document.getElementById('subj-avg').innerHTML=ah;
-  const weak=[...S.topics.physics,...S.topics.chemistry,...S.topics.maths].filter(t=>t.conf<40).slice(0,6);
+  const weak=[...(S.topics.physics11||[]),...(S.topics.physics12||[]),...(S.topics.chemistry11||[]),...(S.topics.chemistry12||[]),...(S.topics.maths11||[]),...(S.topics.maths12||[])].filter(t=>t.conf<40).slice(0,6);
   if(!weak.length){document.getElementById('weak-chapters').innerHTML='<div style="color:var(--green);font-size:13px">✓ No topics below 40%. Keep going!</div>';}
   else{let wh='<div style="font-size:12px;color:var(--text2);margin-bottom:10px">Prioritise these for quick score gains:</div>';weak.forEach(t=>{wh+=`<div style="display:flex;align-items:center;gap:9px;margin-bottom:9px"><div style="width:6px;height:6px;border-radius:50%;background:var(--red);flex-shrink:0"></div><span style="font-size:13px;flex:1">${t.name}</span><span style="font-family:var(--mono);font-size:11px;color:var(--red)">${t.conf}%</span></div>`;});document.getElementById('weak-chapters').innerHTML=wh;}
 }
@@ -1420,8 +1545,9 @@ function renderHeatmap(){
 
 function renderChronicle(){
   const wMins=S.sessions.filter(s=>{const d=new Date(s.date),n=new Date();return(n-d)/86400000<=7;}).reduce((a,s)=>a+s.min,0);
-  const weak=[...S.topics.physics,...S.topics.chemistry,...S.topics.maths].filter(t=>t.conf<40);
-  const strong=[...S.topics.physics,...S.topics.chemistry,...S.topics.maths].filter(t=>t.conf>=80);
+  const allT=[...(S.topics.physics11||[]),...(S.topics.physics12||[]),...(S.topics.chemistry11||[]),...(S.topics.chemistry12||[]),...(S.topics.maths11||[]),...(S.topics.maths12||[])];
+  const weak=allT.filter(t=>t.conf<40);
+  const strong=allT.filter(t=>t.conf>=80);
   const tests=S.tests.slice(-2);
   const testL=tests.length>=2?(tests[1].total>tests[0].total?'improving ↑':'dropped ↓ since last test'):'No tests logged this week.';
   const rk=getRank(S.hunter.xp);
@@ -1431,7 +1557,7 @@ function renderChronicle(){
     `${(wMins/60).toFixed(1)}h studied in the last 7 days.`,
     tests.length>=2?`Test scores ${testL}.`:testL,
     weak.length>0?`${weak.length} topics below 40% confidence — focus these first.`:'All topics above 40%. Solid foundation.',
-    strong.length>0?`${strong.length} topics mastered (80%+). Well done.`:'No topics mastered yet — push those sliders up.',
+    strong.length>0?`${strong.length}/${allT.length} topics mastered (80%+). Well done.`:'No topics mastered yet — push those sliders up.',
     S.hunter.streak>=3?`${S.hunter.streak}-day streak active. The shadow army grows. 🔥`:'Build your streak. Consistency is the path to S-rank.',
   ];
   document.getElementById('chronicle').innerHTML=lines.map(l=>`<div class="report-line">${l}</div>`).join('');
