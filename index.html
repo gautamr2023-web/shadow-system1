@@ -349,8 +349,13 @@ section.active{display:block}
 </section>
 
 <section id="s-study">
-  <div class="sec-title">Study Timer</div>
-  <div class="sec-sub">Track your focus sessions and earn XP</div>
+  <div id="focus-stats-bar" style="margin-bottom:14px"></div>
+  <div class="tab-bar" style="margin-bottom:14px">
+    <button class="tab-btn active" onclick="setFocusTab('timer',this)">⏱ Timer</button>
+    <button class="tab-btn" onclick="setFocusTab('log',this)">📋 History</button>
+    <button class="tab-btn" onclick="setFocusTab('stats',this)">📊 Focus</button>
+  </div>
+  <div id="fp-timer">
   <div class="timer-modes">
     <button class="tmode-btn active" onclick="setMode('pomodoro',this)">Pomodoro</button>
     <button class="tmode-btn" onclick="setMode('stopwatch',this)">Stopwatch</button>
@@ -393,9 +398,25 @@ section.active{display:block}
     Mana: <span id="mana-study" style="color:var(--mana);font-family:var(--mono)">100</span>/100
     <button class="mana-restore" onclick="restoreMana()">+ Restore</button>
   </div>
-  <div class="card">
-    <div class="card-hdr"><span class="hl">Today's Sessions</span></div>
-    <div id="sess-log"></div>
+  </div>
+  <div id="fp-log" style="display:none">
+    <div style="display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap">
+      <button class="tab-btn active" style="flex:none;padding:7px 14px" onclick="setLogPeriod('today',this)">Today</button>
+      <button class="tab-btn" style="flex:none;padding:7px 14px" onclick="setLogPeriod('week',this)">This Week</button>
+      <button class="tab-btn" style="flex:none;padding:7px 14px" onclick="setLogPeriod('month',this)">This Month</button>
+      <button class="tab-btn" style="flex:none;padding:7px 14px" onclick="setLogPeriod('all',this)">All Time</button>
+    </div>
+    <div id="log-period-summary" style="margin-bottom:12px"></div>
+    <div class="card"><div class="card-hdr"><span class="hl" id="log-period-label">Today's Sessions</span></div><div id="sess-log-full"></div></div>
+  </div>
+  <div id="fp-stats" style="display:none">
+    <div style="display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap">
+      <button class="tab-btn active" style="flex:none;padding:7px 14px" onclick="setStatsPeriod('today',this)">Today</button>
+      <button class="tab-btn" style="flex:none;padding:7px 14px" onclick="setStatsPeriod('week',this)">Week</button>
+      <button class="tab-btn" style="flex:none;padding:7px 14px" onclick="setStatsPeriod('month',this)">Month</button>
+      <button class="tab-btn" style="flex:none;padding:7px 14px" onclick="setStatsPeriod('all',this)">All Time</button>
+    </div>
+    <div id="fp-stats-content"></div>
   </div>
 </section>
 
@@ -1154,6 +1175,9 @@ function autoLog(mins,sub,mode){
   S.sessions.push({id:Date.now(),date:today(),min:mins,sub,mode,eff,xp,time:new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})});
   S.hunter.xp+=xp;S.hunter.mana=Math.max(0,S.hunter.mana-Math.min(15,Math.round(mins/7)));
   save();updateHeader();renderSessLog();
+  // refresh whichever focus sub-tab is open
+  if(focusTab==='log')renderSessionLog();
+  if(focusTab==='stats')renderFocusStats();
   const t=today(),comp=S.questComp[t]||{};
   const tM=S.sessions.filter(s=>s.date===t).reduce((a,s)=>a+s.min,0);
   const goalMins=(S.goals&&S.goals.questStudyHours?S.goals.questStudyHours:2)*60;
@@ -1161,18 +1185,290 @@ function autoLog(mins,sub,mode){
   if(mode==='pomodoro'&&mins>=25&&!comp.q2){comp.q2=true;S.hunter.xp+=25;S.questComp[t]=comp;save();updateHeader();}
 }
 function restoreMana(){S.hunter.mana=Math.min(100,S.hunter.mana+30);save();updateHeader();showToast('Mana +30 🌙 — take a real break!');}
-function renderSessLog(){
-  const sess=S.sessions.filter(s=>s.date===today()).reverse();
-  if(!sess.length){document.getElementById('sess-log').innerHTML='<div class="empty">No sessions yet. Start studying! ⚔️</div>';return;}
-  const tags={physics:'tag-physics PHY',chemistry:'tag-chemistry CHE',maths:'tag-maths MAT',other:'tag-other OTH'};
-  const lbl={physics:'Physics',chemistry:'Chemistry',maths:'Maths',other:'Other'};
-  let h='';
-  sess.forEach(s=>{
-    const[tc,tl]=(tags[s.sub]||'tag-other OTH').split(' ');
-    h+=`<div class="sess-item"><div class="sess-tag ${tc}">${tl}</div><div class="sess-info"><div class="sess-name">${lbl[s.sub]}</div><div class="sess-meta">${s.time} · ${s.mode} · ${s.eff}% eff</div></div><div class="sess-dur">${s.min}m<br><span style="color:var(--gold)">+${s.xp} XP</span></div></div>`;
+// FOCUS STATS SYSTEM
+let focusTab='timer', logPeriod='today', statsPeriod='today';
+
+function setFocusTab(tab, btn){
+  focusTab=tab;
+  ['timer','log','stats'].forEach(t=>{
+    const el=document.getElementById('fp-'+t);
+    if(el)el.style.display=t===tab?'block':'none';
   });
-  document.getElementById('sess-log').innerHTML=h;
+  document.querySelectorAll('#s-study .tab-bar .tab-btn').forEach(b=>b.classList.remove('active'));
+  if(btn)btn.classList.add('active');
+  if(tab==='log')renderSessionLog();
+  if(tab==='stats')renderFocusStats();
+  renderFocusStatsBar();
 }
+
+function setLogPeriod(p, btn){
+  logPeriod=p;
+  document.querySelectorAll('#fp-log .tab-btn').forEach(b=>b.classList.remove('active'));
+  if(btn)btn.classList.add('active');
+  renderSessionLog();
+}
+
+function setStatsPeriod(p, btn){
+  statsPeriod=p;
+  document.querySelectorAll('#fp-stats .tab-btn').forEach(b=>b.classList.remove('active'));
+  if(btn)btn.classList.add('active');
+  renderFocusStats();
+}
+
+function getSessionsForPeriod(period){
+  const now=new Date(), t=today();
+  if(period==='today')return S.sessions.filter(s=>s.date===t);
+  if(period==='week'){
+    const days=[];for(let i=6;i>=0;i--){const d=new Date(now);d.setDate(d.getDate()-i);days.push(d.toISOString().split('T')[0]);}
+    return S.sessions.filter(s=>days.includes(s.date));
+  }
+  if(period==='month'){
+    const yr=now.getFullYear(),mo=now.getMonth();
+    return S.sessions.filter(s=>{const d=new Date(s.date);return d.getFullYear()===yr&&d.getMonth()===mo;});
+  }
+  return S.sessions;
+}
+
+function fmtHM(mins){
+  if(mins<60)return mins+'m';
+  return Math.floor(mins/60)+'h '+(mins%60)+'m';
+}
+
+function renderFocusStatsBar(){
+  const bar=document.getElementById('focus-stats-bar');if(!bar)return;
+  const t=today();
+  const todayMins=S.sessions.filter(s=>s.date===t).reduce((a,s)=>a+s.min,0);
+  const goal=(S.goals&&S.goals.studyHours?S.goals.studyHours:6)*60;
+  const pct=Math.min(100,Math.round(todayMins/goal*100));
+  const weekSess=getSessionsForPeriod('week');
+  const weekMins=weekSess.reduce((a,s)=>a+s.min,0);
+  const monthSess=getSessionsForPeriod('month');
+  const monthMins=monthSess.reduce((a,s)=>a+s.min,0);
+  const sub={physics:0,chemistry:0,maths:0,other:0};
+  S.sessions.filter(s=>s.date===t).forEach(s=>{sub[s.sub]=(sub[s.sub]||0)+s.min;});
+  const subTotal=Object.values(sub).reduce((a,v)=>a+v,0);
+
+  bar.innerHTML=`
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:16px">
+    <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:10px">
+      <div>
+        <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:2px">Today's Focus</div>
+        <div style="font-family:var(--mono);font-size:28px;color:var(--text);line-height:1">${fmtHM(todayMins)}</div>
+        <div style="font-size:11px;color:var(--text2);margin-top:2px">Goal: ${fmtHM(goal)} · ${pct}% done</div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.6px">This Week</div>
+        <div style="font-family:var(--mono);font-size:18px;color:var(--accent)">${fmtHM(weekMins)}</div>
+        <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;margin-top:6px">This Month</div>
+        <div style="font-family:var(--mono);font-size:18px;color:var(--accent2)">${fmtHM(monthMins)}</div>
+      </div>
+    </div>
+    <!-- Goal progress bar -->
+    <div style="height:6px;background:rgba(255,255,255,.05);border-radius:3px;overflow:hidden;margin-bottom:10px;position:relative">
+      <div style="height:100%;width:${pct}%;background:${pct>=100?'var(--green)':pct>=60?'var(--accent)':'var(--accent2)'};border-radius:3px;transition:width .5s"></div>
+    </div>
+    <!-- Subject mini-bars -->
+    ${subTotal>0?`<div style="display:flex;gap:4px;height:4px;border-radius:2px;overflow:hidden">
+      ${sub.physics>0?`<div style="flex:${sub.physics};background:rgba(91,110,245,.8)"></div>`:''}
+      ${sub.chemistry>0?`<div style="flex:${sub.chemistry};background:rgba(0,214,143,.8)"></div>`:''}
+      ${sub.maths>0?`<div style="flex:${sub.maths};background:rgba(244,196,48,.8)"></div>`:''}
+      ${sub.other>0?`<div style="flex:${sub.other};background:rgba(150,150,200,.6)"></div>`:''}
+    </div>
+    <div style="display:flex;gap:12px;margin-top:5px;font-size:10px;color:var(--text3)">
+      ${sub.physics>0?`<span><span style="color:rgba(91,110,245,.9)">■</span> PHY ${fmtHM(sub.physics)}</span>`:''}
+      ${sub.chemistry>0?`<span><span style="color:rgba(0,214,143,.9)">■</span> CHE ${fmtHM(sub.chemistry)}</span>`:''}
+      ${sub.maths>0?`<span><span style="color:rgba(244,196,48,.9)">■</span> MAT ${fmtHM(sub.maths)}</span>`:''}
+      ${sub.other>0?`<span><span style="color:rgba(150,150,200,.8)">■</span> OTH ${fmtHM(sub.other)}</span>`:''}
+    </div>`:'<div style="font-size:11px;color:var(--text3)">No sessions yet today. Start a session above!</div>'}
+  </div>`;
+}
+
+function renderSessionLog(){
+  const periodLabels={today:"Today's Sessions",week:"This Week's Sessions",month:"This Month's Sessions",all:"All Sessions"};
+  const lbl=document.getElementById('log-period-label');
+  if(lbl)lbl.textContent=periodLabels[logPeriod]||'Sessions';
+
+  const sess=getSessionsForPeriod(logPeriod).slice().reverse();
+  const totalMins=sess.reduce((a,s)=>a+s.min,0);
+  const totalXP=sess.reduce((a,s)=>a+(s.xp||0),0);
+  const subCounts={physics:0,chemistry:0,maths:0,other:0};
+  sess.forEach(s=>{subCounts[s.sub]=(subCounts[s.sub]||0)+s.min;});
+
+  // Summary bar
+  const sumEl=document.getElementById('log-period-summary');
+  if(sumEl&&sess.length>0){
+    sumEl.innerHTML=`<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;text-align:center">
+        <div style="font-family:var(--mono);font-size:18px;color:var(--text)">${fmtHM(totalMins)}</div>
+        <div style="font-size:10px;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-top:2px">Total</div>
+      </div>
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;text-align:center">
+        <div style="font-family:var(--mono);font-size:18px;color:var(--gold)">+${totalXP}</div>
+        <div style="font-size:10px;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-top:2px">XP</div>
+      </div>
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;text-align:center">
+        <div style="font-family:var(--mono);font-size:18px;color:var(--accent)">${sess.length}</div>
+        <div style="font-size:10px;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-top:2px">Sessions</div>
+      </div>
+    </div>`;
+  }else if(sumEl){sumEl.innerHTML='';}
+
+  const logEl=document.getElementById('sess-log-full');if(!logEl)return;
+  if(!sess.length){logEl.innerHTML='<div class="empty">No sessions in this period.</div>';return;}
+
+  const tags={physics:'tag-physics PHY',chemistry:'tag-chemistry CHE',maths:'tag-maths MAT',other:'tag-other OTH'};
+  const lbl2={physics:'Physics',chemistry:'Chemistry',maths:'Maths',other:'Other'};
+  const modeLabel={pomodoro:'🍅 Pomo',stopwatch:'⏱ Free',countdown:'⏲ CD'};
+
+  // Group by date for non-today views
+  if(logPeriod==='today'){
+    let h='';
+    sess.forEach(s=>{
+      const[tc,tl]=(tags[s.sub]||'tag-other OTH').split(' ');
+      h+=`<div class="sess-item"><div class="sess-tag ${tc}">${tl}</div><div class="sess-info"><div class="sess-name">${lbl2[s.sub]||s.sub}</div><div class="sess-meta">${s.time||''}${s.time?' · ':''}${modeLabel[s.mode]||s.mode} · ${s.eff||100}% eff</div></div><div class="sess-dur">${fmtHM(s.min)}<br><span style="color:var(--gold);font-size:11px">+${s.xp||0} XP</span></div></div>`;
+    });
+    logEl.innerHTML=h;
+  } else {
+    // Group by date
+    const byDate={};
+    sess.forEach(s=>{if(!byDate[s.date])byDate[s.date]=[];byDate[s.date].push(s);});
+    const sortedDates=Object.keys(byDate).sort((a,b)=>b.localeCompare(a));
+    let h='';
+    sortedDates.forEach(date=>{
+      const daySess=byDate[date];
+      const dayMins=daySess.reduce((a,s)=>a+s.min,0);
+      const dayXP=daySess.reduce((a,s)=>a+(s.xp||0),0);
+      h+=`<div style="margin-bottom:4px;padding:8px 0 4px;border-bottom:1px solid var(--border2)">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span style="font-size:12px;font-weight:700;color:var(--text2)">${fmtDate(date)}</span>
+          <span style="font-size:11px;color:var(--text3);font-family:var(--mono)">${fmtHM(dayMins)} · +${dayXP} XP</span>
+        </div>
+      </div>`;
+      daySess.forEach(s=>{
+        const[tc,tl]=(tags[s.sub]||'tag-other OTH').split(' ');
+        h+=`<div class="sess-item" style="padding:8px 0"><div class="sess-tag ${tc}" style="width:30px;height:30px;font-size:9px">${tl}</div><div class="sess-info"><div class="sess-name" style="font-size:13px">${lbl2[s.sub]||s.sub}</div><div class="sess-meta">${modeLabel[s.mode]||s.mode} · ${s.eff||100}% eff</div></div><div class="sess-dur">${fmtHM(s.min)}<br><span style="color:var(--gold);font-size:11px">+${s.xp||0} XP</span></div></div>`;
+      });
+    });
+    logEl.innerHTML=h;
+  }
+}
+
+function renderFocusStats(){
+  const el=document.getElementById('fp-stats-content');if(!el)return;
+  const sess=getSessionsForPeriod(statsPeriod);
+  if(!sess.length){el.innerHTML='<div class="empty">No sessions in this period yet.<br>Start studying to see your focus stats! 🔥</div>';return;}
+
+  const totalMins=sess.reduce((a,s)=>a+s.min,0);
+  const totalXP=sess.reduce((a,s)=>a+(s.xp||0),0);
+  const avgEff=Math.round(sess.reduce((a,s)=>a+(s.eff||100),0)/sess.length);
+  const longestSess=Math.max(...sess.map(s=>s.min));
+
+  // Subject breakdown
+  const sub={physics:0,chemistry:0,maths:0,other:0};
+  sess.forEach(s=>{sub[s.sub]=(sub[s.sub]||0)+s.min;});
+  const subOrder=[['Physics','physics','var(--accent)'],['Chemistry','chemistry','var(--green)'],['Maths','maths','var(--gold)'],['Other','other','rgba(150,150,200,.8)']];
+
+  // Best/avg day
+  const byDate={};
+  sess.forEach(s=>{byDate[s.date]=(byDate[s.date]||0)+s.min;});
+  const dayMins=Object.values(byDate);
+  const bestDay=dayMins.length?Math.max(...dayMins):0;
+  const avgDay=dayMins.length?Math.round(dayMins.reduce((a,v)=>a+v,0)/dayMins.length):0;
+  const activeDays=dayMins.filter(v=>v>0).length;
+
+  // Mode breakdown
+  const modes={pomodoro:0,stopwatch:0,countdown:0};
+  sess.forEach(s=>{modes[s.mode]=(modes[s.mode]||0)+s.min;});
+
+  // Daily chart for week/month
+  let chartRows='';
+  if(statsPeriod==='week'||statsPeriod==='month'){
+    const days=statsPeriod==='week'?7:30;
+    const dayArr=[];
+    for(let i=days-1;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);dayArr.push(d.toISOString().split('T')[0]);}
+    const maxM=Math.max(...dayArr.map(d=>byDate[d]||0),60);
+    chartRows=`<div class="card" style="margin-bottom:12px">
+      <div class="card-hdr"><span class="hl">Daily Focus — ${statsPeriod==='week'?'Last 7 Days':'Last 30 Days'}</span></div>
+      <div style="display:flex;align-items:flex-end;gap:${statsPeriod==='week'?'6':'3'}px;height:100px;padding:4px 0">
+        ${dayArr.map(d=>{
+          const m=byDate[d]||0;
+          const h=Math.round(m/maxM*96);
+          const dt=new Date(d);
+          const lbl=statsPeriod==='week'?dt.toLocaleDateString('en-IN',{weekday:'short'}):dt.getDate();
+          const isToday=d===today();
+          return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px">
+            <div style="width:100%;background:${isToday?'var(--accent)':m>0?'rgba(91,110,245,.55)':'rgba(255,255,255,.04)'};height:${h||2}px;border-radius:3px 3px 0 0;min-height:2px;transition:height .3s" title="${fmtHM(m)}"></div>
+            <div style="font-size:${statsPeriod==='week'?'9':'8'}px;color:${isToday?'var(--accent)':'var(--text3)'}">${lbl}</div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>`;
+  }
+
+  el.innerHTML=`
+  <!-- Big stats -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
+    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px">
+      <div style="font-family:var(--mono);font-size:24px;color:var(--text)">${fmtHM(totalMins)}</div>
+      <div style="font-size:10px;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-top:2px">Total Focus</div>
+    </div>
+    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px">
+      <div style="font-family:var(--mono);font-size:24px;color:var(--gold)">+${totalXP}</div>
+      <div style="font-size:10px;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-top:2px">XP Earned</div>
+    </div>
+    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px">
+      <div style="font-family:var(--mono);font-size:24px;color:var(--green)">${fmtHM(bestDay)}</div>
+      <div style="font-size:10px;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-top:2px">Best Day</div>
+    </div>
+    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px">
+      <div style="font-family:var(--mono);font-size:24px;color:var(--mana)">${fmtHM(avgDay)}</div>
+      <div style="font-size:10px;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-top:2px">Daily Avg</div>
+    </div>
+    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px">
+      <div style="font-family:var(--mono);font-size:24px;color:var(--accent)">${sess.length}</div>
+      <div style="font-size:10px;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-top:2px">Sessions</div>
+    </div>
+    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px">
+      <div style="font-family:var(--mono);font-size:24px;color:${avgEff>=80?'var(--green)':avgEff>=60?'var(--gold)':'var(--red)'}">${avgEff}%</div>
+      <div style="font-size:10px;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-top:2px">Avg Efficiency</div>
+    </div>
+  </div>
+
+  ${chartRows}
+
+  <!-- Subject breakdown -->
+  <div class="card" style="margin-bottom:12px">
+    <div class="card-hdr"><span class="hl">Subject Breakdown</span></div>
+    ${subOrder.filter(([,k])=>sub[k]>0).map(([name,key,color])=>{
+      const pct=Math.round(sub[key]/totalMins*100);
+      return `<div style="margin-bottom:10px">
+        <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+          <span style="font-size:13px;font-weight:600">${name}</span>
+          <span style="font-family:var(--mono);font-size:12px;color:var(--text2)">${fmtHM(sub[key])} · ${pct}%</span>
+        </div>
+        <div class="pb-wrap" style="height:7px"><div class="pb-fill" style="width:${pct}%;background:${color}"></div></div>
+      </div>`;
+    }).join('')}
+    ${subOrder.every(([,k])=>!sub[k])?'<div class="empty">No data</div>':''}
+  </div>
+
+  <!-- Session mode breakdown -->
+  <div class="card">
+    <div class="card-hdr"><span class="hl">Focus Mode</span></div>
+    <div style="display:flex;gap:8px">
+      ${[['🍅 Pomodoro','pomodoro','var(--accent)'],['⏱ Free Flow','stopwatch','var(--green)'],['⏲ Countdown','countdown','var(--gold)']].map(([label,key,color])=>modes[key]?`<div style="flex:1;text-align:center;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 4px">
+        <div style="font-family:var(--mono);font-size:15px;color:${color}">${fmtHM(modes[key])}</div>
+        <div style="font-size:9px;color:var(--text3);margin-top:3px">${label}</div>
+      </div>`:'').join('')}
+    </div>
+  </div>`;
+}
+
+function renderSessLog(){
+  // Also update the always-visible stats bar and today session log when on timer tab
+  renderFocusStatsBar();
+}
+
 
 // TESTS
 function setTTab(t,btn){
@@ -1702,7 +1998,7 @@ function setupPWA(){
 // INIT
 function initApp(){
   checkStreak();setupPWA();
-  updateTimerUI();renderDash();renderSessLog();renderTests();renderWorkout();
+  updateTimerUI();renderDash();renderFocusStatsBar();renderTests();renderWorkout();
   document.getElementById('t-date').value=today();
 }
 </script>
