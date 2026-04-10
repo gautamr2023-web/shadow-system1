@@ -875,6 +875,28 @@ section.active{display:block}
   </div>
 </div>
 
+<!-- SESSION RATING MODAL -->
+<div id="rating-modal" style="display:none;position:fixed;inset:0;z-index:998;background:rgba(0,0,0,.75);backdrop-filter:blur(4px);align-items:center;justify-content:center;padding:24px">
+  <div style="background:var(--card);border:1px solid var(--border2);border-radius:var(--radius);padding:24px;max-width:340px;width:100%;position:relative">
+    <div style="font-family:var(--mono);font-size:11px;color:var(--accent);letter-spacing:2px;text-transform:uppercase;margin-bottom:6px">Session Complete</div>
+    <div style="font-size:20px;font-weight:700;margin-bottom:4px" id="rm-title">25 min · Physics</div>
+    <div style="font-size:13px;color:var(--text2);margin-bottom:20px" id="rm-sub">How focused were you?</div>
+    <div style="display:flex;gap:10px;margin-bottom:20px" id="rm-ratings">
+      <button class="rm-rate" onclick="selectRating(1)" data-r="1" style="flex:1;padding:12px 4px;border-radius:10px;border:1.5px solid var(--border2);background:transparent;cursor:pointer;font-size:22px;transition:all .2s">😴</button>
+      <button class="rm-rate" onclick="selectRating(2)" data-r="2" style="flex:1;padding:12px 4px;border-radius:10px;border:1.5px solid var(--border2);background:transparent;cursor:pointer;font-size:22px;transition:all .2s">😐</button>
+      <button class="rm-rate" onclick="selectRating(3)" data-r="3" style="flex:1;padding:12px 4px;border-radius:10px;border:1.5px solid var(--border2);background:transparent;cursor:pointer;font-size:22px;transition:all .2s">🙂</button>
+      <button class="rm-rate" onclick="selectRating(4)" data-r="4" style="flex:1;padding:12px 4px;border-radius:10px;border:1.5px solid var(--border2);background:transparent;cursor:pointer;font-size:22px;transition:all .2s">😤</button>
+      <button class="rm-rate" onclick="selectRating(5)" data-r="5" style="flex:1;padding:12px 4px;border-radius:10px;border:1.5px solid var(--border2);background:transparent;cursor:pointer;font-size:22px;transition:all .2s">🔥</button>
+    </div>
+    <div style="display:flex;gap:6px;justify-content:space-between;font-size:10px;color:var(--text3);margin-top:-14px;margin-bottom:16px;padding:0 2px">
+      <span>Distracted</span><span style="margin-left:auto">Locked in</span>
+    </div>
+    <div style="font-size:12px;color:var(--text2);margin-bottom:8px" id="rm-rating-note"></div>
+    <button id="rm-confirm" onclick="confirmRating()" class="btn btn-primary" style="width:100%;opacity:.4;pointer-events:none">Save Session</button>
+    <button onclick="dismissRating()" style="width:100%;margin-top:8px;background:none;border:none;color:var(--text3);font-size:12px;cursor:pointer;padding:6px">Skip</button>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -1296,9 +1318,36 @@ function applyCd(){
   const m=parseInt(document.getElementById('cd-m').value)||0;
   tSecs=h*3600+m*60;tTotal=tSecs;if(tRunning)resetTimer();updateTimerUI();
 }
+// NOTIFICATIONS
+let notifPermission='default';
+function requestNotifPermission(){
+  if('Notification' in window&&Notification.permission==='default'){
+    Notification.requestPermission().then(p=>{notifPermission=p;});
+  }
+}
+function sendNotification(title,body){
+  // Vibrate on mobile
+  if(navigator.vibrate)navigator.vibrate([300,100,300,100,500]);
+  // Browser notification (works on laptop + Android Chrome)
+  if('Notification' in window&&Notification.permission==='granted'){
+    new Notification(title,{body,icon:'',badge:'',tag:'shadow-timer',requireInteraction:true});
+  } else if('Notification' in window&&Notification.permission==='default'){
+    Notification.requestPermission().then(p=>{
+      if(p==='granted')new Notification(title,{body,tag:'shadow-timer',requireInteraction:true});
+    });
+  }
+}
+
 function toggleTimer(){
-  if(tRunning){clearInterval(tInterval);tRunning=false;pauseCount++;el('t-toggle','Resume');}
-  else{tRunning=true;el('t-toggle','Pause');tInterval=setInterval(tick,1000);}
+  if(tRunning){
+    clearInterval(tInterval);tRunning=false;pauseCount++;
+    el('t-toggle','Resume');
+    pauseMusic(); // pause music when timer pauses
+  } else {
+    tRunning=true;el('t-toggle','Pause');
+    tInterval=setInterval(tick,1000);
+    requestNotifPermission();
+  }
 }
 function tick(){
   if(tMode==='stopwatch'){tSecs++;elapsed++;}
@@ -1307,17 +1356,63 @@ function tick(){
 }
 function handleEnd(){
   clearInterval(tInterval);tRunning=false;el('t-toggle','Start');
+  stopMusicSilent(); // stop music when timer ends
   if(tMode==='pomodoro'){
     if(pomoPhase==='focus'){
-      autoLog(25,studySub,'pomodoro');pomoCount++;
-      if(pomoCount%4===0){pomoPhase='longbreak';tSecs=15*60;tTotal=15*60;showToast('Long break! 15 min 🌙');}
-      else{pomoPhase='break';tSecs=5*60;tTotal=5*60;showToast('Break time! 5 min 🍃');}
-    }else{pomoPhase='focus';tSecs=25*60;tTotal=25*60;showToast('Focus time! ⚔️');}
+      sendNotification('Focus session done! ⚔️','Time for a break. Great work, Hunter.');
+      const mins=25;
+      showRatingModal(mins,studySub);
+      pomoCount++;
+      if(pomoCount%4===0){pomoPhase='longbreak';tSecs=15*60;tTotal=15*60;}
+      else{pomoPhase='break';tSecs=5*60;tTotal=5*60;}
+    }else{
+      sendNotification('Break over! ⚡','Back to focus, Hunter.');
+      pomoPhase='focus';tSecs=25*60;tTotal=25*60;showToast('Focus time! ⚔️');
+    }
     elapsed=0;tRunning=true;el('t-toggle','Pause');tInterval=setInterval(tick,1000);
-  }else{autoLog(Math.round(tTotal/60),studySub,tMode);showToast('Done! ⚡');tSecs=tTotal;elapsed=0;}
+  }else{
+    const mins=Math.round(tTotal/60);
+    sendNotification('Timer done! ⚡','Session complete. How did it go?');
+    showRatingModal(mins,studySub);
+    tSecs=tTotal;elapsed=0;
+  }
   updateTimerUI();
 }
-function updateTimerUI(){
+function resetTimer(){
+  clearInterval(tInterval);tRunning=false;elapsed=0;pauseCount=0;el('t-toggle','Start');
+  if(tMode==='pomodoro'){tSecs=25*60;tTotal=25*60;pomoPhase='focus';}
+  else if(tMode==='stopwatch'){tSecs=0;tTotal=0;}
+  else applyCd();
+  updateTimerUI();
+}
+function manualLog(){
+  const mins=Math.round(elapsed/60);
+  if(mins<1){showToast('Start timer first — min 1 minute');return;}
+  clearInterval(tInterval);tRunning=false;elapsed=0;pauseCount=0;el('t-toggle','Start');
+  showRatingModal(mins,studySub);
+}
+function autoLog(mins,sub,mode,rating){
+  if(mins<1)return;
+  const eff=Math.max(10,Math.round(100-pauseCount*8));
+  // Rating boosts XP: 1=0.5x, 2=0.75x, 3=1x, 4=1.25x, 5=1.5x
+  const rMult=rating?[0,.5,.75,1,1.25,1.5][rating]:1;
+  const xp=Math.round(mins*(eff/100)*0.5*rMult);
+  S.sessions.push({id:Date.now(),date:today(),min:mins,sub,mode,eff,xp,rating:rating||0,
+    time:new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})});
+  S.hunter.xp+=xp;S.hunter.mana=Math.max(0,S.hunter.mana-Math.min(15,Math.round(mins/7)));
+  save();updateHeader();
+  if(typeof renderSessLog==='function')renderSessLog();
+  if(focusTab==='log')renderSessionLog();
+  if(focusTab==='stats')renderFocusStats();
+  const t=today(),comp=S.questComp[t]||{};
+  const tM=S.sessions.filter(s=>s.date===t).reduce((a,s)=>a+s.min,0);
+  const goalMins=(S.goals&&S.goals.questStudyHours?S.goals.questStudyHours:2)*60;
+  if(tM>=goalMins&&!comp.q1){comp.q1=true;S.hunter.xp+=50;S.questComp[t]=comp;save();showToast('Quest done: study goal hit! +50 XP 🔥');updateHeader();}
+  if(mode==='pomodoro'&&mins>=25&&!comp.q2){comp.q2=true;S.hunter.xp+=25;S.questComp[t]=comp;save();updateHeader();}
+  const rLabel=['','Distracted','Low focus','Decent','Focused','Locked in 🔥'][rating||0];
+  showToast(`Logged ${mins}m · +${xp} XP${rating?' · '+rLabel:''}`);
+}
+function restoreMana(){S.hunter.mana=Math.min(100,S.hunter.mana+30);save();updateHeader();showToast('Mana +30 🌙 — take a real break!');}
   const ring=document.getElementById('t-ring');if(!ring)return;
   const pct=tMode==='stopwatch'?1:tTotal>0?tSecs/tTotal:0;
   ring.style.strokeDashoffset=CIRC*(1-pct);
@@ -1332,36 +1427,6 @@ function updateTimerUI(){
   document.getElementById('t-meta').textContent=tMode==='pomodoro'?'Session '+(Math.floor(pomoCount)+1)+' / 4':{physics:'Physics',chemistry:'Chemistry',maths:'Maths',other:'Other'}[studySub];
   const ms=document.getElementById('mana-study');if(ms)ms.textContent=S.hunter.mana;
 }
-function resetTimer(){
-  clearInterval(tInterval);tRunning=false;elapsed=0;pauseCount=0;el('t-toggle','Start');
-  if(tMode==='pomodoro'){tSecs=25*60;tTotal=25*60;pomoPhase='focus';}
-  else if(tMode==='stopwatch'){tSecs=0;tTotal=0;}
-  else applyCd();
-  updateTimerUI();
-}
-function manualLog(){
-  const mins=Math.round(elapsed/60);
-  if(mins<1){showToast('Start timer first — min 1 minute');return;}
-  autoLog(mins,studySub,tMode);showToast('Logged '+mins+'m! +'+Math.round(mins*.5)+' XP');
-  elapsed=0;pauseCount=0;
-}
-function autoLog(mins,sub,mode){
-  if(mins<1)return;
-  const eff=Math.max(10,Math.round(100-pauseCount*8));
-  const xp=Math.round(mins*(eff/100)*0.5);
-  S.sessions.push({id:Date.now(),date:today(),min:mins,sub,mode,eff,xp,time:new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})});
-  S.hunter.xp+=xp;S.hunter.mana=Math.max(0,S.hunter.mana-Math.min(15,Math.round(mins/7)));
-  save();updateHeader();renderSessLog();
-  // refresh whichever focus sub-tab is open
-  if(focusTab==='log')renderSessionLog();
-  if(focusTab==='stats')renderFocusStats();
-  const t=today(),comp=S.questComp[t]||{};
-  const tM=S.sessions.filter(s=>s.date===t).reduce((a,s)=>a+s.min,0);
-  const goalMins=(S.goals&&S.goals.questStudyHours?S.goals.questStudyHours:2)*60;
-  if(tM>=goalMins&&!comp.q1){comp.q1=true;S.hunter.xp+=50;S.questComp[t]=comp;save();showToast('Quest done: study goal hit! +50 XP 🔥');updateHeader();}
-  if(mode==='pomodoro'&&mins>=25&&!comp.q2){comp.q2=true;S.hunter.xp+=25;S.questComp[t]=comp;save();updateHeader();}
-}
-function restoreMana(){S.hunter.mana=Math.min(100,S.hunter.mana+30);save();updateHeader();showToast('Mana +30 🌙 — take a real break!');}
 // FOCUS STATS SYSTEM
 let focusTab='timer', logPeriod='today', statsPeriod='today';
 
@@ -2351,6 +2416,72 @@ function restoreLastMusic(){
     document.getElementById('yt-url-input').value=lm.videoId;
     // Don't autoplay on load — just restore the URL so user can tap play
   }
+}
+
+// MUSIC — pause without clearing URL, stop silently without saving null
+function pauseMusic(){
+  // Pause by reloading src without autoplay
+  const iframe=document.getElementById('yt-iframe');
+  if(!iframe||!iframe.src)return;
+  // Remove autoplay param to pause
+  iframe.src=iframe.src.replace('autoplay=1','autoplay=0');
+}
+function stopMusicSilent(){
+  // Stop music but don't clear the saved URL — user can restart it
+  const iframe=document.getElementById('yt-iframe');
+  if(iframe)iframe.src='';
+  document.getElementById('yt-player-wrap').style.display='none';
+  document.getElementById('yt-nowplaying').style.display='none';
+  document.querySelectorAll('.music-preset').forEach(b=>b.classList.remove('active'));
+  // Note: don't clear S.lastMusic so user can replay
+}
+
+// SESSION RATING MODAL
+let pendingLog={mins:0,sub:'',mode:''};
+let selectedRating=0;
+const ratingNotes=['','😴 Distracted — lots of daydreaming','😐 Low focus — some distractions','🙂 Decent — mostly on task','😤 Focused — rarely distracted','🔥 Locked in — pure flow state'];
+const ratingColors=['','#ff3b5c','#ff8855','#f4c430','#00d68f','#7c5ef5'];
+const subLabels={physics:'Physics',chemistry:'Chemistry',maths:'Maths',other:'Other'};
+
+function showRatingModal(mins,sub){
+  pendingLog={mins,sub,mode:tMode};
+  selectedRating=0;
+  const modal=document.getElementById('rating-modal');
+  modal.style.display='flex';
+  document.getElementById('rm-title').textContent=mins+'m · '+(subLabels[sub]||sub);
+  document.getElementById('rm-rating-note').textContent='Tap to rate your focus';
+  document.getElementById('rm-confirm').style.opacity='.4';
+  document.getElementById('rm-confirm').style.pointerEvents='none';
+  document.querySelectorAll('.rm-rate').forEach(b=>{
+    b.style.background='transparent';
+    b.style.borderColor='var(--border2)';
+  });
+}
+
+function selectRating(r){
+  selectedRating=r;
+  document.querySelectorAll('.rm-rate').forEach(b=>{
+    const br=parseInt(b.getAttribute('data-r'));
+    b.style.background=br===r?ratingColors[r]+'22':'transparent';
+    b.style.borderColor=br===r?ratingColors[r]:'var(--border2)';
+    b.style.transform=br===r?'scale(1.1)':'scale(1)';
+  });
+  document.getElementById('rm-rating-note').textContent=ratingNotes[r];
+  document.getElementById('rm-rating-note').style.color=ratingColors[r];
+  document.getElementById('rm-confirm').style.opacity='1';
+  document.getElementById('rm-confirm').style.pointerEvents='auto';
+}
+
+function confirmRating(){
+  document.getElementById('rating-modal').style.display='none';
+  autoLog(pendingLog.mins,pendingLog.sub,pendingLog.mode,selectedRating);
+  pauseCount=0;
+}
+
+function dismissRating(){
+  document.getElementById('rating-modal').style.display='none';
+  autoLog(pendingLog.mins,pendingLog.sub,pendingLog.mode,0);
+  pauseCount=0;
 }
 
 // INIT
