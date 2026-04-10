@@ -260,6 +260,42 @@ section.active{display:block}
 .rank-S{background:rgba(255,120,50,.1);border-color:#f85;color:#f85}
 .rank-SS{background:rgba(255,50,50,.12);border-color:var(--red);color:var(--red)}
 .rank-SSS{background:rgba(200,50,255,.15);border-color:#c35ff5;color:#c35ff5}
+/* ── STATUS WINDOW ── */
+.status-window{
+  background:var(--card);
+  border:1px solid rgba(91,110,245,0.35);
+  border-radius:var(--radius);
+  padding:18px 16px 14px;
+  margin-bottom:14px;
+  position:relative;
+  overflow:hidden;
+}
+.status-window::before{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(135deg,rgba(91,110,245,.06) 0%,transparent 60%);
+  pointer-events:none;
+}
+.sw-header{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:14px}
+.sw-title{font-family:var(--mono);font-size:11px;color:var(--accent);letter-spacing:3px;text-transform:uppercase;white-space:nowrap}
+.sw-lines{display:flex;flex-direction:column;gap:3px;flex:1}
+.sw-line{height:1px;background:linear-gradient(90deg,transparent,rgba(91,110,245,.4),transparent)}
+.sw-identity{display:flex;align-items:center;gap:12px;margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid var(--border)}
+.sw-rank-badge{width:44px;height:44px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;font-family:var(--mono);border:2px solid;flex-shrink:0}
+.sw-name{font-size:17px;font-weight:700;letter-spacing:.3px}
+.sw-class{font-size:10px;color:var(--accent);letter-spacing:1.5px;text-transform:uppercase;margin-top:2px}
+.sw-xp-block{margin-left:auto;text-align:right}
+.sw-xp-val{font-family:var(--mono);font-size:20px;color:var(--gold)}
+.sw-xp-lbl{font-size:9px;color:var(--text2);text-transform:uppercase;letter-spacing:.8px}
+.sw-stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.sw-stat{display:flex;flex-direction:column;gap:5px}
+.sw-stat-hdr{display:flex;justify-content:space-between;align-items:center}
+.sw-stat-name{font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase}
+.sw-stat-val{font-family:var(--mono);font-size:13px}
+.sw-stat-bar{height:5px;background:rgba(255,255,255,.06);border-radius:3px;overflow:hidden}
+.sw-stat-fill{height:100%;border-radius:3px;transition:width .8s cubic-bezier(.4,0,.2,1)}
+.sw-footer{display:flex;justify-content:space-between;padding-top:12px;border-top:1px solid var(--border);font-size:11px;color:var(--text2);font-family:var(--mono)}
+.sw-streak{color:var(--gold)}
+.sw-jee{color:var(--text2)}
 </style>
 </head>
 <body>
@@ -330,6 +366,36 @@ section.active{display:block}
     </div>
     <button class="ins-close" onclick="this.parentElement.style.display='none'">✕</button>
   </div>
+
+  <!-- STATUS WINDOW -->
+  <div class="status-window" id="status-window">
+    <div class="sw-header">
+      <div class="sw-lines">
+        <div class="sw-line"></div><div class="sw-line"></div><div class="sw-line"></div>
+      </div>
+      <div class="sw-title">STATUS WINDOW</div>
+      <div class="sw-lines">
+        <div class="sw-line"></div><div class="sw-line"></div><div class="sw-line"></div>
+      </div>
+    </div>
+    <div class="sw-identity">
+      <div class="sw-rank-badge rank-E" id="sw-rank">E</div>
+      <div>
+        <div class="sw-name" id="sw-name">Hunter Gautam</div>
+        <div class="sw-class" id="sw-class">Shadow Warrior</div>
+      </div>
+      <div class="sw-xp-block">
+        <div class="sw-xp-val" id="sw-xp">0</div>
+        <div class="sw-xp-lbl">Total XP</div>
+      </div>
+    </div>
+    <div class="sw-stats" id="sw-stats"></div>
+    <div class="sw-footer">
+      <div class="sw-streak"><span id="sw-streak">0</span> day streak</div>
+      <div class="sw-jee" id="sw-jee-days">— days to exam</div>
+    </div>
+  </div>
+
   <div class="mob-dash-top">
     <div class="mob-day"><div class="mob-day-n" id="mob-day-n">1</div><div class="mob-day-l">Day</div></div>
     <div class="mob-jee-days"><div class="mob-jee-n" id="mob-jee-n">—</div><div class="mob-jee-l exam-label-display">Days to JEE Adv.</div></div>
@@ -1047,6 +1113,7 @@ function renderDash(){
   const tXP=tSess.reduce((a,s)=>a+(s.xp||0),0);
   el('ds-hrs',Math.floor(tMins/60)+'h'+(tMins%60)+'m');
   el('ds-xp','+'+tXP);el('ds-sess',tSess.length);
+  renderStatusWindow();
   renderQuests();renderGates();renderPenalty();
 }
 
@@ -2046,7 +2113,96 @@ function setupPWA(){
   if(!window.matchMedia('(display-mode: standalone)').matches)document.getElementById('ins-banner').style.display='flex';
 }
 
-// MUSIC PLAYER
+// STATUS WINDOW STATS
+function calcStats(){
+  const sessions=S.sessions||[];
+  const workoutLogs=S.workout?.logs||[];
+  const tests=S.tests||[];
+  const questComp=S.questComp||{};
+  const last30=[];for(let i=29;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);last30.push(d.toISOString().split('T')[0]);}
+  const last7=last30.slice(-7);
+
+  // INTELLIGENCE — based on total study hours + avg test score
+  const totalHrs=sessions.reduce((a,s)=>a+s.min,0)/60;
+  const avgTest=tests.length?tests.reduce((a,t)=>a+(t.total/(t.max||300)*100),0)/tests.length:0;
+  const intelligence=Math.min(99,Math.round(Math.min(totalHrs/200,1)*60 + (avgTest/100)*40));
+
+  // FOCUS — based on avg session efficiency + pomodoro completions
+  const effSessions=sessions.filter(s=>s.eff!==undefined);
+  const avgEff=effSessions.length?effSessions.reduce((a,s)=>a+s.eff,0)/effSessions.length:50;
+  const pomoCount=sessions.filter(s=>s.mode==='pomodoro').length;
+  const focus=Math.min(99,Math.round((avgEff*0.6)+(Math.min(pomoCount/50,1)*40)));
+
+  // STRENGTH — based on workout consistency last 30 days
+  const workoutDays=new Set(workoutLogs.map(l=>l.date)).size;
+  const strength=Math.min(99,Math.round((workoutDays/30)*100));
+
+  // ENDURANCE — based on streak + total days studied
+  const studyDays=new Set(sessions.map(s=>s.date)).size;
+  const streak=S.hunter?.streak||0;
+  const endurance=Math.min(99,Math.round((Math.min(streak/30,1)*50)+(Math.min(studyDays/100,1)*50)));
+
+  // DISCIPLINE — based on quest completion rate last 14 days
+  const last14=last30.slice(-14);
+  let qTotal=0,qDone=0;
+  last14.forEach(d=>{const c=questComp[d]||{};qTotal+=5;qDone+=Object.values(c).filter(Boolean).length;});
+  const discipline=Math.min(99,qTotal>0?Math.round((qDone/qTotal)*100):0);
+
+  // PERCEPTION — based on topic confidence average
+  const allTopics=Object.values(S.topics||{}).flat();
+  const avgConf=allTopics.length?allTopics.reduce((a,t)=>a+(t.conf||0),0)/allTopics.length:0;
+  const perception=Math.min(99,Math.round(avgConf));
+
+  return {intelligence,focus,strength,endurance,discipline,perception};
+}
+
+function renderStatusWindow(){
+  if(!S)return;
+  const stats=calcStats();
+  const rk=getRank(S.hunter.xp);
+  const name=S.hunter?.name||S.settings?.hunterName||'Gautam';
+  const cls=getClass(rk.r);
+
+  // Update identity
+  const sb=document.getElementById('sw-rank');
+  if(sb){sb.textContent=rk.r;sb.className='sw-rank-badge rank-'+rk.r;}
+  const sn=document.getElementById('sw-name');if(sn)sn.textContent='Hunter '+name;
+  const sc=document.getElementById('sw-class');if(sc)sc.textContent=cls;
+  const sx=document.getElementById('sw-xp');if(sx)sx.textContent=S.hunter.xp;
+  const ss=document.getElementById('sw-streak');if(ss)ss.textContent=S.hunter.streak||0;
+
+  // JEE days
+  const jeeDate=new Date(S.examDate||S.settings?.jeeDate||'2027-05-18');
+  const dLeft=Math.max(0,Math.ceil((jeeDate-new Date())/86400000));
+  const jd=document.getElementById('sw-jee-days');
+  if(jd)jd.textContent=dLeft+' days to exam';
+
+  // Stat definitions
+  const statDefs=[
+    {key:'intelligence', label:'Intelligence', color:'#5b6ef5', icon:'📘'},
+    {key:'focus',        label:'Focus',        color:'#00b4d8', icon:'🎯'},
+    {key:'strength',     label:'Strength',     color:'#ff3b5c', icon:'💪'},
+    {key:'endurance',    label:'Endurance',    color:'#00d68f', icon:'🏃'},
+    {key:'discipline',   label:'Discipline',   color:'#f4c430', icon:'⚔️'},
+    {key:'perception',   label:'Perception',   color:'#7c5ef5', icon:'🧠'},
+  ];
+
+  const container=document.getElementById('sw-stats');
+  if(!container)return;
+  container.innerHTML=statDefs.map(d=>{
+    const v=stats[d.key]||0;
+    const bars=Math.round(v/10); // 0-10 filled blocks
+    return `<div class="sw-stat">
+      <div class="sw-stat-hdr">
+        <span class="sw-stat-name" style="color:${d.color}">${d.icon} ${d.label}</span>
+        <span class="sw-stat-val" style="color:${d.color}">${v}</span>
+      </div>
+      <div class="sw-stat-bar">
+        <div class="sw-stat-fill" style="width:${v}%;background:${d.color}"></div>
+      </div>
+    </div>`;
+  }).join('');
+}
 const YT_PRESETS={
   lofi:     {id:'jfKfPfyJRdk', title:'Lofi Hip Hop Radio'},
   rain:     {id:'mPZkdNFkNps', title:'Rain & Thunder Sounds'},
