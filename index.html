@@ -1038,16 +1038,27 @@ const firebaseConfig={
 firebase.initializeApp(firebaseConfig);
 auth=firebase.auth();
 db=firebase.firestore();
-auth.getRedirectResult().catch(e=>console.warn('redirect:',e.message));
+// Handle redirect fallback result
+auth.getRedirectResult().then(r=>{if(r&&r.user)console.log('redirect sign-in ok');}).catch(()=>{});
 
 function signInGoogle(){
   const provider=new firebase.auth.GoogleAuthProvider();
+  provider.setCustomParameters({prompt:'select_account'}); // always show account picker
   const btn=document.querySelector('#login-screen button');
-  if(btn){btn.textContent='Opening Google...';btn.disabled=true;}
-  auth.signInWithRedirect(provider).catch(e=>{
-    showToast('Sign in failed: '+e.message);
-    if(btn){btn.disabled=false;btn.textContent='Continue with Google';}
-  });
+  const reset=()=>{if(btn){btn.disabled=false;const sp=btn.querySelector('span');if(sp)sp.textContent='Continue with Google';else btn.childNodes[btn.childNodes.length-1].textContent=' Continue with Google';}};
+  if(btn){btn.disabled=true;const sp=btn.querySelector('span');if(sp)sp.textContent='Opening…';}
+  auth.signInWithPopup(provider)
+    .then(()=>{/* onAuthStateChanged handles everything */})
+    .catch(e=>{
+      if(e.code==='auth/popup-closed-by-user'||e.code==='auth/cancelled-popup-request'){reset();return;}
+      if(e.code==='auth/popup-blocked'){
+        // fallback to redirect
+        showToast('Popup blocked — redirecting…');
+        auth.signInWithRedirect(provider);
+        return;
+      }
+      reset();showToast('Sign in error: '+e.message);
+    });
 }
 function signOutUser(){if(confirm('Sign out?')){S=null;auth.signOut();}}
 
