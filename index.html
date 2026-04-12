@@ -247,26 +247,6 @@ section.active{display:block}
 
 /* ── MISC ── */
 .empty{text-align:center;padding:24px;color:var(--text3);font-size:13px}
-/* ── SESSION RATING MODAL ── */
-.modal-overlay{position:fixed;inset:0;z-index:9000;background:rgba(0,0,0,.75);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;transition:opacity .25s;pointer-events:none}
-.modal-overlay.show{opacity:1;pointer-events:all}
-.modal-box{background:var(--card2);border:1px solid var(--border2);border-radius:var(--radius);padding:24px;max-width:360px;width:100%;transform:translateY(24px);transition:transform .3s cubic-bezier(.34,1.2,.64,1)}
-.modal-overlay.show .modal-box{transform:translateY(0)}
-.star-row{display:flex;justify-content:center;gap:8px;margin:16px 0 8px}
-.star-btn{font-size:34px;background:none;border:none;cursor:pointer;opacity:.25;transition:all .15s;padding:2px}
-.star-btn.lit{opacity:1;filter:drop-shadow(0 0 6px #f4c430)}
-.mood-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:12px 0 4px}
-.mood-btn{padding:9px 4px;border-radius:var(--radius-sm);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;cursor:pointer;border:1px solid var(--border2);background:transparent;color:var(--text2);transition:all .18s;text-align:center;line-height:1.3}
-.mood-btn:hover{border-color:var(--text2);color:var(--text)}
-.mood-btn.sel{border-color:var(--accent);background:rgba(91,110,245,.14);color:var(--accent)}
-/* ── TIMER DONE BANNER ── */
-.timer-done-banner{position:fixed;top:0;left:0;right:0;z-index:8500;padding:14px 18px;transform:translateY(-110%);transition:transform .4s cubic-bezier(.34,1.4,.64,1);display:flex;align-items:center;gap:12px;background:linear-gradient(135deg,#0d0826,#0d1a10);border-bottom:2px solid var(--green)}
-.timer-done-banner.show{transform:translateY(0)}
-.done-pulse{width:10px;height:10px;border-radius:50%;background:var(--green);flex-shrink:0;animation:dpulse 1s ease-in-out infinite}
-@keyframes dpulse{0%,100%{box-shadow:0 0 0 0 rgba(0,214,143,.7)}60%{box-shadow:0 0 0 9px rgba(0,214,143,0)}}
-/* ── SOUND PANEL ── */
-.sound-chip{display:inline-flex;align-items:center;gap:5px;padding:6px 12px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid var(--border2);background:transparent;color:var(--text2);transition:all .18s;font-family:var(--font)}
-.sound-chip.on{border-color:var(--accent);background:rgba(91,110,245,.1);color:var(--accent)}
 .report-line{font-size:13px;color:var(--text2);margin-bottom:9px;padding-left:12px;border-left:2px solid var(--accent);line-height:1.5}
 .toast{position:fixed;top:20px;left:50%;transform:translateX(-50%);background:var(--card2);border:1px solid var(--border2);border-radius:10px;padding:10px 18px;font-size:13px;color:var(--text);z-index:9999;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap;max-width:92vw}
 .toast.show{opacity:1}
@@ -316,6 +296,28 @@ section.active{display:block}
 .sw-footer{display:flex;justify-content:space-between;padding-top:12px;border-top:1px solid var(--border);font-size:11px;color:var(--text2);font-family:var(--mono)}
 .sw-streak{color:var(--gold)}
 .sw-jee{color:var(--text2)}
+
+/* ── SESSION RATING MODAL ── */
+.modal-overlay{position:fixed;inset:0;z-index:9500;background:rgba(0,0,0,.82);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;transition:opacity .22s;pointer-events:none}
+.modal-overlay.show{opacity:1;pointer-events:all}
+.modal-box{background:var(--card2);border:1px solid var(--border2);border-radius:var(--radius);padding:24px;max-width:360px;width:100%;transform:translateY(28px);transition:transform .28s cubic-bezier(.34,1.2,.64,1)}
+.modal-overlay.show .modal-box{transform:translateY(0)}
+.star-row{display:flex;justify-content:center;gap:8px;margin:14px 0 4px}
+.star-btn{font-size:36px;background:none;border:none;cursor:pointer;opacity:.22;transition:all .15s;padding:2px;line-height:1}
+.star-btn.lit{opacity:1;filter:drop-shadow(0 0 8px #f4c430)}
+.mood-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:12px 0}
+.mood-btn{padding:10px 4px;border-radius:var(--radius-sm);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;cursor:pointer;border:1px solid var(--border2);background:transparent;color:var(--text2);transition:all .15s;text-align:center;line-height:1.4}
+.mood-btn.sel{border-color:var(--accent);background:rgba(91,110,245,.15);color:var(--accent)}
+/* ── TIMER DONE BANNER ── */
+.done-banner{position:fixed;top:0;left:0;right:0;z-index:9000;padding:12px 16px;transform:translateY(-110%);transition:transform .4s cubic-bezier(.34,1.4,.64,1);display:flex;align-items:center;gap:12px}
+.done-banner.show{transform:translateY(0)}
+.done-banner-focus{background:linear-gradient(135deg,#071a0e,#0d0d1a);border-bottom:2px solid var(--green)}
+.done-banner-break{background:linear-gradient(135deg,#0d1428,#0d0d1a);border-bottom:2px solid var(--mana)}
+.done-pulse{width:10px;height:10px;border-radius:50%;flex-shrink:0;animation:dpulse 1s infinite}
+.done-pulse-focus{background:var(--green)}
+.done-pulse-break{background:var(--mana)}
+@keyframes dpulse{0%,100%{box-shadow:0 0 0 0 rgba(0,214,143,.7)}60%{box-shadow:0 0 0 9px rgba(0,214,143,0)}}
+
 </style>
 </head>
 <body>
@@ -529,18 +531,18 @@ section.active{display:block}
       </div>
     </div>
   </div>
+  </div>
 
-  <!-- NOTIFICATION SETUP CARD -->
-  <div class="card" style="margin-bottom:4px" id="notif-setup-card">
+  <!-- NOTIFICATION + ALERTS CARD -->
+  <div class="card" id="notif-setup-card" style="margin-bottom:14px">
     <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
       <div style="flex:1">
         <div style="font-size:13px;font-weight:700">🔔 Timer Alerts</div>
-        <div style="font-size:11px;color:var(--text2);margin-top:2px" id="notif-status-text">Get notified when timer ends — even if phone is locked</div>
+        <div style="font-size:11px;color:var(--text2);margin-top:2px">Get notified on lock screen when timer ends</div>
       </div>
-      <button class="btn btn-ghost btn-sm" onclick="requestNotifPermission()" id="notif-perm-btn" style="flex-shrink:0">Enable</button>
+      <button class="btn btn-primary btn-sm" onclick="requestNotifPermission()" style="flex-shrink:0">Enable</button>
     </div>
-    <div style="font-size:10px;color:var(--text3);margin-top:8px">📳 Android: vibration + lock screen notification &nbsp;·&nbsp; 💻 Laptop: OS notification + sound</div>
-  </div>
+    <div style="font-size:10px;color:var(--text3);margin-top:8px">📳 Android: vibration + lock screen · 💻 Laptop: OS notification + chime</div>
   </div>
   <div id="fp-log" style="display:none">
     <div style="display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap">
@@ -896,61 +898,73 @@ section.active{display:block}
   <div style="font-family:var(--mono);font-size:52px;color:var(--accent);margin-bottom:12px">⚔</div>
   <div style="font-size:28px;font-weight:700;margin-bottom:6px">Shadow System</div>
   <div style="font-size:12px;color:var(--text2);letter-spacing:2.5px;text-transform:uppercase;margin-bottom:36px">JEE Hunter Dashboard</div>
-  <button id="google-signin-btn" onclick="signInGoogle()" style="display:flex;align-items:center;gap:12px;background:var(--card2);border:1px solid var(--border2);border-radius:12px;padding:16px 28px;cursor:pointer;color:var(--text);font-family:var(--font);font-size:15px;font-weight:600;transition:opacity .2s">
-    <svg id="signin-icon" width="22" height="22" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
-    <span id="signin-btn-text">Continue with Google</span>
+  <button onclick="signInGoogle()" style="display:flex;align-items:center;gap:12px;background:var(--card2);border:1px solid var(--border2);border-radius:12px;padding:16px 28px;cursor:pointer;color:var(--text);font-family:var(--font);font-size:15px;font-weight:600">
+    <svg width="22" height="22" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+    Continue with Google
   </button>
-  <div id="signin-status" style="font-size:12px;color:var(--text2);margin-top:14px;min-height:18px"></div>
-  <div style="font-size:12px;color:var(--text3);margin-top:10px;line-height:1.9">Your data syncs across all devices.<br>Use a different Google account to switch profiles.</div>
-  <div style="margin-top:20px;font-size:11px;color:var(--text3)">
-    <button onclick="useWithoutAccount()" style="background:none;border:none;color:var(--text3);text-decoration:underline;cursor:pointer;font-size:11px;font-family:var(--font)">Continue without account (local only)</button>
-  </div>
+  <div style="font-size:12px;color:var(--text3);margin-top:24px;line-height:1.9">Your data syncs across all devices.<br>Use a different Google account for testing vs real use.</div>
 </div>
 
-<!-- SESSION DONE BANNER -->
-<div class="timer-done-banner" id="timer-done-banner">
-  <div class="done-pulse"></div>
-  <div style="flex:1">
-    <div style="font-size:14px;font-weight:700;color:var(--green)" id="done-banner-title">Session Complete!</div>
-    <div style="font-size:11px;color:var(--text2)" id="done-banner-sub">Rate how it went ↓</div>
+<!-- TIMER DONE BANNER -->
+<div class="done-banner" id="done-banner">
+  <div class="done-pulse" id="done-pulse"></div>
+  <div style="flex:1;min-width:0">
+    <div style="font-size:14px;font-weight:700" id="done-banner-title">Session Complete!</div>
+    <div style="font-size:11px;color:var(--text2);margin-top:1px" id="done-banner-sub">25 min • Physics</div>
   </div>
-  <button onclick="closeDoneBanner()" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:18px;padding:4px">✕</button>
+  <button onclick="closeRatingModal(true)" style="background:rgba(255,255,255,.07);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:11px;padding:5px 10px;cursor:pointer;font-family:var(--font);font-weight:700;white-space:nowrap">Review ⭐</button>
+  <button onclick="hideDoneBanner()" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:18px;padding:4px;flex-shrink:0">✕</button>
 </div>
 
 <!-- SESSION RATING MODAL -->
 <div class="modal-overlay" id="rating-modal">
   <div class="modal-box">
-    <div style="font-size:18px;font-weight:700;margin-bottom:4px">⚔ Session Review</div>
-    <div style="font-size:12px;color:var(--text2);margin-bottom:4px" id="rating-session-info">25 min · Physics · Pomodoro</div>
-    <div style="height:1px;background:var(--border);margin:12px 0"></div>
+    <div style="font-size:18px;font-weight:700;margin-bottom:3px">⚔ Session Review</div>
+    <div style="font-size:12px;color:var(--text2);margin-bottom:12px" id="rating-sess-info">25 min · Physics · Pomodoro</div>
+    <div style="height:1px;background:var(--border);margin-bottom:14px"></div>
 
-    <div style="font-size:12px;color:var(--text2);text-transform:uppercase;letter-spacing:.8px;margin-bottom:2px">How focused were you?</div>
+    <div style="font-size:11px;text-transform:uppercase;letter-spacing:.8px;color:var(--text3);margin-bottom:2px">How focused were you?</div>
     <div class="star-row" id="star-row">
-      <button class="star-btn" data-v="1" onclick="rateStar(1)">⭐</button>
-      <button class="star-btn" data-v="2" onclick="rateStar(2)">⭐</button>
-      <button class="star-btn" data-v="3" onclick="rateStar(3)">⭐</button>
-      <button class="star-btn" data-v="4" onclick="rateStar(4)">⭐</button>
-      <button class="star-btn" data-v="5" onclick="rateStar(5)">⭐</button>
+      <button class="star-btn" onclick="rateStar(1)">⭐</button>
+      <button class="star-btn" onclick="rateStar(2)">⭐</button>
+      <button class="star-btn" onclick="rateStar(3)">⭐</button>
+      <button class="star-btn" onclick="rateStar(4)">⭐</button>
+      <button class="star-btn" onclick="rateStar(5)">⭐</button>
     </div>
-    <div style="text-align:center;font-size:11px;color:var(--text3);margin-bottom:12px" id="star-label">Tap a star</div>
+    <div style="text-align:center;font-size:11px;color:var(--text3);min-height:16px;margin-bottom:10px" id="star-label">Tap a star</div>
 
-    <div style="font-size:12px;color:var(--text2);text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px">What was the vibe?</div>
+    <div style="font-size:11px;text-transform:uppercase;letter-spacing:.8px;color:var(--text3);margin-bottom:8px">What was the vibe?</div>
     <div class="mood-grid">
-      <button class="mood-btn" onclick="rateMood('locked-in')" data-m="locked-in">🔥 Locked In</button>
-      <button class="mood-btn" onclick="rateMood('decent')" data-m="decent">👍 Decent</button>
-      <button class="mood-btn" onclick="rateMood('distracted')" data-m="distracted">😵 Distracted</button>
-      <button class="mood-btn" onclick="rateMood('zoned-out')" data-m="zoned-out">💭 Zoned Out</button>
-      <button class="mood-btn" onclick="rateMood('tired')" data-m="tired">😴 Tired</button>
-      <button class="mood-btn" onclick="rateMood('anxious')" data-m="anxious">😬 Anxious</button>
+      <button class="mood-btn" onclick="rateMood('locked-in',this)">🔥<br>Locked In</button>
+      <button class="mood-btn" onclick="rateMood('decent',this)">👍<br>Decent</button>
+      <button class="mood-btn" onclick="rateMood('distracted',this)">😵<br>Distracted</button>
+      <button class="mood-btn" onclick="rateMood('zoned-out',this)">💭<br>Zoned Out</button>
+      <button class="mood-btn" onclick="rateMood('tired',this)">😴<br>Tired</button>
+      <button class="mood-btn" onclick="rateMood('anxious',this)">😬<br>Anxious</button>
     </div>
 
-    <div style="margin-top:14px">
-      <input type="text" class="fi" id="rating-note" placeholder="Quick note (optional)… e.g. kept getting distracted by phone" style="font-size:13px;padding:9px 12px">
+    <input type="text" id="rating-note" placeholder="Quick note… e.g. kept checking phone"
+      style="width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--radius-sm);color:var(--text);font-family:var(--font);font-size:13px;padding:9px 12px;outline:none;margin-bottom:14px">
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-ghost btn-sm" onclick="submitRating(false)" style="flex:1">Skip</button>
+      <button class="btn btn-primary" onclick="submitRating(true)" style="flex:2">Save Review ⚡</button>
     </div>
+  </div>
+</div>
 
-    <div style="display:flex;gap:8px;margin-top:14px">
-      <button class="btn btn-ghost btn-sm" onclick="skipRating()" style="flex:1">Skip</button>
-      <button class="btn btn-primary" onclick="submitRating()" style="flex:2">Save Review ⚡</button>
+<!-- NOTIFICATION PERMISSION MODAL -->
+<div class="modal-overlay" id="notif-modal">
+  <div class="modal-box" style="max-width:320px;text-align:center">
+    <div style="font-size:36px;margin-bottom:10px">🔔</div>
+    <div style="font-size:17px;font-weight:700;margin-bottom:6px">Allow Notifications</div>
+    <div style="font-size:12px;color:var(--text2);line-height:1.7;margin-bottom:18px">
+      Shadow System wants to send you alerts when your study timer ends.<br><br>
+      <b style="color:var(--text)">On Android:</b> Lock screen + vibration<br>
+      <b style="color:var(--text)">On laptop:</b> OS notification popup
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-ghost btn-sm" onclick="document.getElementById('notif-modal').classList.remove('show')" style="flex:1">Later</button>
+      <button class="btn btn-primary" onclick="doRequestNotif()" style="flex:2">Allow 🔔</button>
     </div>
   </div>
 </div>
@@ -1024,68 +1038,17 @@ const firebaseConfig={
 firebase.initializeApp(firebaseConfig);
 auth=firebase.auth();
 db=firebase.firestore();
-// Handle redirect result first (for mobile browsers that don't support popups)
-auth.getRedirectResult().then(result=>{
-  if(result&&result.user){
-    console.log('Signed in via redirect');
-    setSigninStatus('Signing in…');
-  }
-}).catch(e=>{
-  if(e.code!=='auth/no-auth-event'&&e.code!=='auth/null-user')console.warn('redirect result:',e.message);
-  // Reset button if redirect failed
-  setSigninLoading(false);
-});
-
-function setSigninLoading(loading){
-  const btn=document.getElementById('google-signin-btn');
-  const txt=document.getElementById('signin-btn-text');
-  if(btn)btn.disabled=loading;
-  if(btn)btn.style.opacity=loading?'0.6':'1';
-  if(txt)txt.textContent=loading?'Signing in…':'Continue with Google';
-}
-function setSigninStatus(msg){
-  const s=document.getElementById('signin-status');
-  if(s)s.textContent=msg;
-}
+auth.getRedirectResult().catch(e=>console.warn('redirect:',e.message));
 
 function signInGoogle(){
   const provider=new firebase.auth.GoogleAuthProvider();
-  provider.addScope('email');
-  provider.addScope('profile');
-  setSigninLoading(true);
-  setSigninStatus('Opening Google sign in…');
-
-  auth.signInWithPopup(provider)
-    .then(()=>{
-      setSigninStatus('Success! Loading your data…');
-    })
-    .catch(e=>{
-      if(e.code==='auth/popup-closed-by-user'||e.code==='auth/cancelled-popup-request'){
-        setSigninLoading(false);
-        setSigninStatus('Sign in cancelled. Try again.');
-        return;
-      }
-      if(e.code==='auth/popup-blocked'){
-        // Popup blocked — fall back to redirect
-        setSigninStatus('Popup blocked. Redirecting…');
-        auth.signInWithRedirect(provider).catch(e2=>{
-          setSigninLoading(false);
-          setSigninStatus('Sign in failed: '+e2.message);
-        });
-        return;
-      }
-      // Any other error
-      setSigninLoading(false);
-      setSigninStatus('Error: '+e.message);
-    });
+  const btn=document.querySelector('#login-screen button');
+  if(btn){btn.textContent='Opening Google...';btn.disabled=true;}
+  auth.signInWithRedirect(provider).catch(e=>{
+    showToast('Sign in failed: '+e.message);
+    if(btn){btn.disabled=false;btn.textContent='Continue with Google';}
+  });
 }
-
-function useWithoutAccount(){
-  document.getElementById('login-screen').style.display='none';
-  loadLocal();
-  initApp();
-}
-
 function signOutUser(){if(confirm('Sign out?')){S=null;auth.signOut();}}
 
 function defState(){return JSON.parse(JSON.stringify(DEF));}
@@ -1144,7 +1107,6 @@ async function loadFromCloud(uid){
 auth.onAuthStateChanged(async user=>{
   if(user){
     currentUser=user;
-    setSigninStatus('Loading your data…');
     document.getElementById('login-screen').style.display='none';
     document.getElementById('rp-user-strip').style.display='block';
     document.getElementById('rp-avatar').src=user.photoURL||'';
@@ -1163,9 +1125,6 @@ auth.onAuthStateChanged(async user=>{
     initApp();
   }else{
     currentUser=null;
-    // Reset the signin button in case it was loading
-    setSigninLoading(false);
-    setSigninStatus('');
     document.getElementById('login-screen').style.display='flex';
     document.getElementById('rp-user-strip').style.display='none';
     const sib=document.getElementById('s-signin-btn');if(sib)sib.style.display='';
@@ -1228,6 +1187,9 @@ function updateHeader(){
   const ms=document.getElementById('mana-study');if(ms)ms.textContent=mana;
   // update exam day label on right panel
   const rdl=document.getElementById('rp-days-label');if(rdl)rdl.textContent='Days to '+(S.examName||'JEE Advanced');
+  // FIX: update status window XP (was missing — causing XP display bug)
+  el('sw-xp',xp);
+  renderStatusWindow();
 }
 
 // NAV
@@ -1237,7 +1199,7 @@ function goTo(name,btn){
   document.querySelectorAll('.nav-btn,.bnav-btn').forEach(b=>b.classList.remove('active'));
   if(btn)btn.classList.add('active');
   if(name==='dashboard')renderDash();
-  if(name==='study')renderSessLog();
+  if(name==='study'){renderSessLog();renderFocusStatsBar();}
   if(name==='tests')renderTests();
   if(name==='workout')renderWorkout();
   if(name==='analytics')setTimeout(renderCharts,60);
@@ -1356,183 +1318,241 @@ function renderPenalty(){
 }
 
 // TIMER
+// ═══════════════════════════════════════════════════════════
+//  SHADOW SYSTEM — TIMER + NOTIFICATIONS + RATING + SOUND
+// ═══════════════════════════════════════════════════════════
 const CIRC=2*Math.PI*106;
 let tMode='pomodoro',tRunning=false,tSecs=25*60,tTotal=25*60,tInterval=null;
 let pomoPhase='focus',pomoCount=0,studySub='physics',elapsed=0,pauseCount=0;
-let ratingStars=0, ratingMood='', pendingLogData=null;
+let pendingRating=null, ratingStars=0, ratingMood='';
+let swReg=null; // Service Worker registration
 
-// ── NOTIFICATION & VIBRATION SYSTEM ──
-let notifPermission='default';
-function requestNotifPermission(){
-  if(!('Notification' in window)){
-    document.getElementById('notif-status-text').textContent='Notifications not supported in this browser';
-    document.getElementById('notif-perm-btn').style.display='none';
-    return;
+// ── SERVICE WORKER (inline blob) — enables REAL lock-screen notifications ──
+const SW_CODE=`
+self.addEventListener('message',e=>{
+  if(e.data&&e.data.type==='NOTIFY'){
+    const opts={
+      body:e.data.body||'',
+      icon:e.data.icon||'',
+      badge:e.data.badge||'',
+      tag:'shadow-timer',
+      requireInteraction:true,
+      vibrate:e.data.vibrate||[300,100,300],
+      actions:[{action:'open',title:'Open App'}],
+      data:{url:self.location.origin}
+    };
+    self.registration.showNotification(e.data.title||'Shadow System',opts);
   }
-  Notification.requestPermission().then(p=>{
-    notifPermission=p;
-    updateNotifUI();
-    if(p==='granted')showToast('Notifications enabled! 🔔');
-    else if(p==='denied')showToast('Notifications blocked. Enable in browser settings.');
-  });
+});
+self.addEventListener('notificationclick',e=>{
+  e.notification.close();
+  e.waitUntil(clients.matchAll({type:'window',includeUncontrolled:true}).then(cs=>{
+    for(const c of cs){if(c.url.includes(self.location.origin)&&'focus' in c)return c.focus();}
+    return clients.openWindow(e.notification.data&&e.notification.data.url||'/');
+  }));
+});
+self.addEventListener('install',()=>self.skipWaiting());
+self.addEventListener('activate',e=>e.waitUntil(clients.claim()));
+`;
+
+async function setupInlineSW(){
+  if(!('serviceWorker' in navigator))return;
+  try{
+    // Unregister old sw.js if any
+    const regs=await navigator.serviceWorker.getRegistrations();
+    for(const r of regs){if(r.active&&r.active.scriptURL.includes('sw.js'))r.unregister();}
+    // Register inline SW via blob URL
+    const blob=new Blob([SW_CODE],{type:'application/javascript'});
+    const url=URL.createObjectURL(blob);
+    swReg=await navigator.serviceWorker.register(url,{scope:'/'});
+    await navigator.serviceWorker.ready;
+    console.log('Shadow SW ready');
+  }catch(e){console.warn('SW setup:',e);}
 }
-function updateNotifUI(){
-  const st=document.getElementById('notif-status-text');
-  const btn=document.getElementById('notif-perm-btn');
-  if(!('Notification' in window)){if(st)st.textContent='Not supported on this browser';if(btn)btn.style.display='none';return;}
-  const p=Notification.permission;
-  notifPermission=p;
+
+// ── NOTIFICATION SYSTEM ──
+async function requestNotifPermission(){
+  document.getElementById('notif-modal').classList.add('show');
+}
+async function doRequestNotif(){
+  document.getElementById('notif-modal').classList.remove('show');
+  if(!('Notification' in window)){showToast('Notifications not supported');return;}
+  const perm=await Notification.requestPermission();
+  if(perm==='granted'){
+    showToast('Notifications enabled! 🔔 You\'ll get alerted even on lock screen');
+    updateNotifCard();
+    // Send a test notification
+    setTimeout(()=>sendNotification('⚔ Shadow System Ready','Timer notifications are working!',false),500);
+  } else if(perm==='denied'){
+    showToast('Blocked — go to browser site settings to allow notifications');
+  }
+}
+function updateNotifCard(){
+  const card=document.getElementById('notif-setup-card');if(!card)return;
+  const p=('Notification' in window)?Notification.permission:'unsupported';
   if(p==='granted'){
-    if(st)st.textContent='✅ Notifications enabled — you\'ll get alerted when timer ends';
-    if(btn)btn.style.display='none';
+    card.innerHTML=`<div style="display:flex;align-items:center;gap:10px">
+      <div style="font-size:20px">🔔</div>
+      <div><div style="font-size:13px;font-weight:700;color:var(--green)">Notifications Active ✓</div>
+      <div style="font-size:11px;color:var(--text2);margin-top:2px">You'll be alerted on lock screen when timer ends</div></div></div>`;
   } else if(p==='denied'){
-    if(st)st.textContent='🚫 Blocked — go to browser settings → Site settings → Allow notifications';
-    if(btn){btn.textContent='How to fix';btn.onclick=()=>showToast('Browser Settings → Privacy → Site Settings → Notifications → Allow this site');}
+    card.innerHTML=`<div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+      <div><div style="font-size:13px;font-weight:700;color:var(--red)">🔕 Notifications Blocked</div>
+      <div style="font-size:11px;color:var(--text2);margin-top:2px">Go to browser settings → Site settings → Allow</div></div></div>`;
   } else {
-    if(st)st.textContent='Get notified when timer ends — even if phone is locked';
-    if(btn){btn.textContent='Enable';btn.style.display='';}
+    card.innerHTML=`<div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+      <div><div style="font-size:13px;font-weight:700">🔔 Timer Alerts</div>
+      <div style="font-size:11px;color:var(--text2);margin-top:2px">Android lock screen · Laptop OS alerts · Vibration</div></div>
+      <button class="btn btn-primary btn-sm" onclick="requestNotifPermission()" style="flex-shrink:0">Enable</button></div>`;
   }
 }
 
-function fireTimerAlert(title, body, isBreak){
-  // 1. Vibrate (Android/mobile)
-  if('vibrate' in navigator){
-    if(isBreak) navigator.vibrate([200,100,200]);
-    else navigator.vibrate([300,100,300,100,600]); // Focus done — longer pattern
-  }
-  // 2. Browser Notification (works on lock screen on Android Chrome PWA)
-  if(Notification.permission==='granted'){
+function sendNotification(title,body,isBreak){
+  if(!('Notification' in window)||Notification.permission!=='granted')return;
+  const vibPat=isBreak?[200,100,200,100,200]:[400,100,400,100,800];
+  // Use Service Worker notification (works on lock screen)
+  if(swReg&&swReg.active){
+    swReg.active.postMessage({
+      type:'NOTIFY',title,body,
+      vibrate:vibPat,
+      icon:'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" style="background:%23080810"><text y=".9em" font-size="90">⚔</text></svg>',
+      badge:'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">⚔</text></svg>'
+    });
+  } else {
+    // Fallback: direct Notification (works when app is open)
     try{
-      const n=new Notification(title,{
-        body,
-        icon:'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">⚔</text></svg>',
-        badge:'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">⚔</text></svg>',
-        tag:'shadow-timer',
-        requireInteraction:true,
-        silent:false
-      });
-      n.onclick=()=>{window.focus();n.close();};
+      const n=new Notification(title,{body,tag:'shadow-timer',requireInteraction:true});
       setTimeout(()=>n.close(),8000);
-    }catch(e){console.warn('notification error',e);}
+    }catch(e){}
   }
-  // 3. In-app banner
-  showDoneBanner(title, body);
-  // 4. Sound chime
-  playTimerChime(isBreak);
-  // 5. Flash tab title
-  flashTabTitle(title);
 }
 
-function showDoneBanner(title, sub){
-  const b=document.getElementById('timer-done-banner');
-  if(!b)return;
-  document.getElementById('done-banner-title').textContent=title;
-  document.getElementById('done-banner-sub').textContent=sub;
-  b.classList.add('show');
-  // Auto-hide after 6s unless still showing
-  clearTimeout(b._to);
-  b._to=setTimeout(()=>b.classList.remove('show'),6000);
-}
-function closeDoneBanner(){
-  const b=document.getElementById('timer-done-banner');
-  if(b)b.classList.remove('show');
+// ── VIBRATION ──
+function vibrate(pattern){
+  if('vibrate' in navigator){
+    try{navigator.vibrate(pattern);}catch(e){}
+  }
 }
 
-// Tab title countdown
-let tabFlashInterval=null;
-const originalTitle='Shadow System';
-function updateTabTitle(){
-  if(!tRunning){document.title=originalTitle;return;}
-  const m=Math.floor(Math.abs(tSecs)/60),s=Math.abs(tSecs)%60;
-  const phase=tMode==='pomodoro'?(pomoPhase==='focus'?'🔥':'☕'):tMode==='stopwatch'?'⏱':'⏲';
-  document.title=`${phase} ${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')} | Shadow`;
-}
-function flashTabTitle(msg){
-  let on=true,cnt=0;
-  clearInterval(tabFlashInterval);
-  tabFlashInterval=setInterval(()=>{
-    document.title=on?`🔔 ${msg}`:originalTitle;
-    on=!on; cnt++;
-    if(cnt>10){clearInterval(tabFlashInterval);document.title=originalTitle;}
-  },600);
-}
-
-// Chime sound using Web Audio API
+// ── AUDIO CHIME (Web Audio API) ──
 let audioCtx=null;
 function getAudioCtx(){
-  if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)();
+  if(!audioCtx||audioCtx.state==='closed'){
+    audioCtx=new(window.AudioContext||window.webkitAudioContext)();
+  }
+  if(audioCtx.state==='suspended')audioCtx.resume();
   return audioCtx;
 }
-function playTimerChime(isBreak){
+function playChime(isBreak){
   try{
     const ctx=getAudioCtx();
-    const notes=isBreak?[523,659,784]:[784,659,523,440,523]; // Break: up / Focus-done: down then resolve
-    let t=ctx.currentTime;
-    notes.forEach((freq,i)=>{
+    // Focus done: descending resolve chord. Break done: ascending bright
+    const seq=isBreak
+      ?[[523,.0],[659,.18],[784,.36],[1047,.54]]   // C5 E5 G5 C6 — bright break
+      :[[880,.0],[698,.2],[587,.38],[523,.54],[392,.72]]; // A5→F5→D5→C5→G4 — session complete
+    seq.forEach(([freq,t])=>{
       const osc=ctx.createOscillator();
-      const gain=ctx.createGain();
-      osc.connect(gain);gain.connect(ctx.destination);
-      osc.frequency.value=freq;
+      const env=ctx.createGain();
+      osc.connect(env);env.connect(ctx.destination);
       osc.type='sine';
-      gain.gain.setValueAtTime(0,t+i*0.18);
-      gain.gain.linearRampToValueAtTime(0.35,t+i*0.18+0.04);
-      gain.gain.exponentialRampToValueAtTime(0.001,t+i*0.18+0.4);
-      osc.start(t+i*0.18);
-      osc.stop(t+i*0.18+0.45);
+      osc.frequency.value=freq;
+      const now=ctx.currentTime;
+      env.gain.setValueAtTime(0,now+t);
+      env.gain.linearRampToValueAtTime(0.55,now+t+0.06);  // louder: 0.55
+      env.gain.exponentialRampToValueAtTime(0.001,now+t+0.5);
+      osc.start(now+t);osc.stop(now+t+0.55);
     });
+    // Also a low thump on focus done
+    if(!isBreak){
+      const osc2=ctx.createOscillator();const g2=ctx.createGain();
+      osc2.connect(g2);g2.connect(ctx.destination);
+      osc2.type='triangle';osc2.frequency.value=120;
+      const now=ctx.currentTime;
+      g2.gain.setValueAtTime(0.6,now);g2.gain.exponentialRampToValueAtTime(0.001,now+0.4);
+      osc2.start(now);osc2.stop(now+0.4);
+    }
   }catch(e){console.warn('chime error',e);}
 }
 
+// ── DONE BANNER ──
+let bannerTimeout=null;
+function showDoneBanner(title,sub,isBreak){
+  const b=document.getElementById('done-banner');if(!b)return;
+  b.className='done-banner show '+(isBreak?'done-banner-break':'done-banner-focus');
+  const p=document.getElementById('done-pulse');
+  if(p)p.className='done-pulse '+(isBreak?'done-pulse-break':'done-pulse-focus');
+  document.getElementById('done-banner-title').textContent=title;
+  document.getElementById('done-banner-sub').textContent=sub;
+  clearTimeout(bannerTimeout);
+  bannerTimeout=setTimeout(hideDoneBanner,8000);
+}
+function hideDoneBanner(){
+  const b=document.getElementById('done-banner');if(b)b.classList.remove('show');
+}
+
 // ── SESSION RATING MODAL ──
-function showRatingModal(logData){
-  pendingLogData=logData;
-  ratingStars=0; ratingMood='';
+function showRatingModal(sessInfo){
+  pendingRating=sessInfo;ratingStars=0;ratingMood='';
   document.querySelectorAll('.star-btn').forEach(b=>b.classList.remove('lit'));
   document.querySelectorAll('.mood-btn').forEach(b=>b.classList.remove('sel'));
-  document.getElementById('rating-note').value='';
-  document.getElementById('star-label').textContent='Tap a star';
-  const info=document.getElementById('rating-session-info');
-  if(info)info.textContent=`${logData.min} min · ${logData.sub.charAt(0).toUpperCase()+logData.sub.slice(1)} · ${logData.mode}`;
+  const ni=document.getElementById('rating-note');if(ni)ni.value='';
+  const sl=document.getElementById('star-label');if(sl)sl.textContent='Tap a star';
+  const si=document.getElementById('rating-sess-info');
+  if(si)si.textContent=sessInfo.min+'m · '+sessInfo.sub.charAt(0).toUpperCase()+sessInfo.sub.slice(1)+' · '+sessInfo.mode;
   document.getElementById('rating-modal').classList.add('show');
+}
+function closeRatingModal(openInstead){
+  hideDoneBanner();
+  if(openInstead){
+    document.getElementById('rating-modal').classList.add('show');
+  }
 }
 function rateStar(v){
   ratingStars=v;
-  const labels=['','😴 Barely there','😕 Mostly distracted','🙂 It was okay','💪 Pretty focused','🔥 Fully locked in!'];
-  document.getElementById('star-label').textContent=labels[v]||'';
-  document.querySelectorAll('.star-btn').forEach(b=>{
-    b.classList.toggle('lit',parseInt(b.dataset.v)<=v);
-  });
+  const lbls=['','😴 Barely there','😕 Mostly distracted','🙂 It was okay','💪 Pretty focused','🔥 Fully locked in!'];
+  const sl=document.getElementById('star-label');if(sl)sl.textContent=lbls[v]||'';
+  document.querySelectorAll('.star-btn').forEach((b,i)=>b.classList.toggle('lit',i<v));
 }
-function rateMood(m){
+function rateMood(m,btn){
   ratingMood=m;
-  document.querySelectorAll('.mood-btn').forEach(b=>b.classList.toggle('sel',b.dataset.m===m));
+  document.querySelectorAll('.mood-btn').forEach(b=>b.classList.remove('sel'));
+  if(btn)btn.classList.add('sel');
 }
-function submitRating(){
-  const note=document.getElementById('rating-note').value.trim();
-  if(pendingLogData){
-    // Attach rating to the last session
-    const lastSess=S.sessions[S.sessions.length-1];
-    if(lastSess){
-      lastSess.stars=ratingStars||null;
-      lastSess.mood=ratingMood||null;
-      lastSess.note=note||null;
-      // Adjust XP slightly based on self-rating
-      if(ratingStars>=4&&!lastSess.ratingBonus){lastSess.ratingBonus=5;S.hunter.xp+=5;showToast('Focused session! +5 bonus XP ⭐');}
-      if(ratingStars<=2&&!lastSess.ratingPenalty){lastSess.ratingPenalty=true;showToast('Noted. Be honest next time too 💪');}
+function submitRating(save_it){
+  if(save_it&&pendingRating){
+    const last=S.sessions[S.sessions.length-1];
+    if(last&&last.id===pendingRating.id){
+      last.stars=ratingStars||null;
+      last.mood=ratingMood||null;
+      last.note=(document.getElementById('rating-note')||{}).value||null;
+      if(ratingStars>=4&&!last.ratingBonus){last.ratingBonus=true;S.hunter.xp+=5;showToast('Focused session! +5 bonus XP ⭐');updateHeader();}
       save();
     }
   }
-  closeRatingModal();
+  document.getElementById('rating-modal').classList.remove('show');
+  pendingRating=null;
   if(focusTab==='log')renderSessionLog();
 }
-function skipRating(){
-  closeRatingModal();
-}
-function closeRatingModal(){
-  document.getElementById('rating-modal').classList.remove('show');
-  pendingLogData=null;
+
+// ── TAB TITLE TIMER ──
+const ORIG_TITLE='Shadow System';
+function updateTabTitle(){
+  if(!tRunning){document.title=ORIG_TITLE;return;}
+  const m=Math.floor(Math.abs(tSecs)/60),s=Math.abs(tSecs)%60;
+  const icon=tMode==='pomodoro'?(pomoPhase==='focus'?'🔥':'☕'):tMode==='stopwatch'?'⏱':'⏲';
+  document.title=icon+' '+String(m).padStart(2,'0')+':'+String(s).padStart(2,'0')+' | Shadow';
 }
 
+// ── FIRE ALL ALERTS ──
+function fireAlert(title,body,isBreak,sessInfo){
+  vibrate(isBreak?[200,80,200,80,200]:[400,100,400,100,800,100,800]);
+  playChime(isBreak);
+  sendNotification(title,body,isBreak);
+  showDoneBanner(title,body,isBreak);
+  if(sessInfo)setTimeout(()=>showRatingModal(sessInfo),700);
+}
+
+// ── TIMER CORE ──
 function setMode(m,btn){
   if(tRunning)resetTimer();
   tMode=m;
@@ -1543,20 +1563,30 @@ function setMode(m,btn){
   else{tSecs=25*60;tTotal=25*60;}
   updateTimerUI();
 }
-function setSub(s,btn){studySub=s;document.querySelectorAll('.subj-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');}
+function setSub(s,btn){
+  studySub=s;
+  document.querySelectorAll('.subj-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+}
 function applyCd(){
   const h=parseInt(document.getElementById('cd-h').value)||0;
   const m=parseInt(document.getElementById('cd-m').value)||0;
-  tSecs=h*3600+m*60;tTotal=tSecs;if(tRunning)resetTimer();updateTimerUI();
+  tSecs=h*3600+m*60;tTotal=tSecs;
+  if(tRunning)resetTimer();
+  updateTimerUI();
 }
 function toggleTimer(){
   if(tRunning){
-    clearInterval(tInterval);tRunning=false;pauseCount++;el('t-toggle','Resume');
-    pauseAmbientSound(); // pause sound when timer paused
-    document.title=originalTitle;
+    clearInterval(tInterval);tRunning=false;pauseCount++;
+    el('t-toggle','Resume');
+    pauseMusic();           // pause music when timer pauses
+    document.title=ORIG_TITLE;
   } else {
-    tRunning=true;el('t-toggle','Pause');tInterval=setInterval(tick,1000);
-    resumeAmbientSound(); // resume sound when timer resumes
+    // Unlock AudioContext on first user gesture
+    if(audioCtx&&audioCtx.state==='suspended')audioCtx.resume();
+    tRunning=true;el('t-toggle','Pause');
+    tInterval=setInterval(tick,1000);
+    resumeMusic();          // resume music when timer resumes
   }
 }
 function tick(){
@@ -1567,34 +1597,32 @@ function tick(){
 }
 function handleEnd(){
   clearInterval(tInterval);tRunning=false;el('t-toggle','Start');
-  stopAmbientSound(); // stop sound when timer ends
-  document.title=originalTitle;
+  document.title=ORIG_TITLE;
 
   if(tMode==='pomodoro'){
     if(pomoPhase==='focus'){
-      const logData={min:25,sub:studySub,mode:'pomodoro'};
-      autoLog(25,studySub,'pomodoro');pomoCount++;
+      const sid=Date.now();
+      autoLog(25,studySub,'pomodoro',sid);pomoCount++;
       if(pomoCount%4===0){
         pomoPhase='longbreak';tSecs=15*60;tTotal=15*60;
-        fireTimerAlert('🍃 Long Break Time!','25-min focus done. Take 15 mins off.',true);
+        fireAlert('🍃 Long Break! 15 min','Focus session complete. Great work!',true,{id:sid,min:25,sub:studySub,mode:'pomodoro'});
       } else {
         pomoPhase='break';tSecs=5*60;tTotal=5*60;
-        fireTimerAlert('☕ Break Time!','Focus session complete. 5 min break.',true);
+        fireAlert('☕ Break Time! 5 min','Pomodoro done. Rest your eyes.',true,{id:sid,min:25,sub:studySub,mode:'pomodoro'});
       }
-      // Show rating modal after a short delay
-      setTimeout(()=>showRatingModal(logData),800);
+      stopMusic();           // stop music at end of focus session
     } else {
       pomoPhase='focus';tSecs=25*60;tTotal=25*60;
-      fireTimerAlert('⚔ Focus Time!','Break over. Back to work.',false);
+      fireAlert('⚔ Focus Time!','Break over. Lock in.',false,null);
+      resumeMusic();         // restart music for next focus block
     }
     elapsed=0;tRunning=true;el('t-toggle','Pause');tInterval=setInterval(tick,1000);
-    resumeAmbientSound();
   } else {
-    const mins=Math.round(tTotal/60);
-    const logData={min:mins,sub:studySub,mode:tMode};
-    autoLog(mins,studySub,tMode);
-    fireTimerAlert('✅ Session Done!',`${mins} min of ${studySub} complete!`,false);
-    setTimeout(()=>showRatingModal(logData),800);
+    const mins=Math.round(tTotal/60)||1;
+    const sid=Date.now();
+    autoLog(mins,studySub,tMode,sid);
+    fireAlert('✅ Session Done!',mins+'m of '+studySub+' complete!',false,{id:sid,min:mins,sub:studySub,mode:tMode});
+    stopMusic();             // stop music at end of countdown/stopwatch
     tSecs=tTotal;elapsed=0;
   }
   updateTimerUI();
@@ -1615,9 +1643,9 @@ function updateTimerUI(){
   const ms=document.getElementById('mana-study');if(ms)ms.textContent=S.hunter.mana;
 }
 function resetTimer(){
-  clearInterval(tInterval);tRunning=false;elapsed=0;pauseCount=0;el('t-toggle','Start');
-  stopAmbientSound();
-  document.title=originalTitle;
+  clearInterval(tInterval);tRunning=false;elapsed=0;pauseCount=0;
+  el('t-toggle','Start');document.title=ORIG_TITLE;
+  stopMusic();              // stop music on reset
   if(tMode==='pomodoro'){tSecs=25*60;tTotal=25*60;pomoPhase='focus';}
   else if(tMode==='stopwatch'){tSecs=0;tTotal=0;}
   else applyCd();
@@ -1626,154 +1654,37 @@ function resetTimer(){
 function manualLog(){
   const mins=Math.round(elapsed/60);
   if(mins<1){showToast('Start timer first — min 1 minute');return;}
-  const logData={min:mins,sub:studySub,mode:tMode};
-  autoLog(mins,studySub,tMode);showToast('Logged '+mins+'m! +'+Math.round(mins*.5)+' XP');
+  const sid=Date.now();
+  autoLog(mins,studySub,tMode,sid);
+  showToast('Logged '+mins+'m! +'+Math.round(mins*0.5)+' XP ⚡');
   elapsed=0;pauseCount=0;
-  setTimeout(()=>showRatingModal(logData),400);
+  setTimeout(()=>showRatingModal({id:sid,min:mins,sub:studySub,mode:tMode}),300);
 }
-function autoLog(mins,sub,mode){
+function autoLog(mins,sub,mode,sid){
   if(mins<1)return;
   const eff=Math.max(10,Math.round(100-pauseCount*8));
-  const xp=Math.round(mins*(eff/100)*0.5);
-  S.sessions.push({id:Date.now(),date:today(),min:mins,sub,mode,eff,xp,time:new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})});
-  S.hunter.xp+=xp;S.hunter.mana=Math.max(0,S.hunter.mana-Math.min(15,Math.round(mins/7)));
+  // XP: 0.5 per minute * efficiency. Min 1 XP.
+  const xp=Math.max(1,Math.round(mins*(eff/100)*0.5));
+  const sessObj={
+    id:sid||Date.now(),
+    date:today(),min:mins,sub,mode,eff,xp,
+    time:new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})
+  };
+  S.sessions.push(sessObj);
+  S.hunter.xp+=xp;
+  S.hunter.mana=Math.max(0,S.hunter.mana-Math.min(15,Math.round(mins/7)));
   save();updateHeader();renderSessLog();
-  // refresh whichever focus sub-tab is open
-  if(focusTab==='log')renderSessionLog();
-  if(focusTab==='stats')renderFocusStats();
+  if(typeof renderSessionLog==='function'&&focusTab==='log')renderSessionLog();
+  if(typeof renderFocusStats==='function'&&focusTab==='stats')renderFocusStats();
+  if(typeof renderFocusStatsBar==='function')renderFocusStatsBar();
+  // Quest auto-completion
   const t=today(),comp=S.questComp[t]||{};
   const tM=S.sessions.filter(s=>s.date===t).reduce((a,s)=>a+s.min,0);
-  const goalMins=(S.goals&&S.goals.questStudyHours?S.goals.questStudyHours:2)*60;
+  const goalMins=((S.goals&&S.goals.questStudyHours)||2)*60;
   if(tM>=goalMins&&!comp.q1){comp.q1=true;S.hunter.xp+=50;S.questComp[t]=comp;save();showToast('Quest done: study goal hit! +50 XP 🔥');updateHeader();}
   if(mode==='pomodoro'&&mins>=25&&!comp.q2){comp.q2=true;S.hunter.xp+=25;S.questComp[t]=comp;save();updateHeader();}
 }
 function restoreMana(){S.hunter.mana=Math.min(100,S.hunter.mana+30);save();updateHeader();showToast('Mana +30 🌙 — take a real break!');}
-
-// ── AMBIENT SOUND ENGINE (Web Audio API — no external files needed) ──
-let soundCtx=null, activeSound=null, activeSoundKey=null, soundVolume=0.4;
-
-function getSoundCtx(){
-  if(!soundCtx||soundCtx.state==='closed')soundCtx=new(window.AudioContext||window.webkitAudioContext)();
-  return soundCtx;
-}
-
-const SOUNDS={
-  rain:(ctx,vol)=>{
-    const buf=ctx.createBuffer(1,ctx.sampleRate*2,ctx.sampleRate);
-    const d=buf.getChannelData(0);
-    for(let i=0;i<d.length;i++)d[i]=(Math.random()*2-1)*0.8;
-    const src=ctx.createBufferSource();src.buffer=buf;src.loop=true;
-    const lp=ctx.createBiquadFilter();lp.type='lowpass';lp.frequency.value=800;
-    const gain=ctx.createGain();gain.gain.value=vol*0.6;
-    src.connect(lp);lp.connect(gain);gain.connect(ctx.destination);
-    src.start();return{src,gain,stop:()=>{try{src.stop();}catch(e){}}};
-  },
-  white:(ctx,vol)=>{
-    const buf=ctx.createBuffer(1,ctx.sampleRate,ctx.sampleRate);
-    const d=buf.getChannelData(0);
-    for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;
-    const src=ctx.createBufferSource();src.buffer=buf;src.loop=true;
-    const gain=ctx.createGain();gain.gain.value=vol*0.25;
-    src.connect(gain);gain.connect(ctx.destination);src.start();
-    return{src,gain,stop:()=>{try{src.stop();}catch(e){}}};
-  },
-  forest:(ctx,vol)=>{
-    // Birds + wind
-    const nodes=[];
-    function addBird(delay){
-      const osc=ctx.createOscillator();const g=ctx.createGain();
-      osc.type='sine';
-      const base=800+Math.random()*600;
-      osc.frequency.setValueAtTime(base,ctx.currentTime+delay);
-      osc.frequency.linearRampToValueAtTime(base+200,ctx.currentTime+delay+0.1);
-      osc.frequency.linearRampToValueAtTime(base,ctx.currentTime+delay+0.2);
-      g.gain.setValueAtTime(0,ctx.currentTime+delay);
-      g.gain.linearRampToValueAtTime(vol*0.12,ctx.currentTime+delay+0.05);
-      g.gain.linearRampToValueAtTime(0,ctx.currentTime+delay+0.25);
-      osc.connect(g);g.connect(ctx.destination);
-      osc.start(ctx.currentTime+delay);osc.stop(ctx.currentTime+delay+0.3);
-      nodes.push(osc);
-    }
-    // Wind (noise)
-    const buf=ctx.createBuffer(1,ctx.sampleRate*2,ctx.sampleRate);
-    const d=buf.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=(Math.random()*2-1);
-    const wind=ctx.createBufferSource();wind.buffer=buf;wind.loop=true;
-    const hp=ctx.createBiquadFilter();hp.type='bandpass';hp.frequency.value=300;hp.Q.value=0.3;
-    const wg=ctx.createGain();wg.gain.value=vol*0.08;
-    wind.connect(hp);hp.connect(wg);wg.connect(ctx.destination);wind.start();
-    // Schedule birds
-    let t=0.5;const birdInt=setInterval(()=>{if(activeSoundKey!=='forest')return clearInterval(birdInt);addBird(t);t=Math.random()*3+1;},2000);
-    addBird(0.5);addBird(2);addBird(4);
-    return{src:wind,gain:wg,stop:()=>{try{wind.stop();clearInterval(birdInt);}catch(e){}}};
-  },
-  cafe:(ctx,vol)=>{
-    // Low murmur
-    const buf=ctx.createBuffer(1,ctx.sampleRate*2,ctx.sampleRate);
-    const d=buf.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=(Math.random()*2-1);
-    const src=ctx.createBufferSource();src.buffer=buf;src.loop=true;
-    const lp=ctx.createBiquadFilter();lp.type='lowpass';lp.frequency.value=400;
-    const lp2=ctx.createBiquadFilter();lp2.type='highpass';lp2.frequency.value=80;
-    const gain=ctx.createGain();gain.gain.value=vol*0.3;
-    src.connect(lp);lp.connect(lp2);lp2.connect(gain);gain.connect(ctx.destination);src.start();
-    return{src,gain,stop:()=>{try{src.stop();}catch(e){}}};
-  },
-  fire:(ctx,vol)=>{
-    const buf=ctx.createBuffer(1,ctx.sampleRate*2,ctx.sampleRate);
-    const d=buf.getChannelData(0);
-    for(let i=0;i<d.length;i++){d[i]=(Math.random()*2-1)*(0.5+0.5*Math.sin(i/ctx.sampleRate*0.3));}
-    const src=ctx.createBufferSource();src.buffer=buf;src.loop=true;
-    const lp=ctx.createBiquadFilter();lp.type='lowpass';lp.frequency.value=600;
-    const gain=ctx.createGain();gain.gain.value=vol*0.4;
-    src.connect(lp);lp.connect(gain);gain.connect(ctx.destination);src.start();
-    return{src,gain,stop:()=>{try{src.stop();}catch(e){}}};
-  },
-  ocean:(ctx,vol)=>{
-    const buf=ctx.createBuffer(1,ctx.sampleRate*4,ctx.sampleRate);
-    const d=buf.getChannelData(0);
-    for(let i=0;i<d.length;i++){
-      const wave=Math.sin(i/ctx.sampleRate*0.2)*0.5+0.5;
-      d[i]=(Math.random()*2-1)*wave;
-    }
-    const src=ctx.createBufferSource();src.buffer=buf;src.loop=true;
-    const lp=ctx.createBiquadFilter();lp.type='lowpass';lp.frequency.value=700;
-    const gain=ctx.createGain();gain.gain.value=vol*0.5;
-    src.connect(lp);lp.connect(gain);gain.connect(ctx.destination);src.start();
-    return{src,gain,stop:()=>{try{src.stop();}catch(e){}}};
-  }
-};
-
-function toggleSound(key){
-  if(activeSoundKey===key){stopAmbientSound();return;}
-  stopAmbientSound();
-  try{
-    const ctx=getSoundCtx();
-    if(ctx.state==='suspended')ctx.resume();
-    activeSound=SOUNDS[key](ctx,soundVolume);
-    activeSoundKey=key;
-    document.querySelectorAll('.sound-chip').forEach(b=>b.classList.remove('on'));
-    const btn=document.getElementById('snd-'+key);
-    if(btn)btn.classList.add('on');
-    showToast((key.charAt(0).toUpperCase()+key.slice(1))+' sounds on 🎵');
-  }catch(e){showToast('Sound not available: '+e.message);}
-}
-function stopAmbientSound(){
-  if(activeSound){activeSound.stop();activeSound=null;}
-  activeSoundKey=null;
-  document.querySelectorAll('.sound-chip').forEach(b=>b.classList.remove('on'));
-}
-function pauseAmbientSound(){
-  if(soundCtx&&soundCtx.state==='running')soundCtx.suspend();
-}
-function resumeAmbientSound(){
-  if(activeSoundKey&&soundCtx&&soundCtx.state==='suspended')soundCtx.resume();
-}
-function setVolume(v){
-  soundVolume=v/100;
-  if(activeSound&&activeSound.gain)activeSound.gain.gain.value=soundVolume*(activeSoundKey==='white'?0.25:activeSoundKey==='cafe'?0.3:0.5);
-}
-
-// Init notifications UI on load
-window.addEventListener('load',()=>updateNotifUI());
 // FOCUS STATS SYSTEM
 let focusTab='timer', logPeriod='today', statsPeriod='today';
 
@@ -1914,9 +1825,7 @@ function renderSessionLog(){
     let h='';
     sess.forEach(s=>{
       const[tc,tl]=(tags[s.sub]||'tag-other OTH').split(' ');
-      const starsHtml=s.stars?'⭐'.repeat(s.stars):'';
-      const moodHtml=s.mood?`<span style="font-size:10px;color:var(--text3);margin-left:4px">${{'locked-in':'🔥','decent':'👍','distracted':'😵','zoned-out':'💭','tired':'😴','anxious':'😬'}[s.mood]||''}</span>`:'';
-      h+=`<div class="sess-item"><div class="sess-tag ${tc}">${tl}</div><div class="sess-info"><div class="sess-name">${lbl2[s.sub]||s.sub} ${moodHtml}</div><div class="sess-meta">${s.time||''}${s.time?' · ':''}${modeLabel[s.mode]||s.mode} · ${s.eff||100}% eff${starsHtml?' · '+starsHtml:''}</div>${s.note?`<div style="font-size:10px;color:var(--text3);margin-top:2px;font-style:italic">"${s.note}"</div>`:''}</div><div class="sess-dur">${fmtHM(s.min)}<br><span style="color:var(--gold);font-size:11px">+${s.xp||0} XP</span></div></div>`;
+      h+=buildSessItemHtml(s,false);
     });
     logEl.innerHTML=h;
   } else {
@@ -1937,7 +1846,7 @@ function renderSessionLog(){
       </div>`;
       daySess.forEach(s=>{
         const[tc,tl]=(tags[s.sub]||'tag-other OTH').split(' ');
-        h+=`<div class="sess-item" style="padding:8px 0"><div class="sess-tag ${tc}" style="width:30px;height:30px;font-size:9px">${tl}</div><div class="sess-info"><div class="sess-name" style="font-size:13px">${lbl2[s.sub]||s.sub}</div><div class="sess-meta">${modeLabel[s.mode]||s.mode} · ${s.eff||100}% eff</div></div><div class="sess-dur">${fmtHM(s.min)}<br><span style="color:var(--gold);font-size:11px">+${s.xp||0} XP</span></div></div>`;
+        h+=buildSessItemHtml(s,true);
       });
     });
     logEl.innerHTML=h;
@@ -2055,8 +1964,27 @@ function renderFocusStats(){
   </div>`;
 }
 
+function buildSessItemHtml(s,compact){
+  const tags={physics:'tag-physics PHY',chemistry:'tag-chemistry CHE',maths:'tag-maths MAT',other:'tag-other OTH'};
+  const lbl={physics:'Physics',chemistry:'Chemistry',maths:'Maths',other:'Other'};
+  const modeIcons={pomodoro:'🍅',stopwatch:'⏱',countdown:'⏲'};
+  const[tc,tl]=(tags[s.sub]||'tag-other OTH').split(' ');
+  const starsHtml=s.stars?'⭐'.repeat(s.stars):'';
+  const moodMap={'locked-in':'🔥','decent':'👍','distracted':'😵','zoned-out':'💭','tired':'😴','anxious':'😬'};
+  const moodIcon=s.mood?moodMap[s.mood]||'':'';
+  const noteHtml=s.note?`<div style="font-size:10px;color:var(--text3);margin-top:2px;font-style:italic;">"${s.note}"</div>`:'';
+  const mins=s.min||0;const xp=s.xp||0;
+  return `<div class="sess-item" style="${compact?'padding:7px 0':''}">
+    <div class="sess-tag ${tc}" style="${compact?'width:30px;height:30px;font-size:9px':''}">${tl}</div>
+    <div class="sess-info">
+      <div class="sess-name">${lbl[s.sub]||s.sub}${moodIcon?' '+moodIcon:''}</div>
+      <div class="sess-meta">${s.time?s.time+' · ':''}${modeIcons[s.mode]||''} ${s.mode} · ${s.eff||100}% eff${starsHtml?' · '+starsHtml:''}</div>
+      ${noteHtml}
+    </div>
+    <div class="sess-dur">${mins}m<br><span style="color:var(--gold);font-size:11px">+${xp} XP</span></div>
+  </div>`;
+}
 function renderSessLog(){
-  // Also update the always-visible stats bar and today session log when on timer tab
   renderFocusStatsBar();
 }
 
@@ -2582,8 +2510,13 @@ function setupPWA(){
   const mf={name:'Shadow System',short_name:'Shadow',start_url:location.pathname,display:'standalone',background_color:'#080810',theme_color:'#080810',icons:[{src:icon192,sizes:'192x192',type:'image/png'},{src:icon512,sizes:'512x512',type:'image/png'}]};
   const blob=new Blob([JSON.stringify(mf)],{type:'application/manifest+json'});
   document.getElementById('pwa-manifest').href=URL.createObjectURL(blob);
-  if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
-  if(!window.matchMedia('(display-mode: standalone)').matches)document.getElementById('ins-banner').style.display='flex';
+  // Use inline SW (works without separate sw.js file)
+  setupInlineSW();
+  if(!window.matchMedia('(display-mode: standalone)').matches){
+    const ib=document.getElementById('ins-banner');if(ib)ib.style.display='flex';
+  }
+  // Init notification card UI
+  setTimeout(updateNotifCard,200);
 }
 
 // STATUS WINDOW STATS
@@ -2703,19 +2636,20 @@ function getYTPlaylist(input){
   return m?m[1]:null;
 }
 
+let currentMusicState=null;
 function loadYT(videoId, playlistId, title){
   let src='https://www.youtube.com/embed/';
+  // enablejsapi=1 allows pause/play via postMessage
   if(playlistId){
-    src+=(videoId||'videoseries')+'?list='+playlistId+'&autoplay=1&loop=1';
+    src+=(videoId||'videoseries')+'?list='+playlistId+'&autoplay=1&loop=1&enablejsapi=1';
   } else {
-    src+=videoId+'?autoplay=1&loop=1&playlist='+videoId;
+    src+=videoId+'?autoplay=1&loop=1&playlist='+videoId+'&enablejsapi=1';
   }
-  // Append volume — YT embed doesn't support volume param but we overlay our control
   document.getElementById('yt-iframe').src=src;
   document.getElementById('yt-player-wrap').style.display='block';
   document.getElementById('yt-nowplaying').style.display='block';
   document.getElementById('yt-title').textContent=title||videoId;
-  // Save last played
+  currentMusicState={videoId,playlistId,title,src};
   if(S){S.lastMusic={videoId,playlistId,title};save();}
 }
 
@@ -2737,13 +2671,31 @@ function loadCustomURL(){
   loadYT(vid,pl,'Custom: '+(vid||pl));
 }
 
-function stopMusic(){
-  document.getElementById('yt-iframe').src='';
+function stopMusic(silent){
+  const iframe=document.getElementById('yt-iframe');
+  if(iframe&&iframe.contentWindow){
+    try{iframe.contentWindow.postMessage('{"event":"command","func":"pauseVideo","args":""}','*');}catch(e){}
+  }
+  iframe.src='';
   document.getElementById('yt-player-wrap').style.display='none';
   document.getElementById('yt-nowplaying').style.display='none';
   document.getElementById('yt-url-input').value='';
   document.querySelectorAll('.music-preset').forEach(b=>b.classList.remove('active'));
-  if(S){S.lastMusic=null;save();}
+  currentMusicState=null;
+  if(S&&!silent){S.lastMusic=null;save();}
+}
+function pauseMusic(){
+  const iframe=document.getElementById('yt-iframe');
+  if(iframe&&iframe.src&&iframe.contentWindow){
+    try{iframe.contentWindow.postMessage('{"event":"command","func":"pauseVideo","args":""}','*');}catch(e){}
+  }
+}
+function resumeMusic(){
+  if(!currentMusicState)return;
+  const iframe=document.getElementById('yt-iframe');
+  if(iframe&&iframe.src&&iframe.contentWindow){
+    try{iframe.contentWindow.postMessage('{"event":"command","func":"playVideo","args":""}','*');}catch(e){}
+  }
 }
 
 function setYTVol(v){
@@ -2773,6 +2725,17 @@ function initApp(){
   updateTimerUI();renderDash();renderFocusStatsBar();renderTests();renderWorkout();
   document.getElementById('t-date').value=today();
   restoreLastMusic();
+  // Prompt for notifications if not yet decided, after a short delay
+  setTimeout(()=>{
+    if('Notification' in window&&Notification.permission==='default'&&S.sessions.length===0){
+      // First time — show after a few seconds
+    } else if('Notification' in window&&Notification.permission==='default'&&S.sessions.length>0){
+      // Has sessions but never allowed — offer once more
+      updateNotifCard();
+    } else {
+      updateNotifCard();
+    }
+  },1000);
 }
 </script>
 </body>
