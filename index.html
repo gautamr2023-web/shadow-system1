@@ -247,6 +247,26 @@ section.active{display:block}
 
 /* ── MISC ── */
 .empty{text-align:center;padding:24px;color:var(--text3);font-size:13px}
+/* ── SESSION RATING MODAL ── */
+.modal-overlay{position:fixed;inset:0;z-index:9000;background:rgba(0,0,0,.75);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;transition:opacity .25s;pointer-events:none}
+.modal-overlay.show{opacity:1;pointer-events:all}
+.modal-box{background:var(--card2);border:1px solid var(--border2);border-radius:var(--radius);padding:24px;max-width:360px;width:100%;transform:translateY(24px);transition:transform .3s cubic-bezier(.34,1.2,.64,1)}
+.modal-overlay.show .modal-box{transform:translateY(0)}
+.star-row{display:flex;justify-content:center;gap:8px;margin:16px 0 8px}
+.star-btn{font-size:34px;background:none;border:none;cursor:pointer;opacity:.25;transition:all .15s;padding:2px}
+.star-btn.lit{opacity:1;filter:drop-shadow(0 0 6px #f4c430)}
+.mood-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:12px 0 4px}
+.mood-btn{padding:9px 4px;border-radius:var(--radius-sm);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;cursor:pointer;border:1px solid var(--border2);background:transparent;color:var(--text2);transition:all .18s;text-align:center;line-height:1.3}
+.mood-btn:hover{border-color:var(--text2);color:var(--text)}
+.mood-btn.sel{border-color:var(--accent);background:rgba(91,110,245,.14);color:var(--accent)}
+/* ── TIMER DONE BANNER ── */
+.timer-done-banner{position:fixed;top:0;left:0;right:0;z-index:8500;padding:14px 18px;transform:translateY(-110%);transition:transform .4s cubic-bezier(.34,1.4,.64,1);display:flex;align-items:center;gap:12px;background:linear-gradient(135deg,#0d0826,#0d1a10);border-bottom:2px solid var(--green)}
+.timer-done-banner.show{transform:translateY(0)}
+.done-pulse{width:10px;height:10px;border-radius:50%;background:var(--green);flex-shrink:0;animation:dpulse 1s ease-in-out infinite}
+@keyframes dpulse{0%,100%{box-shadow:0 0 0 0 rgba(0,214,143,.7)}60%{box-shadow:0 0 0 9px rgba(0,214,143,0)}}
+/* ── SOUND PANEL ── */
+.sound-chip{display:inline-flex;align-items:center;gap:5px;padding:6px 12px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid var(--border2);background:transparent;color:var(--text2);transition:all .18s;font-family:var(--font)}
+.sound-chip.on{border-color:var(--accent);background:rgba(91,110,245,.1);color:var(--accent)}
 .report-line{font-size:13px;color:var(--text2);margin-bottom:9px;padding-left:12px;border-left:2px solid var(--accent);line-height:1.5}
 .toast{position:fixed;top:20px;left:50%;transform:translateX(-50%);background:var(--card2);border:1px solid var(--border2);border-radius:10px;padding:10px 18px;font-size:13px;color:var(--text);z-index:9999;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap;max-width:92vw}
 .toast.show{opacity:1}
@@ -508,6 +528,18 @@ section.active{display:block}
         </div>
       </div>
     </div>
+  </div>
+
+  <!-- NOTIFICATION SETUP CARD -->
+  <div class="card" style="margin-bottom:4px" id="notif-setup-card">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+      <div style="flex:1">
+        <div style="font-size:13px;font-weight:700">🔔 Timer Alerts</div>
+        <div style="font-size:11px;color:var(--text2);margin-top:2px" id="notif-status-text">Get notified when timer ends — even if phone is locked</div>
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="requestNotifPermission()" id="notif-perm-btn" style="flex-shrink:0">Enable</button>
+    </div>
+    <div style="font-size:10px;color:var(--text3);margin-top:8px">📳 Android: vibration + lock screen notification &nbsp;·&nbsp; 💻 Laptop: OS notification + sound</div>
   </div>
   </div>
   <div id="fp-log" style="display:none">
@@ -872,6 +904,54 @@ section.active{display:block}
   <div style="font-size:12px;color:var(--text3);margin-top:10px;line-height:1.9">Your data syncs across all devices.<br>Use a different Google account to switch profiles.</div>
   <div style="margin-top:20px;font-size:11px;color:var(--text3)">
     <button onclick="useWithoutAccount()" style="background:none;border:none;color:var(--text3);text-decoration:underline;cursor:pointer;font-size:11px;font-family:var(--font)">Continue without account (local only)</button>
+  </div>
+</div>
+
+<!-- SESSION DONE BANNER -->
+<div class="timer-done-banner" id="timer-done-banner">
+  <div class="done-pulse"></div>
+  <div style="flex:1">
+    <div style="font-size:14px;font-weight:700;color:var(--green)" id="done-banner-title">Session Complete!</div>
+    <div style="font-size:11px;color:var(--text2)" id="done-banner-sub">Rate how it went ↓</div>
+  </div>
+  <button onclick="closeDoneBanner()" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:18px;padding:4px">✕</button>
+</div>
+
+<!-- SESSION RATING MODAL -->
+<div class="modal-overlay" id="rating-modal">
+  <div class="modal-box">
+    <div style="font-size:18px;font-weight:700;margin-bottom:4px">⚔ Session Review</div>
+    <div style="font-size:12px;color:var(--text2);margin-bottom:4px" id="rating-session-info">25 min · Physics · Pomodoro</div>
+    <div style="height:1px;background:var(--border);margin:12px 0"></div>
+
+    <div style="font-size:12px;color:var(--text2);text-transform:uppercase;letter-spacing:.8px;margin-bottom:2px">How focused were you?</div>
+    <div class="star-row" id="star-row">
+      <button class="star-btn" data-v="1" onclick="rateStar(1)">⭐</button>
+      <button class="star-btn" data-v="2" onclick="rateStar(2)">⭐</button>
+      <button class="star-btn" data-v="3" onclick="rateStar(3)">⭐</button>
+      <button class="star-btn" data-v="4" onclick="rateStar(4)">⭐</button>
+      <button class="star-btn" data-v="5" onclick="rateStar(5)">⭐</button>
+    </div>
+    <div style="text-align:center;font-size:11px;color:var(--text3);margin-bottom:12px" id="star-label">Tap a star</div>
+
+    <div style="font-size:12px;color:var(--text2);text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px">What was the vibe?</div>
+    <div class="mood-grid">
+      <button class="mood-btn" onclick="rateMood('locked-in')" data-m="locked-in">🔥 Locked In</button>
+      <button class="mood-btn" onclick="rateMood('decent')" data-m="decent">👍 Decent</button>
+      <button class="mood-btn" onclick="rateMood('distracted')" data-m="distracted">😵 Distracted</button>
+      <button class="mood-btn" onclick="rateMood('zoned-out')" data-m="zoned-out">💭 Zoned Out</button>
+      <button class="mood-btn" onclick="rateMood('tired')" data-m="tired">😴 Tired</button>
+      <button class="mood-btn" onclick="rateMood('anxious')" data-m="anxious">😬 Anxious</button>
+    </div>
+
+    <div style="margin-top:14px">
+      <input type="text" class="fi" id="rating-note" placeholder="Quick note (optional)… e.g. kept getting distracted by phone" style="font-size:13px;padding:9px 12px">
+    </div>
+
+    <div style="display:flex;gap:8px;margin-top:14px">
+      <button class="btn btn-ghost btn-sm" onclick="skipRating()" style="flex:1">Skip</button>
+      <button class="btn btn-primary" onclick="submitRating()" style="flex:2">Save Review ⚡</button>
+    </div>
   </div>
 </div>
 
@@ -1279,6 +1359,179 @@ function renderPenalty(){
 const CIRC=2*Math.PI*106;
 let tMode='pomodoro',tRunning=false,tSecs=25*60,tTotal=25*60,tInterval=null;
 let pomoPhase='focus',pomoCount=0,studySub='physics',elapsed=0,pauseCount=0;
+let ratingStars=0, ratingMood='', pendingLogData=null;
+
+// ── NOTIFICATION & VIBRATION SYSTEM ──
+let notifPermission='default';
+function requestNotifPermission(){
+  if(!('Notification' in window)){
+    document.getElementById('notif-status-text').textContent='Notifications not supported in this browser';
+    document.getElementById('notif-perm-btn').style.display='none';
+    return;
+  }
+  Notification.requestPermission().then(p=>{
+    notifPermission=p;
+    updateNotifUI();
+    if(p==='granted')showToast('Notifications enabled! 🔔');
+    else if(p==='denied')showToast('Notifications blocked. Enable in browser settings.');
+  });
+}
+function updateNotifUI(){
+  const st=document.getElementById('notif-status-text');
+  const btn=document.getElementById('notif-perm-btn');
+  if(!('Notification' in window)){if(st)st.textContent='Not supported on this browser';if(btn)btn.style.display='none';return;}
+  const p=Notification.permission;
+  notifPermission=p;
+  if(p==='granted'){
+    if(st)st.textContent='✅ Notifications enabled — you\'ll get alerted when timer ends';
+    if(btn)btn.style.display='none';
+  } else if(p==='denied'){
+    if(st)st.textContent='🚫 Blocked — go to browser settings → Site settings → Allow notifications';
+    if(btn){btn.textContent='How to fix';btn.onclick=()=>showToast('Browser Settings → Privacy → Site Settings → Notifications → Allow this site');}
+  } else {
+    if(st)st.textContent='Get notified when timer ends — even if phone is locked';
+    if(btn){btn.textContent='Enable';btn.style.display='';}
+  }
+}
+
+function fireTimerAlert(title, body, isBreak){
+  // 1. Vibrate (Android/mobile)
+  if('vibrate' in navigator){
+    if(isBreak) navigator.vibrate([200,100,200]);
+    else navigator.vibrate([300,100,300,100,600]); // Focus done — longer pattern
+  }
+  // 2. Browser Notification (works on lock screen on Android Chrome PWA)
+  if(Notification.permission==='granted'){
+    try{
+      const n=new Notification(title,{
+        body,
+        icon:'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">⚔</text></svg>',
+        badge:'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">⚔</text></svg>',
+        tag:'shadow-timer',
+        requireInteraction:true,
+        silent:false
+      });
+      n.onclick=()=>{window.focus();n.close();};
+      setTimeout(()=>n.close(),8000);
+    }catch(e){console.warn('notification error',e);}
+  }
+  // 3. In-app banner
+  showDoneBanner(title, body);
+  // 4. Sound chime
+  playTimerChime(isBreak);
+  // 5. Flash tab title
+  flashTabTitle(title);
+}
+
+function showDoneBanner(title, sub){
+  const b=document.getElementById('timer-done-banner');
+  if(!b)return;
+  document.getElementById('done-banner-title').textContent=title;
+  document.getElementById('done-banner-sub').textContent=sub;
+  b.classList.add('show');
+  // Auto-hide after 6s unless still showing
+  clearTimeout(b._to);
+  b._to=setTimeout(()=>b.classList.remove('show'),6000);
+}
+function closeDoneBanner(){
+  const b=document.getElementById('timer-done-banner');
+  if(b)b.classList.remove('show');
+}
+
+// Tab title countdown
+let tabFlashInterval=null;
+const originalTitle='Shadow System';
+function updateTabTitle(){
+  if(!tRunning){document.title=originalTitle;return;}
+  const m=Math.floor(Math.abs(tSecs)/60),s=Math.abs(tSecs)%60;
+  const phase=tMode==='pomodoro'?(pomoPhase==='focus'?'🔥':'☕'):tMode==='stopwatch'?'⏱':'⏲';
+  document.title=`${phase} ${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')} | Shadow`;
+}
+function flashTabTitle(msg){
+  let on=true,cnt=0;
+  clearInterval(tabFlashInterval);
+  tabFlashInterval=setInterval(()=>{
+    document.title=on?`🔔 ${msg}`:originalTitle;
+    on=!on; cnt++;
+    if(cnt>10){clearInterval(tabFlashInterval);document.title=originalTitle;}
+  },600);
+}
+
+// Chime sound using Web Audio API
+let audioCtx=null;
+function getAudioCtx(){
+  if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)();
+  return audioCtx;
+}
+function playTimerChime(isBreak){
+  try{
+    const ctx=getAudioCtx();
+    const notes=isBreak?[523,659,784]:[784,659,523,440,523]; // Break: up / Focus-done: down then resolve
+    let t=ctx.currentTime;
+    notes.forEach((freq,i)=>{
+      const osc=ctx.createOscillator();
+      const gain=ctx.createGain();
+      osc.connect(gain);gain.connect(ctx.destination);
+      osc.frequency.value=freq;
+      osc.type='sine';
+      gain.gain.setValueAtTime(0,t+i*0.18);
+      gain.gain.linearRampToValueAtTime(0.35,t+i*0.18+0.04);
+      gain.gain.exponentialRampToValueAtTime(0.001,t+i*0.18+0.4);
+      osc.start(t+i*0.18);
+      osc.stop(t+i*0.18+0.45);
+    });
+  }catch(e){console.warn('chime error',e);}
+}
+
+// ── SESSION RATING MODAL ──
+function showRatingModal(logData){
+  pendingLogData=logData;
+  ratingStars=0; ratingMood='';
+  document.querySelectorAll('.star-btn').forEach(b=>b.classList.remove('lit'));
+  document.querySelectorAll('.mood-btn').forEach(b=>b.classList.remove('sel'));
+  document.getElementById('rating-note').value='';
+  document.getElementById('star-label').textContent='Tap a star';
+  const info=document.getElementById('rating-session-info');
+  if(info)info.textContent=`${logData.min} min · ${logData.sub.charAt(0).toUpperCase()+logData.sub.slice(1)} · ${logData.mode}`;
+  document.getElementById('rating-modal').classList.add('show');
+}
+function rateStar(v){
+  ratingStars=v;
+  const labels=['','😴 Barely there','😕 Mostly distracted','🙂 It was okay','💪 Pretty focused','🔥 Fully locked in!'];
+  document.getElementById('star-label').textContent=labels[v]||'';
+  document.querySelectorAll('.star-btn').forEach(b=>{
+    b.classList.toggle('lit',parseInt(b.dataset.v)<=v);
+  });
+}
+function rateMood(m){
+  ratingMood=m;
+  document.querySelectorAll('.mood-btn').forEach(b=>b.classList.toggle('sel',b.dataset.m===m));
+}
+function submitRating(){
+  const note=document.getElementById('rating-note').value.trim();
+  if(pendingLogData){
+    // Attach rating to the last session
+    const lastSess=S.sessions[S.sessions.length-1];
+    if(lastSess){
+      lastSess.stars=ratingStars||null;
+      lastSess.mood=ratingMood||null;
+      lastSess.note=note||null;
+      // Adjust XP slightly based on self-rating
+      if(ratingStars>=4&&!lastSess.ratingBonus){lastSess.ratingBonus=5;S.hunter.xp+=5;showToast('Focused session! +5 bonus XP ⭐');}
+      if(ratingStars<=2&&!lastSess.ratingPenalty){lastSess.ratingPenalty=true;showToast('Noted. Be honest next time too 💪');}
+      save();
+    }
+  }
+  closeRatingModal();
+  if(focusTab==='log')renderSessionLog();
+}
+function skipRating(){
+  closeRatingModal();
+}
+function closeRatingModal(){
+  document.getElementById('rating-modal').classList.remove('show');
+  pendingLogData=null;
+}
 
 function setMode(m,btn){
   if(tRunning)resetTimer();
@@ -1297,24 +1550,53 @@ function applyCd(){
   tSecs=h*3600+m*60;tTotal=tSecs;if(tRunning)resetTimer();updateTimerUI();
 }
 function toggleTimer(){
-  if(tRunning){clearInterval(tInterval);tRunning=false;pauseCount++;el('t-toggle','Resume');}
-  else{tRunning=true;el('t-toggle','Pause');tInterval=setInterval(tick,1000);}
+  if(tRunning){
+    clearInterval(tInterval);tRunning=false;pauseCount++;el('t-toggle','Resume');
+    pauseAmbientSound(); // pause sound when timer paused
+    document.title=originalTitle;
+  } else {
+    tRunning=true;el('t-toggle','Pause');tInterval=setInterval(tick,1000);
+    resumeAmbientSound(); // resume sound when timer resumes
+  }
 }
 function tick(){
   if(tMode==='stopwatch'){tSecs++;elapsed++;}
   else{if(tSecs<=0){handleEnd();return;}tSecs--;elapsed++;}
   updateTimerUI();
+  updateTabTitle();
 }
 function handleEnd(){
   clearInterval(tInterval);tRunning=false;el('t-toggle','Start');
+  stopAmbientSound(); // stop sound when timer ends
+  document.title=originalTitle;
+
   if(tMode==='pomodoro'){
     if(pomoPhase==='focus'){
+      const logData={min:25,sub:studySub,mode:'pomodoro'};
       autoLog(25,studySub,'pomodoro');pomoCount++;
-      if(pomoCount%4===0){pomoPhase='longbreak';tSecs=15*60;tTotal=15*60;showToast('Long break! 15 min 🌙');}
-      else{pomoPhase='break';tSecs=5*60;tTotal=5*60;showToast('Break time! 5 min 🍃');}
-    }else{pomoPhase='focus';tSecs=25*60;tTotal=25*60;showToast('Focus time! ⚔️');}
+      if(pomoCount%4===0){
+        pomoPhase='longbreak';tSecs=15*60;tTotal=15*60;
+        fireTimerAlert('🍃 Long Break Time!','25-min focus done. Take 15 mins off.',true);
+      } else {
+        pomoPhase='break';tSecs=5*60;tTotal=5*60;
+        fireTimerAlert('☕ Break Time!','Focus session complete. 5 min break.',true);
+      }
+      // Show rating modal after a short delay
+      setTimeout(()=>showRatingModal(logData),800);
+    } else {
+      pomoPhase='focus';tSecs=25*60;tTotal=25*60;
+      fireTimerAlert('⚔ Focus Time!','Break over. Back to work.',false);
+    }
     elapsed=0;tRunning=true;el('t-toggle','Pause');tInterval=setInterval(tick,1000);
-  }else{autoLog(Math.round(tTotal/60),studySub,tMode);showToast('Done! ⚡');tSecs=tTotal;elapsed=0;}
+    resumeAmbientSound();
+  } else {
+    const mins=Math.round(tTotal/60);
+    const logData={min:mins,sub:studySub,mode:tMode};
+    autoLog(mins,studySub,tMode);
+    fireTimerAlert('✅ Session Done!',`${mins} min of ${studySub} complete!`,false);
+    setTimeout(()=>showRatingModal(logData),800);
+    tSecs=tTotal;elapsed=0;
+  }
   updateTimerUI();
 }
 function updateTimerUI(){
@@ -1334,6 +1616,8 @@ function updateTimerUI(){
 }
 function resetTimer(){
   clearInterval(tInterval);tRunning=false;elapsed=0;pauseCount=0;el('t-toggle','Start');
+  stopAmbientSound();
+  document.title=originalTitle;
   if(tMode==='pomodoro'){tSecs=25*60;tTotal=25*60;pomoPhase='focus';}
   else if(tMode==='stopwatch'){tSecs=0;tTotal=0;}
   else applyCd();
@@ -1342,8 +1626,10 @@ function resetTimer(){
 function manualLog(){
   const mins=Math.round(elapsed/60);
   if(mins<1){showToast('Start timer first — min 1 minute');return;}
+  const logData={min:mins,sub:studySub,mode:tMode};
   autoLog(mins,studySub,tMode);showToast('Logged '+mins+'m! +'+Math.round(mins*.5)+' XP');
   elapsed=0;pauseCount=0;
+  setTimeout(()=>showRatingModal(logData),400);
 }
 function autoLog(mins,sub,mode){
   if(mins<1)return;
@@ -1362,6 +1648,132 @@ function autoLog(mins,sub,mode){
   if(mode==='pomodoro'&&mins>=25&&!comp.q2){comp.q2=true;S.hunter.xp+=25;S.questComp[t]=comp;save();updateHeader();}
 }
 function restoreMana(){S.hunter.mana=Math.min(100,S.hunter.mana+30);save();updateHeader();showToast('Mana +30 🌙 — take a real break!');}
+
+// ── AMBIENT SOUND ENGINE (Web Audio API — no external files needed) ──
+let soundCtx=null, activeSound=null, activeSoundKey=null, soundVolume=0.4;
+
+function getSoundCtx(){
+  if(!soundCtx||soundCtx.state==='closed')soundCtx=new(window.AudioContext||window.webkitAudioContext)();
+  return soundCtx;
+}
+
+const SOUNDS={
+  rain:(ctx,vol)=>{
+    const buf=ctx.createBuffer(1,ctx.sampleRate*2,ctx.sampleRate);
+    const d=buf.getChannelData(0);
+    for(let i=0;i<d.length;i++)d[i]=(Math.random()*2-1)*0.8;
+    const src=ctx.createBufferSource();src.buffer=buf;src.loop=true;
+    const lp=ctx.createBiquadFilter();lp.type='lowpass';lp.frequency.value=800;
+    const gain=ctx.createGain();gain.gain.value=vol*0.6;
+    src.connect(lp);lp.connect(gain);gain.connect(ctx.destination);
+    src.start();return{src,gain,stop:()=>{try{src.stop();}catch(e){}}};
+  },
+  white:(ctx,vol)=>{
+    const buf=ctx.createBuffer(1,ctx.sampleRate,ctx.sampleRate);
+    const d=buf.getChannelData(0);
+    for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;
+    const src=ctx.createBufferSource();src.buffer=buf;src.loop=true;
+    const gain=ctx.createGain();gain.gain.value=vol*0.25;
+    src.connect(gain);gain.connect(ctx.destination);src.start();
+    return{src,gain,stop:()=>{try{src.stop();}catch(e){}}};
+  },
+  forest:(ctx,vol)=>{
+    // Birds + wind
+    const nodes=[];
+    function addBird(delay){
+      const osc=ctx.createOscillator();const g=ctx.createGain();
+      osc.type='sine';
+      const base=800+Math.random()*600;
+      osc.frequency.setValueAtTime(base,ctx.currentTime+delay);
+      osc.frequency.linearRampToValueAtTime(base+200,ctx.currentTime+delay+0.1);
+      osc.frequency.linearRampToValueAtTime(base,ctx.currentTime+delay+0.2);
+      g.gain.setValueAtTime(0,ctx.currentTime+delay);
+      g.gain.linearRampToValueAtTime(vol*0.12,ctx.currentTime+delay+0.05);
+      g.gain.linearRampToValueAtTime(0,ctx.currentTime+delay+0.25);
+      osc.connect(g);g.connect(ctx.destination);
+      osc.start(ctx.currentTime+delay);osc.stop(ctx.currentTime+delay+0.3);
+      nodes.push(osc);
+    }
+    // Wind (noise)
+    const buf=ctx.createBuffer(1,ctx.sampleRate*2,ctx.sampleRate);
+    const d=buf.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=(Math.random()*2-1);
+    const wind=ctx.createBufferSource();wind.buffer=buf;wind.loop=true;
+    const hp=ctx.createBiquadFilter();hp.type='bandpass';hp.frequency.value=300;hp.Q.value=0.3;
+    const wg=ctx.createGain();wg.gain.value=vol*0.08;
+    wind.connect(hp);hp.connect(wg);wg.connect(ctx.destination);wind.start();
+    // Schedule birds
+    let t=0.5;const birdInt=setInterval(()=>{if(activeSoundKey!=='forest')return clearInterval(birdInt);addBird(t);t=Math.random()*3+1;},2000);
+    addBird(0.5);addBird(2);addBird(4);
+    return{src:wind,gain:wg,stop:()=>{try{wind.stop();clearInterval(birdInt);}catch(e){}}};
+  },
+  cafe:(ctx,vol)=>{
+    // Low murmur
+    const buf=ctx.createBuffer(1,ctx.sampleRate*2,ctx.sampleRate);
+    const d=buf.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=(Math.random()*2-1);
+    const src=ctx.createBufferSource();src.buffer=buf;src.loop=true;
+    const lp=ctx.createBiquadFilter();lp.type='lowpass';lp.frequency.value=400;
+    const lp2=ctx.createBiquadFilter();lp2.type='highpass';lp2.frequency.value=80;
+    const gain=ctx.createGain();gain.gain.value=vol*0.3;
+    src.connect(lp);lp.connect(lp2);lp2.connect(gain);gain.connect(ctx.destination);src.start();
+    return{src,gain,stop:()=>{try{src.stop();}catch(e){}}};
+  },
+  fire:(ctx,vol)=>{
+    const buf=ctx.createBuffer(1,ctx.sampleRate*2,ctx.sampleRate);
+    const d=buf.getChannelData(0);
+    for(let i=0;i<d.length;i++){d[i]=(Math.random()*2-1)*(0.5+0.5*Math.sin(i/ctx.sampleRate*0.3));}
+    const src=ctx.createBufferSource();src.buffer=buf;src.loop=true;
+    const lp=ctx.createBiquadFilter();lp.type='lowpass';lp.frequency.value=600;
+    const gain=ctx.createGain();gain.gain.value=vol*0.4;
+    src.connect(lp);lp.connect(gain);gain.connect(ctx.destination);src.start();
+    return{src,gain,stop:()=>{try{src.stop();}catch(e){}}};
+  },
+  ocean:(ctx,vol)=>{
+    const buf=ctx.createBuffer(1,ctx.sampleRate*4,ctx.sampleRate);
+    const d=buf.getChannelData(0);
+    for(let i=0;i<d.length;i++){
+      const wave=Math.sin(i/ctx.sampleRate*0.2)*0.5+0.5;
+      d[i]=(Math.random()*2-1)*wave;
+    }
+    const src=ctx.createBufferSource();src.buffer=buf;src.loop=true;
+    const lp=ctx.createBiquadFilter();lp.type='lowpass';lp.frequency.value=700;
+    const gain=ctx.createGain();gain.gain.value=vol*0.5;
+    src.connect(lp);lp.connect(gain);gain.connect(ctx.destination);src.start();
+    return{src,gain,stop:()=>{try{src.stop();}catch(e){}}};
+  }
+};
+
+function toggleSound(key){
+  if(activeSoundKey===key){stopAmbientSound();return;}
+  stopAmbientSound();
+  try{
+    const ctx=getSoundCtx();
+    if(ctx.state==='suspended')ctx.resume();
+    activeSound=SOUNDS[key](ctx,soundVolume);
+    activeSoundKey=key;
+    document.querySelectorAll('.sound-chip').forEach(b=>b.classList.remove('on'));
+    const btn=document.getElementById('snd-'+key);
+    if(btn)btn.classList.add('on');
+    showToast((key.charAt(0).toUpperCase()+key.slice(1))+' sounds on 🎵');
+  }catch(e){showToast('Sound not available: '+e.message);}
+}
+function stopAmbientSound(){
+  if(activeSound){activeSound.stop();activeSound=null;}
+  activeSoundKey=null;
+  document.querySelectorAll('.sound-chip').forEach(b=>b.classList.remove('on'));
+}
+function pauseAmbientSound(){
+  if(soundCtx&&soundCtx.state==='running')soundCtx.suspend();
+}
+function resumeAmbientSound(){
+  if(activeSoundKey&&soundCtx&&soundCtx.state==='suspended')soundCtx.resume();
+}
+function setVolume(v){
+  soundVolume=v/100;
+  if(activeSound&&activeSound.gain)activeSound.gain.gain.value=soundVolume*(activeSoundKey==='white'?0.25:activeSoundKey==='cafe'?0.3:0.5);
+}
+
+// Init notifications UI on load
+window.addEventListener('load',()=>updateNotifUI());
 // FOCUS STATS SYSTEM
 let focusTab='timer', logPeriod='today', statsPeriod='today';
 
@@ -1502,7 +1914,9 @@ function renderSessionLog(){
     let h='';
     sess.forEach(s=>{
       const[tc,tl]=(tags[s.sub]||'tag-other OTH').split(' ');
-      h+=`<div class="sess-item"><div class="sess-tag ${tc}">${tl}</div><div class="sess-info"><div class="sess-name">${lbl2[s.sub]||s.sub}</div><div class="sess-meta">${s.time||''}${s.time?' · ':''}${modeLabel[s.mode]||s.mode} · ${s.eff||100}% eff</div></div><div class="sess-dur">${fmtHM(s.min)}<br><span style="color:var(--gold);font-size:11px">+${s.xp||0} XP</span></div></div>`;
+      const starsHtml=s.stars?'⭐'.repeat(s.stars):'';
+      const moodHtml=s.mood?`<span style="font-size:10px;color:var(--text3);margin-left:4px">${{'locked-in':'🔥','decent':'👍','distracted':'😵','zoned-out':'💭','tired':'😴','anxious':'😬'}[s.mood]||''}</span>`:'';
+      h+=`<div class="sess-item"><div class="sess-tag ${tc}">${tl}</div><div class="sess-info"><div class="sess-name">${lbl2[s.sub]||s.sub} ${moodHtml}</div><div class="sess-meta">${s.time||''}${s.time?' · ':''}${modeLabel[s.mode]||s.mode} · ${s.eff||100}% eff${starsHtml?' · '+starsHtml:''}</div>${s.note?`<div style="font-size:10px;color:var(--text3);margin-top:2px;font-style:italic">"${s.note}"</div>`:''}</div><div class="sess-dur">${fmtHM(s.min)}<br><span style="color:var(--gold);font-size:11px">+${s.xp||0} XP</span></div></div>`;
     });
     logEl.innerHTML=h;
   } else {
