@@ -645,8 +645,15 @@ section.active{display:block}
 
   <!-- Study hours per day -->
   <div class="card">
-    <div class="card-hdr"><span class="hl">⏱ Study Hours — Last 7 Days</span></div>
-    <div class="chart-wrap" style="height:220px"><canvas id="ch-study"></canvas></div>
+    <div class="card-hdr" style="display:flex;justify-content:space-between;align-items:center">
+      <span class="hl">⏱ Study Hours — Last 7 Days</span>
+      <div style="display:flex;gap:10px;font-size:10px;color:var(--text2)">
+        <span><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:rgba(91,110,245,.8);margin-right:3px"></span>PHY</span>
+        <span><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:rgba(0,214,143,.8);margin-right:3px"></span>CHE</span>
+        <span><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:rgba(244,196,48,.8);margin-right:3px"></span>MAT</span>
+      </div>
+    </div>
+    <div id="ch-study-custom" style="margin-top:8px"></div>
   </div>
 
   <!-- Cumulative Study -->
@@ -2557,38 +2564,103 @@ function renderDayView(){
   const plan=S.workout.plan[selDay];
   const log=S.workout.logs.find(l=>l.date===today()&&l.day===selDay);
   const comp=(log&&log.comp)||{};
-  let h=`<div style="border-top:1px solid var(--border);padding-top:14px;margin-top:8px"><div style="font-size:15px;font-weight:700;margin-bottom:12px">${plan.name}</div>`;
-  if(!plan.active||!plan.exercises.length){
+  let h=`<div style="border-top:1px solid var(--border);padding-top:14px;margin-top:8px"><div id="day-title-display" style="font-size:15px;font-weight:700;margin-bottom:12px">${plan.name}</div>`;
+  if(editMode){
+    // ── Edit mode: name field + exercise list + add button ──
+    h+=`<div style="margin-bottom:14px">
+      <div style="font-size:10px;color:var(--text2);text-transform:uppercase;letter-spacing:.6px;margin-bottom:5px;font-weight:700">Day Name</div>
+      <input class="fi" style="font-size:14px;font-weight:700;padding:9px 12px" 
+        value="${plan.name}" 
+        oninput="S.workout.plan['${selDay}'].name=this.value;document.getElementById('day-title-display').textContent=this.value"
+        placeholder="e.g. Push Day, Leg Day...">
+    </div>`;
+    h+=`<div style="font-size:10px;color:var(--text2);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px;font-weight:700">Exercises <span style="color:var(--text3);font-weight:400;font-size:9px">(Name · Sets · Reps)</span></div>`;
+    h+=`<div id="ex-edit-list">`;
+    if(!plan.exercises.length){h+=`<div style="color:var(--text3);font-size:13px;padding:8px 0 12px">No exercises yet. Add one below.</div>`;}
+    plan.exercises.forEach((ex,i)=>{
+      h+=`<div class="ex-item" style="gap:7px;align-items:center;padding:8px 0">
+        <div style="flex:1;min-width:0"><input class="edit-fi" style="width:100%;font-size:13px" value="${ex.name}" oninput="S.workout.plan['${selDay}'].exercises[${i}].name=this.value" placeholder="Exercise name"></div>
+        <input class="edit-num" type="number" value="${ex.sets}" oninput="S.workout.plan['${selDay}'].exercises[${i}].sets=parseInt(this.value)||1" min="1" style="width:42px" title="Sets">
+        <span style="color:var(--text3);font-size:11px;flex-shrink:0">×</span>
+        <input class="edit-fi" style="width:52px;font-size:12px" value="${ex.reps}" oninput="S.workout.plan['${selDay}'].exercises[${i}].reps=this.value" placeholder="Reps" title="Reps/Duration">
+        <button onclick="rmEx(${i})" style="background:none;border:1px solid rgba(255,59,92,.3);border-radius:5px;color:var(--red);cursor:pointer;font-size:13px;padding:3px 8px;flex-shrink:0;transition:all .15s" onmouseover="this.style.background='rgba(255,59,92,.1)'" onmouseout="this.style.background='none'">✕</button>
+      </div>`;
+    });
+    h+=`</div>
+    <button onclick="addEx()" style="width:100%;margin-top:10px;padding:11px;border-radius:var(--radius-sm);font-family:var(--font);font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;cursor:pointer;background:rgba(91,110,245,.1);border:1px dashed rgba(91,110,245,.4);color:var(--accent);transition:all .2s" onmouseover="this.style.background='rgba(91,110,245,.18)'" onmouseout="this.style.background='rgba(91,110,245,.1)'">+ Add Exercise</button>`;
+    h+=`<div style="display:flex;gap:8px;margin-top:12px">
+      <div style="display:flex;align-items:center;gap:8px;flex:1">
+        <span style="font-size:12px;color:var(--text2)">Active day</span>
+        <div onclick="toggleDayActive()" style="width:36px;height:20px;border-radius:10px;background:${plan.active?'var(--accent)':'rgba(255,255,255,.1)'};cursor:pointer;position:relative;transition:background .2s;flex-shrink:0">
+          <div style="width:16px;height:16px;border-radius:50%;background:#fff;position:absolute;top:2px;${plan.active?'right:2px':'left:2px'};transition:all .2s"></div>
+        </div>
+      </div>
+    </div>`;
+  }else if(!plan.active||!plan.exercises.length){
     h+='<div style="color:var(--text2);font-size:14px;padding:12px 0">Rest day. Recover and recharge 🌙</div>';
-  }else if(editMode){
-    h+='<div>';
-    plan.exercises.forEach((ex,i)=>{h+=`<div class="ex-item"><input class="edit-fi" style="flex:1" value="${ex.name}" onchange="S.workout.plan['${selDay}'].exercises[${i}].name=this.value"><input class="edit-num" type="number" value="${ex.sets}" onchange="S.workout.plan['${selDay}'].exercises[${i}].sets=parseInt(this.value)||1" min="1"><span style="color:var(--text3);font-size:11px">×</span><input class="edit-fi" style="width:56px" value="${ex.reps}" onchange="S.workout.plan['${selDay}'].exercises[${i}].reps=this.value"><button class="btn btn-danger btn-sm" onclick="rmEx(${i})" style="padding:5px 8px;font-size:10px">✕</button></div>`;});
-    h+=`</div><button class="btn btn-ghost btn-sm" onclick="addEx()" style="width:100%;margin-top:9px">+ Add Exercise</button>`;
+    h+=`<div style="margin-top:8px"><button onclick="toggleEditFromDay()" style="background:rgba(91,110,245,.07);border:1px solid var(--border2);border-radius:var(--radius-sm);color:var(--accent);font-size:12px;font-weight:700;padding:8px 14px;cursor:pointer;font-family:var(--font)">✏ Edit this day</button></div>`;
   }else{
+    // ── View mode: exercise checklist ──
     plan.exercises.forEach((ex,i)=>{
       const d=!!comp[i];
       h+=`<div class="ex-item"><div class="ex-chk${d?' done':''}" onclick="togEx(${i})">${d?'<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>':''}</div><span class="ex-name" style="${d?'text-decoration:line-through;color:var(--text3)':''}">${ex.name}</span><span class="ex-sets">${ex.sets}×${ex.reps}</span></div>`;
     });
     const dc=Object.values(comp).filter(Boolean).length,tot=plan.exercises.length;
-    if(dc>0)h+=`<div style="margin-top:10px;font-size:12px;color:var(--text2)">${dc}/${tot} done · <span style="color:var(--gold)">+${dc*5} XP</span></div>`;
+    const pct=tot>0?Math.round(dc/tot*100):0;
+    h+=`<div style="margin-top:12px">
+      <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text2);margin-bottom:5px">
+        <span>${dc}/${tot} done</span>
+        <span style="color:var(--gold);font-family:var(--mono)">+${dc===tot&&dc>0?dc*5+30:dc*5} XP</span>
+      </div>
+      <div style="height:4px;background:rgba(255,255,255,.05);border-radius:2px;overflow:hidden">
+        <div style="height:100%;width:${pct}%;background:${pct===100?'var(--green)':'var(--accent)'};border-radius:2px;transition:width .3s"></div>
+      </div>
+    </div>
+    <div style="margin-top:8px;text-align:right">
+      <button onclick="toggleEditFromDay()" style="background:none;border:none;color:var(--text3);font-size:11px;cursor:pointer;font-family:var(--font)">✏ Edit / Add exercises</button>
+    </div>`;
   }
   h+='</div>';document.getElementById('day-view').innerHTML=h;
 }
 function togEx(i){
   const t=today();
   let log=S.workout.logs.find(l=>l.date===t&&l.day===selDay);
-  if(!log){log={date:t,day:selDay,comp:{},xp:0};S.workout.logs.push(log);}
+  if(!log){log={date:t,day:selDay,comp:{},xp:0,xpRewarded:0};S.workout.logs.push(log);}
   if(!log.comp)log.comp={};
+  if(log.xpRewarded===undefined)log.xpRewarded=0;
   log.comp[i]=!log.comp[i];
   const plan=S.workout.plan[selDay];
   const dc=Object.values(log.comp).filter(Boolean).length;
-  log.xp=dc*5;
-  if(dc===plan.exercises.length){const qc=S.questComp[t]||{};if(!qc.q3){qc.q3=true;S.questComp[t]=qc;S.hunter.xp+=30;showToast('Workout complete! +30 XP 💪');updateHeader();}}
-  save();renderWorkout();
+  // Each exercise = 5 XP, tracked via xpRewarded to avoid double-add
+  const targetXP=dc*5;
+  const delta=targetXP-log.xpRewarded;
+  if(delta>0){S.hunter.xp+=delta;log.xpRewarded=targetXP;}
+  else if(delta<0){S.hunter.xp=Math.max(0,S.hunter.xp+delta);log.xpRewarded=targetXP;}
+  log.xp=targetXP;
+  // Completion bonus: +30 XP quest when all done (once)
+  if(dc===plan.exercises.length){
+    const qc=S.questComp[t]||{};
+    if(!qc.q3){
+      qc.q3=true;S.questComp[t]=qc;
+      S.hunter.xp+=30;log.xpRewarded+=30;log.xp+=30;
+      showToast('Workout complete! +30 XP 💪');
+      if(typeof renderPenalty==='function')renderPenalty();
+      if(typeof renderTodaysMission==='function')renderTodaysMission();
+    }
+  }
+  updateHeader();save();renderWorkout();
 }
-function toggleEdit(){editMode=!editMode;document.getElementById('edit-btn').textContent=editMode?'Save Plan':'Edit Plan';if(!editMode)save();renderDayView();}
+function toggleEdit(){editMode=!editMode;document.getElementById('edit-btn').textContent=editMode?'💾 Save Plan':'✏ Edit Plan';if(!editMode)save();renderDayView();}
+function toggleEditFromDay(){editMode=true;document.getElementById('edit-btn').textContent='💾 Save Plan';renderDayView();}
+function toggleDayActive(){S.workout.plan[selDay].active=!S.workout.plan[selDay].active;renderDayView();}
 function rmEx(i){S.workout.plan[selDay].exercises.splice(i,1);renderDayView();}
-function addEx(){S.workout.plan[selDay].exercises.push({name:'New Exercise',sets:3,reps:'10'});renderDayView();}
+function addEx(){
+  if(!S.workout.plan[selDay].exercises)S.workout.plan[selDay].exercises=[];
+  S.workout.plan[selDay].exercises.push({name:'',sets:3,reps:'10'});
+  renderDayView();
+  // Focus the last name input
+  setTimeout(()=>{const inputs=document.querySelectorAll('#ex-edit-list .edit-fi');if(inputs.length)inputs[inputs.length-1].focus();},50);
+}
 function renderWoLog(){
   const logs=[...S.workout.logs].reverse().slice(0,7);
   if(!logs.length){document.getElementById('wo-log').innerHTML='<div class="empty">No workouts logged yet 💪</div>';return;}
@@ -2635,17 +2707,78 @@ function renderCharts(){
     }]
   },options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`Score: ${ctx.raw}/100`}}},scales:{x:{ticks:{color:gc.tc,font:{size:9}},grid:{color:gc.gr}},y:{min:0,max:100,ticks:{color:gc.tc,font:{size:10},callback:v=>v+'%'},grid:{color:gc.gr}}}}});
 
-  // STUDY HOURS BAR (last 7)
-  if(chS)chS.destroy();
-  chS=new Chart(document.getElementById('ch-study').getContext('2d'),{type:'bar',data:{
-    labels:last7.map(d=>new Date(d).toLocaleDateString('en-IN',{weekday:'short'})),
-    datasets:[
-      {label:'Physics',data:last7.map(d=>+(S.sessions.filter(s=>s.date===d&&s.sub==='physics').reduce((a,s)=>a+s.min,0)/60).toFixed(1)),backgroundColor:'rgba(91,110,245,.8)',borderRadius:4},
-      {label:'Chemistry',data:last7.map(d=>+(S.sessions.filter(s=>s.date===d&&s.sub==='chemistry').reduce((a,s)=>a+s.min,0)/60).toFixed(1)),backgroundColor:'rgba(0,214,143,.8)',borderRadius:4},
-      {label:'Maths',data:last7.map(d=>+(S.sessions.filter(s=>s.date===d&&s.sub==='maths').reduce((a,s)=>a+s.min,0)/60).toFixed(1)),backgroundColor:'rgba(244,196,48,.8)',borderRadius:4},
-      {label:'Other',data:last7.map(d=>+(S.sessions.filter(s=>s.date===d&&s.sub==='other').reduce((a,s)=>a+s.min,0)/60).toFixed(1)),backgroundColor:'rgba(150,150,200,.6)',borderRadius:4},
-    ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:gc.tc,font:{size:11}}}},scales:{x:{stacked:true,ticks:{color:gc.tc,font:{size:10}},grid:{color:gc.gr}},y:{stacked:true,ticks:{color:gc.tc,font:{size:10}},grid:{color:gc.gr},title:{display:true,text:'Hours',color:gc.tc,font:{size:10}}}}}
-  });
+  // STUDY HOURS — Custom HTML bar chart (better looking)
+  (()=>{
+    const cont=document.getElementById('ch-study-custom');if(!cont)return;
+    const data=last7.map(d=>{
+      const phy=S.sessions.filter(s=>s.date===d&&s.sub==='physics').reduce((a,s)=>a+s.min,0)/60;
+      const che=S.sessions.filter(s=>s.date===d&&s.sub==='chemistry').reduce((a,s)=>a+s.min,0)/60;
+      const mat=S.sessions.filter(s=>s.date===d&&s.sub==='maths').reduce((a,s)=>a+s.min,0)/60;
+      const oth=S.sessions.filter(s=>s.date===d&&s.sub==='other').reduce((a,s)=>a+s.min,0)/60;
+      const total=phy+che+mat+oth;
+      const dt=new Date(d);
+      const dayStr=dt.toLocaleDateString('en-IN',{weekday:'short'});
+      const dateStr=dt.getDate()+'/'+(dt.getMonth()+1);
+      const isToday=d===today();
+      return{phy,che,mat,oth,total,dayStr,dateStr,isToday};
+    });
+    const maxH=Math.max(...data.map(d=>d.total),1);
+    const goalH=S.goals&&S.goals.studyHours?S.goals.studyHours:6;
+    const goalPct=Math.min(100,goalH/maxH*100);
+    const barAreaH=180;
+    const segs=[
+      {key:'phy',color:'rgba(91,110,245,.85)',label:'PHY'},
+      {key:'che',color:'rgba(0,214,143,.85)',label:'CHE'},
+      {key:'mat',color:'rgba(244,196,48,.85)',label:'MAT'},
+      {key:'oth',color:'rgba(150,150,200,.7)',label:'OTH'},
+    ];
+    // Y-axis labels (0h, maxH/2h, maxH h)
+    const yTicks=[0, maxH/2, maxH].map(v=>+(v).toFixed(1));
+    const totalWeek=data.reduce((a,d)=>a+d.total,0);
+    const avgDay=totalWeek/7;
+    cont.innerHTML=`
+      <div style="font-size:11px;color:var(--text2);display:flex;gap:16px;margin-bottom:10px;flex-wrap:wrap">
+        <span>This week: <b style="color:var(--text)">${totalWeek.toFixed(1)}h</b></span>
+        <span>Daily avg: <b style="color:var(--accent)">${avgDay.toFixed(1)}h</b></span>
+        <span>Goal: <b style="color:var(--gold)">${goalH}h/day</b></span>
+      </div>
+      <div style="display:flex;gap:0;position:relative">
+        <!-- Y axis -->
+        <div style="display:flex;flex-direction:column;justify-content:space-between;padding-bottom:28px;margin-right:4px;flex-shrink:0">
+          ${[...yTicks].reverse().map(v=>`<div style="font-size:9px;color:var(--text3);text-align:right;padding-right:4px;white-space:nowrap">${v.toFixed(1)}h</div>`).join('')}
+        </div>
+        <div style="flex:1;position:relative">
+          <!-- Goal line -->
+          <div style="position:absolute;left:0;right:0;top:${Math.round((1-goalPct/100)*barAreaH)}px;height:1px;background:rgba(244,196,48,.4);z-index:2;pointer-events:none">
+            <span style="position:absolute;right:2px;top:-9px;font-size:8px;color:rgba(244,196,48,.7)">goal</span>
+          </div>
+          <!-- Grid lines -->
+          ${[0.25,0.5,0.75].map(f=>`<div style="position:absolute;left:0;right:0;top:${Math.round(f*barAreaH)}px;height:1px;background:rgba(255,255,255,.04);pointer-events:none"></div>`).join('')}
+          <!-- Bars -->
+          <div style="display:flex;align-items:flex-end;gap:6px;height:${barAreaH}px;position:relative;z-index:1">
+            ${data.map(d=>{
+              const totalPct=d.total/maxH;
+              const barH=Math.max(totalPct*barAreaH,d.total>0?3:0);
+              const isToday=d.isToday;
+              return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;position:relative" title="${d.dayStr}: ${d.total.toFixed(1)}h">
+                ${d.total>0?`<div style="font-size:9px;color:${isToday?'var(--accent)':'var(--text2)'};margin-bottom:3px;font-weight:${isToday?700:400}">${d.total.toFixed(1)}h</div>`:''}
+                <div style="width:100%;height:${barH}px;display:flex;flex-direction:column;justify-content:flex-end;border-radius:5px 5px 0 0;overflow:hidden;${isToday?'box-shadow:0 0 0 1.5px var(--accent)':''}">
+                  ${segs.filter(s=>d[s.key]>0).map(s=>{
+                    const sh=Math.max(1,Math.round(d[s.key]/d.total*barH));
+                    return `<div style="height:${sh}px;background:${s.color};flex-shrink:0" title="${s.label}: ${d[s.key].toFixed(1)}h"></div>`;
+                  }).join('')}
+                  ${d.total===0?`<div style="height:3px;background:rgba(255,255,255,.04);width:100%"></div>`:''}
+                </div>
+              </div>`;
+            }).join('')}
+          </div>
+          <!-- X labels -->
+          <div style="display:flex;gap:6px;margin-top:6px">
+            ${data.map(d=>`<div style="flex:1;text-align:center;font-size:9px;color:${d.isToday?'var(--accent)':'var(--text3)'};font-weight:${d.isToday?700:400}">${d.dayStr}<br><span style="font-size:8px;color:var(--text3)">${d.dateStr}</span></div>`).join('')}
+          </div>
+        </div>
+      </div>`;
+  })();
 
   // CUMULATIVE STUDY
   if(chCum)chCum.destroy();
@@ -2704,32 +2837,88 @@ function renderCharts(){
 
 function renderHeatmap(){
   const hm=document.getElementById('ch-heatmap');if(!hm)return;
-  const days=35;const cells=[];
-  for(let i=days-1;i>=0;i--){
+  // Build 10 weeks of data (70 days), arranged Mon→Sun columns like GitHub
+  const WEEKS=10;const TOTAL=WEEKS*7;
+  const cells=[];
+  const todayStr=today();
+  for(let i=TOTAL-1;i>=0;i--){
     const d=new Date();d.setDate(d.getDate()-i);
     const ds=d.toISOString().split('T')[0];
-    const mins=S.sessions.filter(s=>s.date===ds).reduce((a,s)=>a+s.min,0);
+    const mins=S.sessions.filter(s=>s.date===ds&&!s.paused).reduce((a,s)=>a+s.min,0);
     const hrs=mins/60;
-    const intensity=hrs===0?0:hrs<1?1:hrs<2?2:hrs<4?3:4;
-    const colors=['rgba(255,255,255,.04)','rgba(91,110,245,.25)','rgba(91,110,245,.5)','rgba(91,110,245,.75)','rgba(91,110,245,1)'];
-    cells.push({ds,hrs,intensity,color:colors[intensity],label:d.toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short'})});
+    const isToday=ds===todayStr;
+    const isFuture=ds>todayStr;
+    let lvl=0;
+    if(!isFuture&&hrs>0)lvl=hrs<1?1:hrs<2?2:hrs<4?3:4;
+    const colors=['rgba(255,255,255,.03)','rgba(91,110,245,.22)','rgba(91,110,245,.5)','rgba(91,110,245,.78)','#5b6ef5'];
+    const todayBorder=isToday?'2px solid var(--gold)':'1px solid rgba(91,110,245,.08)';
+    const weekday=d.toLocaleDateString('en-IN',{weekday:'short'});
+    const dateStr=d.toLocaleDateString('en-IN',{day:'numeric',month:'short'});
+    cells.push({ds,hrs,lvl,color:isFuture?'rgba(255,255,255,.015)':colors[lvl],border:todayBorder,label:weekday+' '+dateStr,mins,isToday,isFuture});
   }
-  const weeks=[];for(let i=0;i<5;i++)weeks.push(cells.slice(i*7,(i+1)*7));
-  const dayLabels=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  // Group into columns by week (each column = 1 week Mon-Sun)
+  // We want rows = Mon,Tue,Wed,Thu,Fri,Sat,Sun (7 rows), cols = weeks
+  const ROW_LABELS=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  // Pad so first cell aligns to Monday
+  const firstD=new Date();firstD.setDate(firstD.getDate()-(TOTAL-1));
+  const startDow=(firstD.getDay()+6)%7; // 0=Mon
+  const paddedCells=[...Array(startDow).fill(null),...cells];
+  while(paddedCells.length%7!==0)paddedCells.push(null);
+  const totalCols=paddedCells.length/7;
+  // month labels: find first cell of each month
+  const monthMap={};
+  cells.forEach((c,rawIdx)=>{
+    const paddedIdx=rawIdx+startDow;
+    const col=Math.floor(paddedIdx/7);
+    const mo=new Date(c.ds).toLocaleDateString('en-IN',{month:'short'});
+    if(!monthMap[mo])monthMap[mo]=col;
+  });
+  const monthRow=Array(totalCols).fill('');
+  Object.entries(monthMap).forEach(([mo,col])=>{monthRow[col]=mo;});
+  const totalSess=S.sessions.filter(s=>!s.paused).length;
+  const totalHrs=(S.sessions.filter(s=>!s.paused).reduce((a,s)=>a+s.min,0)/60).toFixed(1);
+  const activeDays=new Set(cells.filter(c=>c.hrs>0).map(c=>c.ds)).size;
+
   hm.innerHTML=`
-    <div style="font-size:10px;color:var(--text3);margin-bottom:8px">Each cell = 1 day. Darker = more hours studied.</div>
-    <div style="overflow-x:auto">
-    <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;min-width:280px">
-      ${dayLabels.map(dl=>`<div style="text-align:center;font-size:9px;color:var(--text3);padding:2px">${dl}</div>`).join('')}
-      ${cells.map(c=>`<div title="${c.label}: ${c.hrs.toFixed(1)}h" style="height:32px;border-radius:4px;background:${c.color};border:1px solid rgba(91,110,245,.1);display:flex;align-items:center;justify-content:center;font-size:9px;color:${c.intensity>2?'rgba(255,255,255,.7)':'var(--text3)'}">
-        ${c.hrs>0?c.hrs.toFixed(1):''}
-      </div>`).join('')}
-    </div></div>
-    <div style="display:flex;align-items:center;gap:8px;margin-top:10px;font-size:10px;color:var(--text3)">
+    <div style="display:flex;gap:16px;font-size:11px;color:var(--text2);margin-bottom:10px;flex-wrap:wrap">
+      <span>📅 <b style="color:var(--text)">${activeDays}</b> active days</span>
+      <span>📚 <b style="color:var(--accent)">${totalHrs}h</b> total</span>
+      <span>⚡ <b style="color:var(--gold)">${totalSess}</b> sessions</span>
+    </div>
+    <div style="overflow-x:auto;padding-bottom:4px">
+      <div style="display:inline-grid;grid-template-columns:28px repeat(${totalCols},1fr);gap:3px;min-width:max-content">
+        <!-- Month labels row -->
+        <div></div>
+        ${monthRow.map(m=>`<div style="font-size:9px;color:var(--text3);padding-bottom:3px;font-weight:600;text-align:center">${m}</div>`).join('')}
+        <!-- Day rows -->
+        ${ROW_LABELS.map((rowLbl,row)=>{
+          const rowCells=[];
+          for(let col=0;col<totalCols;col++)rowCells.push(paddedCells[col*7+row]);
+          return `<div style="font-size:9px;color:var(--text3);display:flex;align-items:center;padding-right:4px;white-space:nowrap">${rowLbl}</div>`+
+            rowCells.map(c=>{
+              if(!c)return `<div style="width:14px;height:14px;border-radius:3px"></div>`;
+              return `<div title="${c.label}: ${c.hrs.toFixed(1)}h${c.isToday?' (today)':''}" 
+                style="width:14px;height:14px;border-radius:3px;background:${c.color};border:${c.border};cursor:default;position:relative;transition:transform .1s"
+                onmouseover="showHeatTip(event,'${c.label}: ${c.hrs>0?c.hrs.toFixed(1)+'h':c.isFuture?'—':'No study'}')"
+                onmouseout="hideHeatTip()"></div>`;
+            }).join('');
+        }).join('')}
+      </div>
+    </div>
+    <div id="heat-tip" style="position:fixed;background:var(--card2);border:1px solid var(--border2);border-radius:7px;padding:5px 10px;font-size:11px;color:var(--text);pointer-events:none;opacity:0;transition:opacity .15s;z-index:9999;white-space:nowrap"></div>
+    <div style="display:flex;align-items:center;gap:6px;margin-top:8px;font-size:10px;color:var(--text3)">
       Less
-      ${['rgba(255,255,255,.04)','rgba(91,110,245,.25)','rgba(91,110,245,.5)','rgba(91,110,245,.75)','rgba(91,110,245,1)'].map(c=>`<div style="width:14px;height:14px;border-radius:3px;background:${c};border:1px solid rgba(91,110,245,.15)"></div>`).join('')}
+      ${['rgba(255,255,255,.03)','rgba(91,110,245,.22)','rgba(91,110,245,.5)','rgba(91,110,245,.78)','#5b6ef5'].map((c,i)=>`<div title="${['0h','<1h','1-2h','2-4h','4h+'][i]}" style="width:12px;height:12px;border-radius:3px;background:${c};border:1px solid rgba(91,110,245,.12)"></div>`).join('')}
       More
     </div>`;
+}
+function showHeatTip(e,msg){
+  const t=document.getElementById('heat-tip');if(!t)return;
+  t.textContent=msg;t.style.opacity='1';
+  t.style.left=(e.clientX+10)+'px';t.style.top=(e.clientY-30)+'px';
+}
+function hideHeatTip(){
+  const t=document.getElementById('heat-tip');if(t)t.style.opacity='0';
 }
 
 function renderChronicle(){
