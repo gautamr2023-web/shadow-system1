@@ -412,6 +412,7 @@ section.active{display:block}
       </div>
     </div>
     <div class="sw-stats" id="sw-stats"></div>
+    <div id="sw-rank-req"></div>
     <div class="sw-footer">
       <div class="sw-streak"><span id="sw-streak">0</span> day streak</div>
       <div class="sw-jee" id="sw-jee-days">— days to exam</div>
@@ -427,6 +428,7 @@ section.active{display:block}
     <div class="dstat"><div class="dstat-val" id="ds-xp">+0</div><div class="dstat-lbl">XP Today</div></div>
     <div class="dstat"><div class="dstat-val" id="ds-sess">0</div><div class="dstat-lbl">Sessions</div></div>
   </div>
+  <div id="todays-mission"></div>
   <div class="card">
     <div class="card-hdr"><span class="hl">Daily Quests</span></div>
     <div id="quest-list"></div>
@@ -811,6 +813,28 @@ section.active{display:block}
     </div>
   </div>
 
+  <!-- PAUSE MODE -->
+  <div class="card">
+    <div class="card-hdr"><span class="hl">⏸ Pause Mode</span></div>
+    <div style="font-size:12px;color:var(--text2);margin-bottom:12px;line-height:1.6">Activate during travel or unavoidable breaks. No XP, no penalties, no streak changes. Maximum 10 days.</div>
+    <div id="pause-mode-status" style="margin-bottom:12px"></div>
+    <div style="display:flex;gap:10px;margin-bottom:10px;flex-wrap:wrap">
+      <div style="flex:1;min-width:120px">
+        <div class="fl" style="margin-bottom:4px">Start Date</div>
+        <input type="date" class="fi" id="pause-start">
+      </div>
+      <div style="flex:1;min-width:120px">
+        <div class="fl" style="margin-bottom:4px">End Date</div>
+        <input type="date" class="fi" id="pause-end">
+      </div>
+    </div>
+    <div style="font-size:11px;color:var(--text3);margin-bottom:12px">Max 10 days. System resumes automatically after end date.</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn btn-primary btn-sm" onclick="activatePauseMode()" id="pause-activate-btn">Activate Pause</button>
+      <button class="btn btn-danger btn-sm" onclick="deactivatePauseMode()" id="pause-deactivate-btn" style="display:none">Deactivate Early</button>
+    </div>
+  </div>
+
   <!-- Danger zone -->
   <div class="card" style="border-color:rgba(255,59,92,.2)">
     <div class="card-hdr"><span style="color:var(--red)">Danger Zone</span></div>
@@ -974,10 +998,20 @@ section.active{display:block}
 <script>
 // DATA
 const RANKS=[
-  {r:'E',min:0,max:500},{r:'D',min:500,max:1500},{r:'C',min:1500,max:3500},
-  {r:'B',min:3500,max:7000},{r:'A',min:7000,max:12000},{r:'S',min:12000,max:22000},
-  {r:'SS',min:22000,max:40000},{r:'SSS',min:40000,max:Infinity}
+  {r:'E',min:0,max:800},{r:'D',min:800,max:1700},{r:'C',min:1700,max:2700},
+  {r:'B',min:2700,max:4300},{r:'A',min:4300,max:7200},{r:'S',min:7200,max:15000},
+  {r:'SS',min:15000,max:30000},{r:'SSS',min:30000,max:Infinity}
 ];
+// ── RANK REQUIREMENTS (multi-condition: XP + Streak + Performance) ──
+const RANK_REQS=[
+  {from:'E',to:'D',xp:800,streak:3},
+  {from:'D',to:'C',xp:1700,streak:7},
+  {from:'C',to:'B',xp:2700,streak:14},
+  {from:'B',to:'A',xp:4300,streak:21},
+  {from:'A',to:'S',xp:7200,streak:30},
+];
+const RANK_ORDER=['E','D','C','B','A','S','SS','SSS'];
+const DAILY_MIN={sessions:2,hours:2}; // minimum daily standard
 const QUESTS=[
   {id:'q1',name:'Study 2+ hours',desc:'Active sessions today',xp:50,auto:true},
   {id:'q2',name:'Complete a Pomodoro',desc:'Finish one 25-min block',xp:25,auto:true},
@@ -1022,6 +1056,14 @@ const DEF={
   classYear:'12',
   goals:{studyHours:6,questStudyHours:2},
   customQuests:null,
+  // ── NEW SYSTEM KEYS (v4) ──
+  dailyStatus:{},        // {date: 'valid'|'failed'|'zero'}
+  consecutiveFailures:0,
+  recoveryMode:{active:false,startDate:null},
+  pauseMode:{active:false,start:null,end:null},
+  weeklyBoss:{},         // {weekKey: true}
+  starterXPDates:{},     // starter trigger per date (prevent double)
+  dailyXPCap:{},         // {date: total session XP earned (cap 500)}
 };
 
 let S,db,auth,currentUser=null,saveTimer=null;
@@ -1092,6 +1134,15 @@ function ensureKeys(){
   if(!S.goals)S.goals={studyHours:6,questStudyHours:2};
   if(!S.hunter.name)S.hunter.name='Gautam';
   if(S.customQuests===undefined)S.customQuests=null;
+  // v4 keys
+  if(!S.dailyStatus)S.dailyStatus={};
+  if(S.consecutiveFailures===undefined)S.consecutiveFailures=0;
+  if(!S.recoveryMode)S.recoveryMode={active:false,startDate:null};
+  if(!S.pauseMode)S.pauseMode={active:false,start:null,end:null};
+  if(!S.weeklyBoss)S.weeklyBoss={};
+  if(!S.starterXPDates)S.starterXPDates={};
+  if(!S.dailyXPCap)S.dailyXPCap={};
+  if(!S.hunter.rank)S.hunter.rank=getRankByXPStatic(S.hunter.xp||0);
 }
 function loadLocal(){
   try{S=JSON.parse(localStorage.getItem('ss_v3'))||defState();}catch(e){S=defState();}
@@ -1154,22 +1205,164 @@ function showToast(msg){
   clearTimeout(t._to);t._to=setTimeout(()=>t.classList.remove('show'),2800);
 }
 
-// STREAK
+// ── STREAK ENGINE (v4) ──
 function checkStreak(){
   const t=today(),last=S.hunter.lastDate;
-  if(last!==t){
-    if(last){const diff=Math.floor((new Date(t)-new Date(last))/86400000);S.hunter.streak=diff===1?S.hunter.streak+1:1;}
-    else S.hunter.streak=1;
-    if(last){const yc=S.questComp[last]||{};const yd=Object.values(yc).filter(Boolean).length;if(yd<3){const p=Math.round((3-yd)*15);S.hunter.xp=Math.max(0,S.hunter.xp-p);setTimeout(()=>showToast('Penalty: missed '+(3-yd)+' quests. -'+p+' XP ⚠'),1500);}}
-    S.hunter.mana=Math.min(100,S.hunter.mana+40);
-    S.hunter.lastDate=t;save();
+  if(last===t)return; // same day — nothing to evaluate
+  
+  // Auto-deactivate expired pause mode
+  if(S.pauseMode&&S.pauseMode.active&&S.pauseMode.end&&t>S.pauseMode.end){
+    S.pauseMode.active=false;
+    setTimeout(()=>showToast('Pause Mode ended automatically. System resumed ⚔'),1200);
   }
+
+  if(last){
+    if(!isPaused(last)){
+      // Evaluate yesterday's performance against DAILY_MIN
+      const ySess=S.sessions.filter(s=>s.date===last&&!s.paused);
+      const yMins=ySess.reduce((a,s)=>a+s.min,0);
+      const yCount=ySess.length;
+      const isZero=yCount===0;
+      const isValid=yCount>=DAILY_MIN.sessions&&yMins>=DAILY_MIN.hours*60;
+
+      if(isZero){
+        // ZERO DAY — system failure
+        S.dailyStatus[last]='zero';
+        S.hunter.streak=0;
+        S.hunter.xp=Math.max(0,S.hunter.xp-20);
+        S.consecutiveFailures=(S.consecutiveFailures||0)+1;
+        setTimeout(()=>showToast('☠ Zero Day yesterday — Streak reset, -20 XP'),1200);
+      } else if(!isValid){
+        // FAILED DAY — insufficient sessions/hours
+        S.dailyStatus[last]='failed';
+        S.hunter.streak=0;
+        S.hunter.xp=Math.max(0,S.hunter.xp-20);
+        S.consecutiveFailures=(S.consecutiveFailures||0)+1;
+        setTimeout(()=>showToast('⚠ Day failed (min not met) — Streak reset, -20 XP'),1200);
+      } else {
+        // VALID DAY!
+        S.dailyStatus[last]='valid';
+        S.consecutiveFailures=0;
+        const diff=Math.floor((new Date(t)-new Date(last))/86400000);
+        S.hunter.streak=diff===1?S.hunter.streak+1:1;
+        // Consistency bonus: every 7 days
+        if(S.hunter.streak>0&&S.hunter.streak%7===0){
+          S.hunter.xp+=50;
+          setTimeout(()=>showToast('🔥 '+S.hunter.streak+'-day streak bonus! +50 XP'),1500);
+        }
+      }
+
+      // Recovery mode: check if 3 sessions + 2h since start
+      if(S.recoveryMode&&S.recoveryMode.active){
+        const recSess=S.sessions.filter(s=>s.date>=S.recoveryMode.startDate&&!s.paused);
+        if(recSess.length>=3&&recSess.reduce((a,s)=>a+s.min,0)>=120){
+          S.recoveryMode={active:false,startDate:null};
+          S.hunter.streak=1;S.consecutiveFailures=0;
+          setTimeout(()=>showToast('💪 Recovery complete! Streak restored. Keep going! ⚔'),1500);
+        }
+      }
+
+      // Activate recovery mode after any failure (if not already in one)
+      if((S.dailyStatus[last]==='failed'||S.dailyStatus[last]==='zero')&&!(S.recoveryMode&&S.recoveryMode.active)){
+        S.recoveryMode={active:true,startDate:t};
+      }
+
+      // Rank down: 2+ consecutive failures
+      if(S.consecutiveFailures>=2)checkRankDown();
+    }
+    // Mana restore (always, even during pause)
+    S.hunter.mana=Math.min(100,S.hunter.mana+40);
+  } else {
+    // First ever day
+    S.hunter.streak=1;
+  }
+
+  S.hunter.lastDate=t;save();
+  // Check rank up on new day (unless paused)
+  if(!isPaused())setTimeout(()=>checkRankUp(),600);
 }
 
-// RANK
-function getRank(xp){for(let i=RANKS.length-1;i>=0;i--)if(xp>=RANKS[i].min)return RANKS[i];return RANKS[0];}
-function getRankProg(xp){const r=getRank(xp);if(r.max===Infinity)return{pct:100};return{pct:Math.min(100,Math.round((xp-r.min)/(r.max-r.min)*100))};}
+// ── PAUSE MODE ──
+function isPaused(date){
+  const pm=S&&S.pauseMode;if(!pm||!pm.active||!pm.start||!pm.end)return false;
+  const d=date||today();return d>=pm.start&&d<=pm.end;
+}
+function getWeekKey(date){
+  const d=new Date(date||today());
+  const jan1=new Date(d.getFullYear(),0,1);
+  const wk=Math.ceil(((d-jan1)/86400000+jan1.getDay()+1)/7);
+  return d.getFullYear()+'-W'+String(wk).padStart(2,'0');
+}
+function getDailyQuestPct(date){
+  const comp=S.questComp[date]||{};
+  const total=getActiveQuests().length;
+  const done=Object.values(comp).filter(Boolean).length;
+  return total>0?Math.round(done/total*100):0;
+}
+
+// ── RANK ──
+function getRankByXPStatic(xp){
+  for(let i=RANKS.length-1;i>=0;i--)if(xp>=RANKS[i].min)return RANKS[i].r;return'E';
+}
+function getRank(xp){
+  // Use explicitly stored rank (multi-condition), fall back to XP-based
+  const stored=S&&S.hunter&&S.hunter.rank?S.hunter.rank:null;
+  const r=RANKS.find(x=>x.r===(stored||getRankByXPStatic(xp)))||RANKS[0];
+  return r;
+}
+function getRankProg(xp){
+  const r=getRank(xp);if(r.max===Infinity)return{pct:100};
+  return{pct:Math.min(100,Math.round((xp-r.min)/(r.max-r.min)*100))};
+}
 function getClass(r){return r==='S'||r==='SS'||r==='SSS'?'Shadow Monarch':r==='A'?'Elite Hunter':r==='B'||r==='C'?'Awakened Hunter':'Shadow Warrior';}
+
+function checkRankUp(){
+  if(!S||isPaused())return;
+  const xp=S.hunter.xp;
+  const streak=S.hunter.streak;
+  const currentRank=S.hunter.rank||'E';
+  const currentIdx=RANK_ORDER.indexOf(currentRank);
+  if(currentIdx>=RANK_ORDER.length-1)return;
+  const req=RANK_REQS.find(r=>r.from===currentRank);
+  if(!req){
+    // SS/SSS: pure XP-based progression
+    const xpRankStr=getRankByXPStatic(xp);
+    const xpIdx=RANK_ORDER.indexOf(xpRankStr);
+    if(xpIdx>currentIdx){
+      const newRank=RANK_ORDER[currentIdx+1];
+      const old=S.hunter.rank;S.hunter.rank=newRank;save();
+      setTimeout(()=>showToast('⚔ RANK UP! '+old+' → '+newRank+' 🔥'),800);
+      updateHeader();
+    }
+    return;
+  }
+  // Check performance: quest pct last 7 days
+  const last7=[];for(let i=6;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);last7.push(d.toISOString().split('T')[0]);}
+  const QN=getActiveQuests().length;
+  let qDone=0,qPoss=0;
+  last7.forEach(d=>{const c=S.questComp[d]||{};qDone+=Object.values(c).filter(Boolean).length;qPoss+=QN;});
+  const questPct=qPoss>0?(qDone/qPoss*100):0;
+  const weekKey=getWeekKey(today());
+  const bossOk=!!(S.weeklyBoss&&S.weeklyBoss[weekKey]);
+  const perfOk=questPct>=60||bossOk;
+  if(xp>=req.xp&&streak>=req.streak&&perfOk){
+    const old=S.hunter.rank;
+    S.hunter.rank=req.to;
+    S.hunter.xp+=50; // rank-up bonus
+    save();
+    setTimeout(()=>showToast('⚔ RANK UP! '+old+' → '+req.to+' +50 bonus XP 🎉'),800);
+    updateHeader();
+  }
+}
+function checkRankDown(){
+  const rk=S.hunter.rank||'E';
+  const idx=RANK_ORDER.indexOf(rk);if(idx<=0)return;
+  const newRank=RANK_ORDER[idx-1];
+  const old=S.hunter.rank;
+  S.hunter.rank=newRank;S.consecutiveFailures=0;save();
+  setTimeout(()=>showToast('⬇ RANK DROP! '+old+' → '+newRank+'. 2 failures in a row. ⚠'),1000);
+  updateHeader();
+}
 
 function updateHeader(){
   const{xp,mana,streak,name}=S.hunter;
@@ -1226,7 +1419,7 @@ function renderDash(){
   el('ds-hrs',Math.floor(tMins/60)+'h'+(tMins%60)+'m');
   el('ds-xp','+'+tXP);el('ds-sess',tSess.length);
   renderStatusWindow();
-  renderQuests();renderGates();renderPenalty();
+  renderQuests();renderGates();renderPenalty();renderTodaysMission();
 }
 
 function getActiveQuests(){
@@ -1276,6 +1469,7 @@ function renderQuests(){
 }
 
 function tQ(id){
+  if(isPaused()){showToast('System Paused — quests frozen ⏸');return;}
   const QUESTS=getActiveQuests();
   const t=today();if(!S.questComp[t])S.questComp[t]={};
   const q=QUESTS.find(q=>q.id===id);if(!q||q.auto)return;
@@ -1284,6 +1478,7 @@ function tQ(id){
   if(!was){S.hunter.xp+=q.xp;showToast('Quest done! +'+q.xp+' XP ⚡');}
   else S.hunter.xp=Math.max(0,S.hunter.xp-q.xp);
   save();renderDash();
+  setTimeout(()=>checkRankUp(),300);
 }
 
 function renderGates(){
@@ -1320,12 +1515,134 @@ function renderGates(){
 }
 
 function renderPenalty(){
-  const t=today(),comp=S.questComp[t]||{};
-  const done=Object.values(comp).filter(Boolean).length;
   const pz=document.getElementById('penalty-zone');if(!pz)return;
-  if(done<3&&new Date().getHours()>=20){
-    pz.innerHTML=`<div style="background:rgba(255,59,92,.07);border:1px solid rgba(255,59,92,.22);border-radius:var(--radius-sm);padding:14px;display:flex;gap:12px;align-items:center;margin-top:4px"><span style="font-size:22px;flex-shrink:0">⚠</span><div><div style="font-size:13px;color:var(--red);font-weight:700">Penalty Warning</div><div style="font-size:12px;color:var(--text2);margin-top:2px">Only ${done}/5 quests done. Complete before midnight.</div></div></div>`;
-  }else pz.innerHTML='';
+  const t=today();const hour=new Date().getHours();
+  let html='';
+
+  // ── PAUSE MODE (highest priority) ──
+  if(isPaused()){
+    const pm=S.pauseMode;
+    pz.innerHTML=`<div style="background:rgba(0,180,216,.07);border:1.5px solid rgba(0,180,216,.3);border-radius:var(--radius-sm);padding:14px 16px;display:flex;gap:12px;align-items:center;margin-bottom:10px">
+      <span style="font-size:24px;flex-shrink:0">⏸</span>
+      <div><div style="font-size:13px;color:var(--mana);font-weight:700">SYSTEM PAUSED</div>
+      <div style="font-size:12px;color:var(--text2);margin-top:2px">No XP gains or penalties. Resumes ${pm.end?'on '+fmtDate(pm.end):'automatically'}.</div></div></div>`;
+    return;
+  }
+
+  // Today's real sessions (excluding paused)
+  const tSess=S.sessions.filter(s=>s.date===t&&!s.paused);
+  const tMins=tSess.reduce((a,s)=>a+s.min,0);
+  const tCount=tSess.length;
+  const isValid=tCount>=DAILY_MIN.sessions&&tMins>=DAILY_MIN.hours*60;
+
+  // ── ZERO DAY DETECTION ──
+  if(tCount===0&&hour>=8){
+    html+=`<div style="background:rgba(255,59,92,.09);border:1.5px solid rgba(255,59,92,.4);border-radius:var(--radius-sm);padding:14px 16px;display:flex;gap:12px;align-items:center;margin-bottom:10px;animation:pulse-border 2s infinite">
+      <span style="font-size:22px;flex-shrink:0">☠</span>
+      <div><div style="font-size:13px;color:var(--red);font-weight:700">⚠ Zero Day Detected — System Failure</div>
+      <div style="font-size:12px;color:var(--text2);margin-top:2px">Start a session NOW to prevent streak reset + -20 XP penalty.</div></div></div>`;
+  }
+
+  // ── RECOVERY MODE ──
+  if(S.recoveryMode&&S.recoveryMode.active){
+    const recSess=S.sessions.filter(s=>s.date>=S.recoveryMode.startDate&&!s.paused);
+    const recCount=Math.min(recSess.length,3);
+    const recMins=recSess.reduce((a,s)=>a+s.min,0);
+    const recMinsD=Math.min(recMins,120);
+    html+=`<div style="background:rgba(244,196,48,.07);border:1px solid rgba(244,196,48,.3);border-radius:var(--radius-sm);padding:14px 16px;margin-bottom:10px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><span style="font-size:18px">🔄</span><div style="font-size:13px;color:var(--gold);font-weight:700">Recovery Mode</div></div>
+      <div style="font-size:12px;color:var(--text2);margin-bottom:8px">Complete 3 sessions + 2h total to restore your streak.</div>
+      <div style="margin-bottom:5px">
+        <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text2);margin-bottom:2px"><span>Sessions</span><span style="color:${recSess.length>=3?'var(--green)':'var(--gold)'}">${recSess.length}/3</span></div>
+        <div style="height:4px;background:rgba(255,255,255,.06);border-radius:2px"><div style="height:100%;width:${Math.min(100,Math.round(recSess.length/3*100))}%;background:${recSess.length>=3?'var(--green)':'var(--gold)'};border-radius:2px;transition:width .3s"></div></div>
+      </div>
+      <div>
+        <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text2);margin-bottom:2px"><span>Study Time</span><span style="color:${recMins>=120?'var(--green)':'var(--gold)'}">${fmtHM(recMinsD)} / 2h</span></div>
+        <div style="height:4px;background:rgba(255,255,255,.06);border-radius:2px"><div style="height:100%;width:${Math.min(100,Math.round(recMinsD/120*100))}%;background:${recMins>=120?'var(--green)':'var(--gold)'};border-radius:2px;transition:width .3s"></div></div>
+      </div>
+    </div>`;
+  }
+
+  // ── CONSECUTIVE FAILURES ──
+  if((S.consecutiveFailures||0)>=1){
+    const rankIdx=RANK_ORDER.indexOf(S.hunter.rank||'E');
+    html+=`<div style="background:rgba(255,59,92,.07);border:1px solid rgba(255,59,92,.2);border-radius:var(--radius-sm);padding:12px 16px;margin-bottom:10px;display:flex;gap:10px;align-items:center">
+      <span style="font-size:20px;flex-shrink:0">⚡</span>
+      <div><div style="font-size:13px;color:var(--red);font-weight:700">Failure Streak: ${S.consecutiveFailures} day${S.consecutiveFailures>1?'s':''}</div>
+      <div style="font-size:12px;color:var(--text2);margin-top:2px">${rankIdx>0?'⚠ 2 failures = rank drop.':''} Grind today to recover.</div></div></div>`;
+  }
+
+  // ── DAILY MINIMUM STATUS ──
+  if(!isValid&&hour>=20){
+    const sNeed=Math.max(0,DAILY_MIN.sessions-tCount);
+    const mNeed=Math.max(0,DAILY_MIN.hours*60-tMins);
+    html+=`<div style="background:rgba(255,59,92,.07);border:1px solid rgba(255,59,92,.22);border-radius:var(--radius-sm);padding:14px 16px;display:flex;gap:12px;align-items:flex-start;margin-bottom:10px">
+      <span style="font-size:22px;flex-shrink:0">⚠</span>
+      <div><div style="font-size:13px;color:var(--red);font-weight:700">Minimum Standard Not Met</div>
+      <div style="font-size:12px;color:var(--text2);margin-top:4px">
+        ${tCount<DAILY_MIN.sessions?`<span style="color:var(--red)">✗ ${tCount}/${DAILY_MIN.sessions} sessions</span>`:`<span style="color:var(--green)">✓ Sessions ✓</span>`} &nbsp;
+        ${tMins<DAILY_MIN.hours*60?`<span style="color:var(--red)">✗ ${fmtHM(tMins)}/${DAILY_MIN.hours}h study</span>`:`<span style="color:var(--green)">✓ Hours ✓</span>`}
+      </div>
+      <div style="font-size:11px;color:var(--text3);margin-top:4px">Streak resets + -20 XP at midnight if not met.</div></div></div>`;
+  }
+
+  // ── ALL GOOD ──
+  if(isValid&&!(S.recoveryMode&&S.recoveryMode.active)){
+    html+=`<div style="background:rgba(0,214,143,.06);border:1px solid rgba(0,214,143,.18);border-radius:var(--radius-sm);padding:11px 14px;display:flex;gap:10px;align-items:center;margin-bottom:10px">
+      <span style="font-size:18px">✅</span>
+      <div style="font-size:13px;color:var(--green);font-weight:600">Day Valid — Streak Protected</div></div>`;
+  }
+
+  pz.innerHTML=html;
+}
+
+// ── TODAY'S MISSION ──
+function renderTodaysMission(){
+  const el=document.getElementById('todays-mission');if(!el)return;
+  const t=today();
+  if(isPaused()){
+    el.innerHTML=`<div class="card" style="border-color:rgba(0,180,216,.2);margin-bottom:14px"><div class="card-hdr"><span class="hl">⏸ System Paused</span></div><div style="color:var(--mana);font-size:13px;padding:4px 0">Rest, recharge, and return stronger.</div></div>`;
+    return;
+  }
+  const tSess=S.sessions.filter(s=>s.date===t&&!s.paused);
+  const tMins=tSess.reduce((a,s)=>a+s.min,0);
+  const tCount=tSess.length;
+  const comp=S.questComp[t]||{};
+  const qDone=Object.values(comp).filter(Boolean).length;
+  const qTotal=getActiveQuests().length;
+  const hour=new Date().getHours();
+
+  const tasks=[
+    {label:'Sessions',icon:'⏱',target:DAILY_MIN.sessions,cur:tCount,disp:tCount+'/'+DAILY_MIN.sessions,col:'var(--accent)',done:tCount>=DAILY_MIN.sessions},
+    {label:'Study Time',icon:'📚',target:DAILY_MIN.hours*60,cur:tMins,disp:fmtHM(tMins)+' / '+DAILY_MIN.hours+'h',col:'var(--mana)',done:tMins>=DAILY_MIN.hours*60},
+    {label:'Quests',icon:'⚡',target:Math.ceil(qTotal*0.6),cur:qDone,disp:qDone+'/'+qTotal+' (need '+Math.ceil(qTotal*0.6)+')',col:'var(--gold)',done:qDone>=Math.ceil(qTotal*0.6)},
+    {label:'Workout',icon:'💪',target:1,cur:comp.q3?1:0,disp:comp.q3?'Done':'Pending',col:'var(--green)',done:!!comp.q3},
+  ];
+  const allDone=tasks.every(m=>m.done);
+  const rank=S.hunter.rank||'E';
+  const req=RANK_REQS.find(r=>r.from===rank);
+  
+  el.innerHTML=`<div class="card" style="margin-bottom:14px;${allDone?'border-color:rgba(0,214,143,.3);':hour>=20&&!allDone?'border-color:rgba(255,59,92,.25);':''}">
+    <div class="card-hdr" style="display:flex;justify-content:space-between;align-items:center">
+      <span class="hl">🎯 Today's Mission</span>
+      <span style="font-size:11px;font-weight:700;color:${allDone?'var(--green)':hour>=20?'var(--red)':'var(--text2)'}">${allDone?'COMPLETE ✓':hour>=20?'AT RISK ⚠':hour<12?'Morning grind 🌅':'Afternoon push 🔥'}</span>
+    </div>
+    ${tasks.map(m=>{
+      const pct=Math.min(100,Math.round(m.cur/m.target*100));
+      return `<div style="margin-bottom:10px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px">
+          <span style="font-size:13px;font-weight:600">${m.icon} ${m.label}</span>
+          <span style="font-size:12px;font-family:var(--mono);color:${m.done?'var(--green)':m.col}">${m.done?'✓ ':''} ${m.disp}</span>
+        </div>
+        <div style="height:4px;background:rgba(255,255,255,.05);border-radius:2px;overflow:hidden">
+          <div style="height:100%;width:${pct}%;background:${m.done?'var(--green)':m.col};border-radius:2px;transition:width .4s"></div>
+        </div>
+      </div>`;
+    }).join('')}
+    ${req?`<div style="padding-top:8px;border-top:1px solid var(--border);font-size:11px;color:var(--text3)">
+      Rank ${rank}→${req.to}: <span style="color:${S.hunter.xp>=req.xp?'var(--green)':'var(--text2)'}">${S.hunter.xp}/${req.xp} XP</span> · <span style="color:${S.hunter.streak>=req.streak?'var(--green)':'var(--text2)'}">${S.hunter.streak}/${req.streak}d streak</span> · <span style="color:var(--text2)">60% quest perf.</span></div>`:''}
+    ${allDone?`<div style="font-size:12px;color:var(--green);text-align:center;margin-top:6px;padding-top:6px;border-top:1px solid var(--border)">Day secured. Chase boss fights and bonus XP. ⚔</div>`:''}
+  </div>`;
 }
 
 // TIMER
@@ -1537,6 +1854,11 @@ function submitRating(save_it){
       last.mood=ratingMood||null;
       last.note=(document.getElementById('rating-note')||{}).value||null;
       if(ratingStars>=4&&!last.ratingBonus){last.ratingBonus=true;S.hunter.xp+=5;showToast('Focused session! +5 bonus XP ⭐');updateHeader();}
+      else if(ratingStars>0&&ratingStars<=2&&!last.ratingPenalty&&!isPaused()){
+        last.ratingPenalty=true;const pen=ratingStars===1?8:4;
+        S.hunter.xp=Math.max(0,S.hunter.xp-pen);
+        showToast('Low focus session. -'+pen+' XP 😵');updateHeader();
+      }
       save();
     }
   }
@@ -1673,27 +1995,55 @@ function manualLog(){
 }
 function autoLog(mins,sub,mode,sid){
   if(mins<1)return;
+  const t=today();
+  const paused=isPaused();
   const eff=Math.max(10,Math.round(100-pauseCount*8));
-  // XP: 0.5 per minute * efficiency. Min 1 XP.
-  const xp=Math.max(1,Math.round(mins*(eff/100)*0.5));
+
+  let xp=0,starterBonus=0;
+  if(!paused){
+    // Base XP: 0.5/min × efficiency
+    xp=Math.max(1,Math.round(mins*(eff/100)*0.5));
+    // Daily XP cap: 500 XP from timer sessions/day (prevent farming)
+    if(!S.dailyXPCap)S.dailyXPCap={};
+    const capSoFar=S.dailyXPCap[t]||0;
+    xp=Math.min(xp,Math.max(0,500-capSoFar));
+    S.dailyXPCap[t]=(capSoFar+xp);
+    // ── Starter Trigger: first session ≥15 min → +10 XP ──
+    if(!S.starterXPDates)S.starterXPDates={};
+    const todaySessCount=S.sessions.filter(s=>s.date===t&&!s.paused).length;
+    if(todaySessCount===0&&mins>=15&&!S.starterXPDates[t]){
+      starterBonus=10;S.starterXPDates[t]=true;
+      setTimeout(()=>showToast('Starter Trigger! +10 XP — Day begun ⚡'),600);
+    }
+  }
+
   const sessObj={
-    id:sid||Date.now(),
-    date:today(),min:mins,sub,mode,eff,xp,
-    time:new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})
+    id:sid||Date.now(),date:t,min:mins,sub,mode,eff,
+    xp:xp+starterBonus,
+    time:new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'}),
+    paused:paused||undefined
   };
   S.sessions.push(sessObj);
-  S.hunter.xp+=xp;
+  if(!paused){
+    S.hunter.xp+=xp+starterBonus;
+    setTimeout(()=>checkRankUp(),400);
+  }
   S.hunter.mana=Math.max(0,S.hunter.mana-Math.min(15,Math.round(mins/7)));
   save();updateHeader();renderSessLog();
   if(typeof renderSessionLog==='function'&&focusTab==='log')renderSessionLog();
   if(typeof renderFocusStats==='function'&&focusTab==='stats')renderFocusStats();
   if(typeof renderFocusStatsBar==='function')renderFocusStatsBar();
-  // Quest auto-completion
-  const t=today(),comp=S.questComp[t]||{};
-  const tM=S.sessions.filter(s=>s.date===t).reduce((a,s)=>a+s.min,0);
-  const goalMins=((S.goals&&S.goals.questStudyHours)||2)*60;
-  if(tM>=goalMins&&!comp.q1){comp.q1=true;S.hunter.xp+=50;S.questComp[t]=comp;save();showToast('Quest done: study goal hit! +50 XP 🔥');updateHeader();}
-  if(mode==='pomodoro'&&mins>=25&&!comp.q2){comp.q2=true;S.hunter.xp+=25;S.questComp[t]=comp;save();updateHeader();}
+  if(typeof renderTodaysMission==='function')renderTodaysMission();
+  if(typeof renderPenalty==='function')renderPenalty();
+
+  // Quest auto-completion (only if not paused)
+  if(!paused){
+    const comp=S.questComp[t]||{};
+    const tM=S.sessions.filter(s=>s.date===t&&!s.paused).reduce((a,s)=>a+s.min,0);
+    const goalMins=((S.goals&&S.goals.questStudyHours)||2)*60;
+    if(tM>=goalMins&&!comp.q1){comp.q1=true;S.hunter.xp+=50;S.questComp[t]=comp;save();showToast('Quest done: study goal hit! +50 XP 🔥');updateHeader();}
+    if(mode==='pomodoro'&&mins>=25&&!comp.q2){comp.q2=true;S.hunter.xp+=25;S.questComp[t]=comp;save();updateHeader();}
+  }
 }
 function restoreMana(){S.hunter.mana=Math.min(100,S.hunter.mana+30);save();updateHeader();showToast('Mana +30 🌙 — take a real break!');}
 // FOCUS STATS SYSTEM
@@ -2016,8 +2366,21 @@ function addTest(){
   const total=phy+che+mat;
   S.tests.push({id:Date.now(),date,phy,che,mat,total,max,type});
   S.tests.sort((a,b)=>new Date(a.date)-new Date(b.date));
-  const xp=Math.round((total/max)*40);S.hunter.xp+=xp;save();updateHeader();
-  showToast('Test logged! +'+xp+' XP');renderTests();
+  const xp=Math.round((total/max)*40);S.hunter.xp+=xp;
+  // ── WEEKLY BOSS: mock/chapter test = +200 XP (once per week) ──
+  let bossXP=0;
+  if(type==='mock'||type==='chapter'){
+    const wk=getWeekKey(date);
+    if(!S.weeklyBoss)S.weeklyBoss={};
+    if(!S.weeklyBoss[wk]&&!isPaused()){
+      S.weeklyBoss[wk]=true;bossXP=200;S.hunter.xp+=200;
+      setTimeout(()=>showToast('⚔ Weekly Boss Defeated! +200 XP 🏆🔥'),700);
+    } else if(S.weeklyBoss[wk]){showToast('Boss already defeated this week. +'+xp+' XP');}
+  }
+  save();updateHeader();
+  if(!bossXP)showToast('Test logged! +'+xp+' XP');
+  setTimeout(()=>checkRankUp(),500);
+  renderTests();
 }
 function renderTests(){
   document.getElementById('t-date').value=today();
@@ -2405,6 +2768,7 @@ function renderSettings(){
   const gqh=document.getElementById('s-goal-quest');if(gqh)gqh.value=S.goals&&S.goals.questStudyHours?S.goals.questStudyHours:2;
   const hn=document.getElementById('s-hunter-name');if(hn)hn.value=S.hunter.name||'Gautam';
   renderQuestEditor();
+  renderPauseStatus();
 }
 
 function updateExamFields(){
@@ -2500,6 +2864,39 @@ function saveQuests(){
   showToast('Quests saved! ✅');
 }
 
+function activatePauseMode(){
+  const start=document.getElementById('pause-start').value;
+  const end=document.getElementById('pause-end').value;
+  if(!start||!end){showToast('Set both start and end dates first');return;}
+  if(end<start){showToast('End date must be after start date');return;}
+  const days=Math.ceil((new Date(end)-new Date(start))/86400000)+1;
+  if(days>10){showToast('Maximum 10 days allowed');return;}
+  if(start<today()){showToast('Start date cannot be in the past');return;}
+  S.pauseMode={active:true,start,end};
+  save();renderSettings();renderDash();
+  showToast('Pause Mode activated until '+fmtDate(end)+' ⏸');
+}
+function deactivatePauseMode(){
+  if(!confirm('Deactivate Pause Mode early?'))return;
+  S.pauseMode={active:false,start:null,end:null};
+  save();renderSettings();renderDash();
+  showToast('Pause Mode deactivated. System resumed ⚔');
+}
+function renderPauseStatus(){
+  const el=document.getElementById('pause-mode-status');if(!el)return;
+  const pm=S.pauseMode;
+  const aBtn=document.getElementById('pause-activate-btn');
+  const dBtn=document.getElementById('pause-deactivate-btn');
+  if(pm&&pm.active){
+    const dLeft=Math.max(0,Math.ceil((new Date(pm.end)-new Date())/86400000));
+    el.innerHTML=`<div style="background:rgba(0,180,216,.07);border:1px solid rgba(0,180,216,.25);border-radius:8px;padding:10px 12px;font-size:12px;color:var(--mana)">⏸ Active · ${fmtDate(pm.start)} → ${fmtDate(pm.end)} · ${dLeft} day${dLeft!==1?'s':''} remaining</div>`;
+    if(aBtn)aBtn.style.display='none';if(dBtn)dBtn.style.display='';
+  }else{
+    el.innerHTML=`<div style="font-size:12px;color:var(--text3)">Pause Mode is inactive.</div>`;
+    if(aBtn)aBtn.style.display='';if(dBtn)dBtn.style.display='none';
+    const ps=document.getElementById('pause-start');if(ps&&!ps.value)ps.value=today();
+  }
+}
 function confirmReset(type){
   if(type==='sessions'){if(!confirm('Clear all study logs? This cannot be undone.'))return;S.sessions=[];save();showToast('Study logs cleared.');}
   else if(type==='tests'){if(!confirm('Clear all test history?'))return;S.tests=[];save();showToast('Test history cleared.');}
@@ -2544,11 +2941,13 @@ function calcStats(){
   const avgTest=tests.length?tests.reduce((a,t)=>a+(t.total/(t.max||300)*100),0)/tests.length:0;
   const intelligence=Math.min(99,Math.round(Math.min(totalHrs/200,1)*60 + (avgTest/100)*40));
 
-  // FOCUS — based on avg session efficiency + pomodoro completions
+  // FOCUS — efficiency + pomodoro + star ratings
   const effSessions=sessions.filter(s=>s.eff!==undefined);
   const avgEff=effSessions.length?effSessions.reduce((a,s)=>a+s.eff,0)/effSessions.length:50;
   const pomoCount=sessions.filter(s=>s.mode==='pomodoro').length;
-  const focus=Math.min(99,Math.round((avgEff*0.6)+(Math.min(pomoCount/50,1)*40)));
+  const ratedSess=sessions.filter(s=>s.stars&&s.stars>0);
+  const avgStars=ratedSess.length?ratedSess.reduce((a,s)=>a+(s.stars||3),0)/ratedSess.length:3;
+  const focus=Math.min(99,Math.max(0,Math.round((avgEff*0.5)+(Math.min(pomoCount/50,1)*25)+(avgStars/5*25))));
 
   // STRENGTH — based on workout consistency last 30 days
   const workoutDays=new Set(workoutLogs.map(l=>l.date)).size;
@@ -2588,6 +2987,26 @@ function renderStatusWindow(){
   const sx=document.getElementById('sw-xp');if(sx)sx.textContent=S.hunter.xp;
   const ss=document.getElementById('sw-streak');if(ss)ss.textContent=S.hunter.streak||0;
 
+  // ── Rank requirements display ──
+  const reqEl=document.getElementById('sw-rank-req');
+  if(reqEl){
+    const xp2=S.hunter.xp,streak2=S.hunter.streak;
+    const curRank=S.hunter.rank||'E';
+    const req2=RANK_REQS.find(r=>r.from===curRank);
+    if(req2){
+      const xpP=Math.min(100,Math.round(xp2/req2.xp*100));
+      const stP=Math.min(100,Math.round(streak2/req2.streak*100));
+      const perfOK=getDailyQuestPct(today())>=60||!!(S.weeklyBoss&&S.weeklyBoss[getWeekKey(today())]);
+      reqEl.innerHTML=`<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
+        <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:1.2px;margin-bottom:6px;font-weight:700">→ Rank ${curRank} to ${req2.to} Requirements</div>
+        <div style="margin-bottom:4px"><div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text2);margin-bottom:2px"><span>XP</span><span style="color:${xp2>=req2.xp?'var(--green)':'var(--text2)'}">${xp2}/${req2.xp}</span></div><div style="height:3px;background:rgba(255,255,255,.06);border-radius:2px"><div style="height:100%;width:${xpP}%;background:${xp2>=req2.xp?'var(--green)':'var(--gold)'};border-radius:2px"></div></div></div>
+        <div style="margin-bottom:4px"><div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text2);margin-bottom:2px"><span>Streak</span><span style="color:${streak2>=req2.streak?'var(--green)':'var(--text2)'}">${streak2}/${req2.streak}d</span></div><div style="height:3px;background:rgba(255,255,255,.06);border-radius:2px"><div style="height:100%;width:${stP}%;background:${streak2>=req2.streak?'var(--green)':'var(--accent)'};border-radius:2px"></div></div></div>
+        <div style="font-size:10px;color:${perfOK?'var(--green)':'var(--text2)'}">${perfOK?'✓':'○'} Quest performance (≥60% or weekly boss)</div>
+      </div>`;
+    } else {
+      reqEl.innerHTML=curRank==='SSS'?`<div style="margin-top:8px;font-size:11px;color:var(--gold);text-align:center">👑 Maximum Rank Achieved</div>`:'';
+    }
+  }
   // JEE days
   const jeeDate=new Date(S.examDate||S.settings?.jeeDate||'2027-05-18');
   const dLeft=Math.max(0,Math.ceil((jeeDate-new Date())/86400000));
