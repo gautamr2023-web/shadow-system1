@@ -1182,11 +1182,11 @@ section.active{display:block}
    ⚡ PREMIUM SOUND SYSTEM (Web Audio API)
 ════════════════════════════════════════════════ */
 let soundEnabled = true;
-let audioCtx = null;
+let _premAudioCtx = null;
 
 function getAudioCtx(){
-  if(!audioCtx){try{audioCtx=new(window.AudioContext||window.webkitAudioContext)();}catch(e){}}
-  return audioCtx;
+  if(!_premAudioCtx){try{_premAudioCtx=new(window.AudioContext||window.webkitAudioContext)();}catch(e){}}
+  return _premAudioCtx;
 }
 
 function playTone(freq, type='sine', duration=0.12, vol=0.08, delay=0){
@@ -1485,6 +1485,7 @@ function renderProgressSummary(){
 }
 
 
+const RANKS=[
   {r:'E',min:0,max:800},{r:'D',min:800,max:1700},{r:'C',min:1700,max:2700},
   {r:'B',min:2700,max:4300},{r:'A',min:4300,max:7200},{r:'S',min:7200,max:15000},
   {r:'SS',min:15000,max:30000},{r:'SSS',min:30000,max:Infinity}
@@ -3299,7 +3300,6 @@ function renderCharts(){
           </div>
         </div>
       </div>`;
-  })();
   })();
 
   // CUMULATIVE STUDY
