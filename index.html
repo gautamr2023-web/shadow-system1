@@ -318,6 +318,268 @@ section.active{display:block}
 .done-pulse-break{background:var(--mana)}
 @keyframes dpulse{0%,100%{box-shadow:0 0 0 0 rgba(0,214,143,.7)}60%{box-shadow:0 0 0 9px rgba(0,214,143,0)}}
 
+/* ══════════════════════════════════════
+   ██████╗ ██████╗ ███████╗███╗   ███╗
+   ██╔══██╗██╔══██╗██╔════╝████╗ ████║
+   ██████╔╝██████╔╝█████╗  ██╔████╔██║
+   ██╔═══╝ ██╔══██╗██╔══╝  ██║╚██╔╝██║
+   ██║     ██║  ██║███████╗██║ ╚═╝ ██║
+   ╚═╝     ╚═╝  ╚═╝╚══════╝╚═╝     ╚═╝
+   PREMIUM VISUAL LAYER — DO NOT REMOVE
+   ══════════════════════════════════════ */
+
+/* ── CARD PREMIUM SHADOWS & HOVER GLOW ── */
+.card{
+  box-shadow:0 4px 24px rgba(0,0,0,.35),0 1px 0 rgba(255,255,255,.03) inset;
+  transition:border-color .25s,box-shadow .25s;
+}
+.card:hover{
+  border-color:rgba(91,110,245,.28);
+  box-shadow:0 4px 32px rgba(0,0,0,.45),0 0 0 1px rgba(91,110,245,.08),0 1px 0 rgba(255,255,255,.04) inset;
+}
+.stat-card{
+  box-shadow:0 3px 16px rgba(0,0,0,.3);
+  transition:border-color .25s,box-shadow .25s,transform .2s;
+}
+.stat-card:hover{
+  border-color:rgba(91,110,245,.3);
+  box-shadow:0 0 0 1px rgba(91,110,245,.12),0 6px 24px rgba(91,110,245,.12);
+  transform:translateY(-2px);
+}
+.dstat{
+  box-shadow:0 2px 12px rgba(0,0,0,.25);
+  transition:border-color .25s,box-shadow .25s,transform .2s;
+}
+.dstat:hover{
+  border-color:rgba(91,110,245,.3);
+  box-shadow:0 0 0 1px rgba(91,110,245,.1),0 4px 20px rgba(91,110,245,.1);
+  transform:translateY(-2px);
+}
+.btn{transition:all .2s;position:relative;overflow:hidden}
+.btn-primary{box-shadow:0 0 16px rgba(91,110,245,.3)}
+.btn-primary:hover{box-shadow:0 0 24px rgba(91,110,245,.5);transform:translateY(-1px)}
+.btn-primary:active{transform:translateY(0)}
+.nav-btn{transition:all .2s,color .15s}
+.nav-btn:hover{box-shadow:0 0 16px rgba(91,110,245,.08)}
+
+/* ── STATUS WINDOW PREMIUM ── */
+.status-window{
+  box-shadow:0 4px 32px rgba(0,0,0,.4),0 0 0 1px rgba(91,110,245,.08);
+  transition:box-shadow .3s;
+}
+.status-window:hover{
+  box-shadow:0 4px 40px rgba(0,0,0,.5),0 0 0 1px rgba(91,110,245,.18),0 0 48px rgba(91,110,245,.04);
+}
+
+/* ── XP FLOAT ANIMATION ── */
+.xp-float{
+  position:fixed;
+  pointer-events:none;
+  font-family:var(--mono);
+  font-size:15px;
+  font-weight:700;
+  color:var(--gold);
+  text-shadow:0 0 12px rgba(244,196,48,.8);
+  z-index:99999;
+  animation:xpFloat 1.6s ease-out forwards;
+  white-space:nowrap;
+}
+@keyframes xpFloat{
+  0%{opacity:1;transform:translateY(0) scale(1)}
+  20%{opacity:1;transform:translateY(-8px) scale(1.15)}
+  80%{opacity:.7;transform:translateY(-52px) scale(.95)}
+  100%{opacity:0;transform:translateY(-72px) scale(.85)}
+}
+
+/* ── RANK UP FLASH ── */
+.rankup-flash{
+  position:fixed;inset:0;z-index:99990;pointer-events:none;
+  background:radial-gradient(ellipse at center,rgba(244,196,48,.25) 0%,rgba(91,110,245,.15) 40%,transparent 70%);
+  animation:rankFlash .9s ease-out forwards;
+}
+@keyframes rankFlash{
+  0%{opacity:0}10%{opacity:1}30%{opacity:.8}60%{opacity:.4}100%{opacity:0}
+}
+.rankup-text-glow{
+  animation:rankGlow 2.5s ease-in-out infinite;
+}
+@keyframes rankGlow{
+  0%,100%{text-shadow:0 0 8px currentColor}
+  50%{text-shadow:0 0 20px currentColor,0 0 40px currentColor}
+}
+
+/* ── FAILURE / PENALTY ANIMATION ── */
+@keyframes failPulse{
+  0%{box-shadow:0 0 0 0 rgba(255,59,92,.0)}
+  30%{box-shadow:0 0 0 8px rgba(255,59,92,.35)}
+  60%{box-shadow:0 0 0 16px rgba(255,59,92,.15)}
+  100%{box-shadow:0 0 0 0 rgba(255,59,92,.0)}
+}
+@keyframes failShake{
+  0%,100%{transform:translateX(0)}
+  15%{transform:translateX(-5px)}
+  30%{transform:translateX(5px)}
+  45%{transform:translateX(-4px)}
+  60%{transform:translateX(4px)}
+  75%{transform:translateX(-2px)}
+  90%{transform:translateX(2px)}
+}
+.fail-shake{animation:failShake .45s ease-out}
+.fail-pulse{animation:failPulse .6s ease-out}
+
+/* ── QUEST TICK ANIMATION ── */
+@keyframes questTick{
+  0%{transform:scale(1)}
+  40%{transform:scale(1.35)}
+  60%{transform:scale(.9)}
+  80%{transform:scale(1.12)}
+  100%{transform:scale(1)}
+}
+@keyframes questGlow{
+  0%{box-shadow:0 0 0 0 rgba(0,214,143,.0)}
+  30%{box-shadow:0 0 0 6px rgba(0,214,143,.4)}
+  100%{box-shadow:0 0 0 0 rgba(0,214,143,.0)}
+}
+.quest-tick-anim{
+  animation:questTick .4s cubic-bezier(.34,1.6,.64,1),questGlow .6s ease-out;
+}
+
+/* ── DYNAMIC FEEDBACK BANNER ── */
+.feedback-banner{
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  padding:12px 16px;
+  margin-bottom:14px;
+  display:flex;
+  align-items:center;
+  gap:12px;
+  box-shadow:0 3px 20px rgba(0,0,0,.3);
+  position:relative;
+  overflow:hidden;
+  transition:border-color .3s,box-shadow .3s;
+}
+.feedback-banner::before{
+  content:'';position:absolute;left:0;top:0;bottom:0;width:3px;border-radius:3px 0 0 3px;
+}
+.feedback-banner.good::before{background:var(--green)}
+.feedback-banner.low::before{background:var(--red)}
+.feedback-banner.streak::before{background:var(--gold)}
+.feedback-banner.neutral::before{background:var(--accent)}
+.feedback-msg{font-size:13px;font-weight:600;flex:1}
+.feedback-sub{font-size:11px;color:var(--text2);margin-top:2px}
+.daily-rating{display:flex;align-items:center;gap:3px;margin-left:auto}
+.daily-star{font-size:15px;line-height:1;opacity:.25;transition:opacity .2s}
+.daily-star.lit{opacity:1}
+
+/* ── PROGRESS SUMMARY CARD ── */
+.progress-summary{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:8px;
+  margin-bottom:14px;
+}
+@media(max-width:500px){.progress-summary{grid-template-columns:repeat(2,1fr)}}
+.ps-item{
+  background:var(--bg2);
+  border:1px solid var(--border);
+  border-radius:var(--radius-sm);
+  padding:12px 10px;
+  text-align:center;
+  transition:border-color .2s,transform .2s,box-shadow .2s;
+}
+.ps-item:hover{border-color:rgba(91,110,245,.3);transform:translateY(-2px);box-shadow:0 4px 16px rgba(91,110,245,.1)}
+.ps-val{font-family:var(--mono);font-size:17px;color:var(--text);line-height:1.2}
+.ps-lbl{font-size:9px;color:var(--text2);text-transform:uppercase;letter-spacing:.7px;margin-top:3px}
+.ps-status{
+  grid-column:1/-1;
+  text-align:center;
+  font-family:var(--mono);
+  font-size:11px;
+  letter-spacing:2px;
+  font-weight:700;
+  padding:8px;
+  border-radius:var(--radius-sm);
+  border:1px solid;
+}
+.ps-status.success{background:rgba(0,214,143,.06);border-color:rgba(0,214,143,.25);color:var(--green)}
+.ps-status.failed{background:rgba(255,59,92,.06);border-color:rgba(255,59,92,.25);color:var(--red)}
+.ps-status.recovery{background:rgba(244,196,48,.06);border-color:rgba(244,196,48,.25);color:var(--gold)}
+.ps-status.ongoing{background:rgba(91,110,245,.06);border-color:rgba(91,110,245,.25);color:var(--accent)}
+
+/* ── NEXT RANK PROGRESS BAR ── */
+.rank-progress-wrap{margin:12px 0 6px}
+.rank-progress-lbl{display:flex;justify-content:space-between;font-size:10px;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px}
+.rank-progress-track{height:6px;background:rgba(255,255,255,.05);border-radius:3px;overflow:hidden;position:relative}
+.rank-progress-fill{
+  height:100%;border-radius:3px;
+  background:linear-gradient(90deg,var(--accent2),var(--accent),#00c9ff);
+  transition:width .8s cubic-bezier(.4,0,.2,1);
+  position:relative;
+}
+.rank-progress-fill::after{
+  content:'';position:absolute;right:-1px;top:0;bottom:0;width:3px;
+  background:rgba(255,255,255,.7);border-radius:2px;
+  animation:rpPulse 1.5s ease-in-out infinite;
+}
+@keyframes rpPulse{0%,100%{opacity:.4}50%{opacity:1}}
+
+/* ── MINI CONSISTENCY GRAPH ── */
+.mini-consistency{
+  position:relative;
+  height:36px;
+  display:flex;
+  align-items:flex-end;
+  gap:2px;
+  margin-top:6px;
+}
+.mini-bar{
+  flex:1;
+  border-radius:2px 2px 0 0;
+  min-height:2px;
+  transition:height .5s cubic-bezier(.4,0,.2,1),background .3s;
+  position:relative;
+}
+.mini-bar.today{outline:1.5px solid rgba(91,110,245,.6);outline-offset:1px}
+
+/* ── CHART NEON GLOW (Canvas filter trick) ── */
+.chart-wrap canvas{filter:drop-shadow(0 0 0 transparent);transition:filter .3s}
+.chart-wrap:hover canvas{filter:drop-shadow(0 0 6px rgba(91,110,245,.15))}
+
+/* ── SOUND TOGGLE ── */
+.sound-toggle{
+  position:fixed;bottom:80px;right:16px;z-index:500;
+  width:38px;height:38px;border-radius:50%;
+  background:var(--card2);border:1px solid var(--border2);
+  color:var(--text2);font-size:16px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 4px 16px rgba(0,0,0,.3);
+  transition:all .2s;
+}
+.sound-toggle:hover{border-color:var(--accent);color:var(--accent);box-shadow:0 0 16px rgba(91,110,245,.2)}
+.sound-toggle.on{border-color:var(--accent);color:var(--accent);background:rgba(91,110,245,.08)}
+@media(min-width:900px){.sound-toggle{bottom:24px;right:320px}}
+
+/* ── SMOOTH GLOBAL TRANSITIONS ── */
+.rp-bar-fill,.bar-fill,.pb-fill{transition:width .6s cubic-bezier(.4,0,.2,1)!important}
+.qchk,.rp-qchk,.ex-chk{transition:all .2s cubic-bezier(.34,1.4,.64,1)!important}
+.tab-btn{transition:all .2s!important}
+.tmode-btn,.subj-btn,.day-chip,.btn{transition:all .2s!important}
+input.fi:focus,select.fi:focus{
+  border-color:var(--accent);
+  box-shadow:0 0 0 3px rgba(91,110,245,.12);
+  transition:border-color .2s,box-shadow .2s;
+}
+
+/* ── RADAR CHART GLOW ── */
+#ch-radar{filter:drop-shadow(0 0 12px rgba(91,110,245,.25))}
+
+/* ── PREMIUM SCROLLBAR ── */
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:rgba(255,255,255,.02)}
+::-webkit-scrollbar-thumb{background:linear-gradient(180deg,var(--accent2),var(--accent));border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:var(--accent)}
+
 </style>
 </head>
 <body>
@@ -381,6 +643,20 @@ section.active{display:block}
 <main class="main-content">
 
 <section id="s-dashboard" class="active">
+  <!-- DYNAMIC FEEDBACK BANNER -->
+  <div id="feedback-banner" class="feedback-banner neutral" style="display:none">
+    <div style="flex:1">
+      <div class="feedback-msg" id="feedback-msg">⚡ System online</div>
+      <div class="feedback-sub" id="feedback-sub"></div>
+    </div>
+    <div class="daily-rating" id="daily-rating"></div>
+  </div>
+
+  <!-- PROGRESS SUMMARY CARD -->
+  <div id="progress-summary-wrap" style="display:none">
+    <div class="progress-summary" id="progress-summary"></div>
+  </div>
+
   <div id="ins-banner" class="ins-banner" style="display:none">
     <div style="flex:1">
       <div style="font-size:13px;font-weight:700;margin-bottom:4px">📱 Install as App</div>
@@ -413,6 +689,21 @@ section.active{display:block}
     </div>
     <div class="sw-stats" id="sw-stats"></div>
     <div id="sw-rank-req"></div>
+    <!-- NEXT RANK PROGRESS BAR -->
+    <div class="rank-progress-wrap" id="sw-rank-progress" style="display:none">
+      <div class="rank-progress-lbl">
+        <span id="sw-rank-prog-label">Next Rank</span>
+        <span id="sw-rank-prog-pct" style="font-family:var(--mono);font-size:10px;color:var(--accent)">0%</span>
+      </div>
+      <div class="rank-progress-track">
+        <div class="rank-progress-fill" id="sw-rank-prog-fill" style="width:0%"></div>
+      </div>
+    </div>
+    <!-- MINI 7-DAY CONSISTENCY GRAPH -->
+    <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border)">
+      <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">7-Day Consistency</div>
+      <div class="mini-consistency" id="mini-consistency-graph"></div>
+    </div>
     <div class="sw-footer">
       <div class="sw-streak"><span id="sw-streak">0</span> day streak</div>
       <div class="sw-jee" id="sw-jee-days">— days to exam</div>
@@ -673,6 +964,13 @@ section.active{display:block}
   <div class="card">
     <div class="card-hdr"><span class="hl">📝 Test Score Trend</span></div>
     <div class="chart-wrap" style="height:200px"><canvas id="ch-tests"></canvas></div>
+  </div>
+
+  <!-- RPG STATS RADAR -->
+  <div class="card">
+    <div class="card-hdr"><span class="hl">⚔ Hunter Ability Radar</span></div>
+    <div style="font-size:11px;color:var(--text2);margin-bottom:8px">Combat stats derived from your study patterns.</div>
+    <div class="chart-wrap" style="height:240px"><canvas id="ch-radar"></canvas></div>
   </div>
 
   <!-- Weekly heatmap -->
@@ -3355,7 +3653,623 @@ function initApp(){
       updateNotifCard();
     }
   },1000);
+
+  // Premium: initial renders
+  setTimeout(renderMiniConsistencyGraph, 200);
+  setTimeout(renderFeedbackBanner, 300);
+  setTimeout(renderProgressSummary, 400);
+  setTimeout(renderNextRankProgress, 200);
+}
+
+/* ═══════════════════════════════════════════════════════
+   █████╗ ███╗   ██╗██╗███╗   ███╗███████╗
+  ██╔══██╗████╗  ██║██║████╗ ████║██╔════╝
+  ███████║██╔██╗ ██║██║██╔████╔██║███████╗
+  ██╔══██║██║╚██╗██║██║██║╚██╔╝██║╚════██║
+  ██║  ██║██║ ╚████║██║██║ ╚═╝ ██║███████║
+  ╚═╝  ╚═╝╚═╝  ╚═══╝╚═╝╚═╝     ╚═╝╚══════╝
+  PREMIUM VISUAL LAYER
+  ═══════════════════════════════════════════════════════ */
+
+// ── SOUND FX SYSTEM ──
+let soundFXEnabled = true;
+function toggleSoundFX(){
+  soundFXEnabled = !soundFXEnabled;
+  const btn = document.getElementById('sound-toggle');
+  if(btn){ btn.textContent = soundFXEnabled ? '🔊' : '🔇'; btn.classList.toggle('on', soundFXEnabled); }
+}
+function playPremiumSound(type){
+  if(!soundFXEnabled) return;
+  try{
+    const ctx = audioCtx || new (window.AudioContext||window.webkitAudioContext)();
+    if(type === 'xp'){
+      // Soft ding
+      const o=ctx.createOscillator(), g=ctx.createGain();
+      o.connect(g); g.connect(ctx.destination);
+      o.type='sine'; o.frequency.setValueAtTime(880,ctx.currentTime);
+      o.frequency.exponentialRampToValueAtTime(1200,ctx.currentTime+0.08);
+      g.gain.setValueAtTime(0,ctx.currentTime);
+      g.gain.linearRampToValueAtTime(0.12,ctx.currentTime+0.02);
+      g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+0.35);
+      o.start(ctx.currentTime); o.stop(ctx.currentTime+0.35);
+    } else if(type === 'rankup'){
+      // Fanfare - three ascending notes
+      [[440,0],[554,0.12],[660,0.24],[880,0.36]].forEach(([freq,t])=>{
+        const o=ctx.createOscillator(),g=ctx.createGain();
+        o.connect(g); g.connect(ctx.destination);
+        o.type='triangle'; o.frequency.value=freq;
+        const start=ctx.currentTime+t;
+        g.gain.setValueAtTime(0,start); g.gain.linearRampToValueAtTime(0.22,start+0.04);
+        g.gain.exponentialRampToValueAtTime(0.001,start+0.28);
+        o.start(start); o.stop(start+0.3);
+      });
+    } else if(type === 'quest'){
+      // Soft pop
+      const o=ctx.createOscillator(),g=ctx.createGain();
+      o.connect(g); g.connect(ctx.destination);
+      o.type='sine'; o.frequency.setValueAtTime(660,ctx.currentTime);
+      o.frequency.exponentialRampToValueAtTime(880,ctx.currentTime+0.06);
+      g.gain.setValueAtTime(0,ctx.currentTime); g.gain.linearRampToValueAtTime(0.1,ctx.currentTime+0.02);
+      g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+0.25);
+      o.start(ctx.currentTime); o.stop(ctx.currentTime+0.25);
+    } else if(type === 'click'){
+      // Tiny tick
+      const o=ctx.createOscillator(),g=ctx.createGain();
+      o.connect(g); g.connect(ctx.destination);
+      o.type='square'; o.frequency.value=2000;
+      g.gain.setValueAtTime(0.04,ctx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+0.04);
+      o.start(ctx.currentTime); o.stop(ctx.currentTime+0.05);
+    } else if(type === 'fail'){
+      // Low thud
+      const o=ctx.createOscillator(),g=ctx.createGain();
+      o.connect(g); g.connect(ctx.destination);
+      o.type='sawtooth'; o.frequency.value=80;
+      g.gain.setValueAtTime(0.15,ctx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+0.3);
+      o.start(ctx.currentTime); o.stop(ctx.currentTime+0.3);
+    }
+  } catch(e){}
+}
+
+// ── FLOATING XP TEXT ──
+function showXPFloat(xp, sourceEl){
+  const el = document.createElement('div');
+  el.className = 'xp-float';
+  el.textContent = '+' + xp + ' XP';
+  // Position near source element or center screen
+  let x = window.innerWidth / 2 - 30;
+  let y = window.innerHeight / 2;
+  if(sourceEl){
+    const r = sourceEl.getBoundingClientRect();
+    x = r.left + r.width/2 - 30;
+    y = r.top + r.height/2;
+  }
+  el.style.left = x + 'px';
+  el.style.top = y + 'px';
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 1700);
+  playPremiumSound('xp');
+}
+
+// ── RANK UP FLASH ──
+function triggerRankUpFlash(){
+  playPremiumSound('rankup');
+  const flash = document.createElement('div');
+  flash.className = 'rankup-flash';
+  document.body.appendChild(flash);
+  setTimeout(() => flash.remove(), 1000);
+  // Glow rank badges
+  document.querySelectorAll('.sw-rank-badge,.rp-rank-badge,.tb-rank').forEach(b=>{
+    b.classList.add('rankup-text-glow');
+    setTimeout(()=>b.classList.remove('rankup-text-glow'),3000);
+  });
+}
+
+// ── FAILURE PULSE ──
+function triggerFailureAnim(el){
+  playPremiumSound('fail');
+  if(el){ el.classList.add('fail-pulse','fail-shake'); setTimeout(()=>{ el.classList.remove('fail-pulse','fail-shake'); },600); }
+}
+
+// ── QUEST TICK ──
+function triggerQuestTick(checkEl){
+  if(!checkEl) return;
+  checkEl.classList.add('quest-tick-anim');
+  setTimeout(()=>checkEl.classList.remove('quest-tick-anim'),500);
+  playPremiumSound('quest');
+}
+
+// ── DYNAMIC FEEDBACK BANNER ──
+function renderFeedbackBanner(){
+  const banner = document.getElementById('feedback-banner');
+  const msgEl = document.getElementById('feedback-msg');
+  const subEl = document.getElementById('feedback-sub');
+  const ratingEl = document.getElementById('daily-rating');
+  if(!banner||!msgEl||!subEl) return;
+
+  const t = today();
+  const todaySess = S.sessions.filter(s=>s.date===t&&!s.paused);
+  const todayMins = todaySess.reduce((a,s)=>a+s.min,0);
+  const goal = (S.goals&&S.goals.studyHours||6)*60;
+  const pct = todayMins/goal;
+  const streak = S.hunter.streak||0;
+  const questComp = S.questComp[t]||{};
+  const questsDone = Object.values(questComp).filter(Boolean).length;
+  const activeQ = getActiveQuests();
+  const questTotal = activeQ.length;
+
+  // Determine message type
+  let type='neutral', msg='⚡ System online', sub='Begin your session, Hunter.';
+  const hour = new Date().getHours();
+
+  if(todayMins===0){
+    if(hour<10){ msg='🌅 New day. New mission.'; sub='The dungeon awaits. Start your first session.'; type='neutral'; }
+    else if(hour<14){ msg='⚠ Output below potential'; sub='Morning half gone. Lock in now, Hunter.'; type='low'; }
+    else if(hour<18){ msg='⚠ No sessions logged today'; sub='The gap is growing. One session is all it takes.'; type='low'; }
+    else{ msg='🌙 Late but not too late'; sub='Even 1 hour now keeps the streak alive.'; type='streak'; }
+  } else if(pct>=1){
+    msg='⚡ Strong progress today'; sub=`${(todayMins/60).toFixed(1)}h logged — goal crushed! Keep momentum.`; type='good';
+  } else if(pct>=0.6){
+    msg='💪 Solid output today'; sub=`${(todayMins/60).toFixed(1)}h done — ${Math.round((1-pct)*goal/60*10)/10}h left to hit goal.`; type='good';
+  } else if(pct>=0.3){
+    msg='📈 Progress building'; sub=`${(todayMins/60).toFixed(1)}h logged. Push through to the goal.`; type='neutral';
+  } else {
+    msg='⚠ Output below potential'; sub=`Only ${(todayMins/60).toFixed(1)}h so far. The shadow army doesn't rest.`; type='low';
+  }
+
+  if(streak>=7){ msg='🔥 Momentum building'; sub=`${streak}-day streak. The system is working. Don't break it.`; type='streak'; }
+  else if(streak>=3 && pct>=0.8){ msg='🔥 On fire today'; sub=`${streak}-day streak + strong session. Rank up incoming.`; type='streak'; }
+
+  banner.className = 'feedback-banner ' + type;
+  banner.style.display = 'flex';
+  msgEl.textContent = msg;
+  subEl.textContent = sub;
+
+  // Daily Star Rating (based on sessions, focus, completion)
+  const stars = calcDailyRating(todayMins, goal, questsDone, questTotal, todaySess);
+  let starHtml = '';
+  for(let i=1;i<=5;i++) starHtml += `<span class="daily-star${i<=stars?' lit':''}">⭐</span>`;
+  ratingEl.innerHTML = starHtml;
+}
+
+function calcDailyRating(mins, goalMins, questsDone, questTotal, sessions){
+  let score = 0;
+  const pct = mins/goalMins;
+  if(pct>=1) score+=2; else if(pct>=0.7) score+=1.5; else if(pct>=0.4) score+=1;
+  if(questTotal>0){ const qr=questsDone/questTotal; if(qr>=0.8) score+=1.5; else if(qr>=0.5) score+=1; else if(qr>0) score+=0.5; }
+  const avgStars = sessions.filter(s=>s.stars).reduce((a,s)=>a+(s.stars||0),0)/Math.max(1,sessions.filter(s=>s.stars).length);
+  if(avgStars>=4) score+=1.5; else if(avgStars>=3) score+=1; else if(avgStars>0) score+=0.5;
+  return Math.min(5, Math.round(score));
+}
+
+// ── PROGRESS SUMMARY CARD ──
+function renderProgressSummary(){
+  const wrap = document.getElementById('progress-summary-wrap');
+  const grid = document.getElementById('progress-summary');
+  if(!wrap||!grid) return;
+
+  const t = today();
+  const todaySess = S.sessions.filter(s=>s.date===t&&!s.paused);
+  const todayMins = todaySess.reduce((a,s)=>a+s.min,0);
+  const todayXP = todaySess.reduce((a,s)=>a+(s.xp||0),0);
+  const goal = (S.goals&&S.goals.studyHours||6)*60;
+  const questComp = S.questComp[t]||{};
+  const questsDone = Object.values(questComp).filter(Boolean).length;
+  const activeQ = getActiveQuests();
+  const pct = todayMins/goal;
+
+  let statusClass='ongoing', statusText='IN PROGRESS';
+  if(todaySess.length===0){ statusClass='ongoing'; statusText='AWAITING DEPLOYMENT'; }
+  else if(pct>=1 && questsDone>=Math.floor(activeQ.length*0.8)){ statusClass='success'; statusText='✓ MISSION SUCCESS'; }
+  else if(pct<0.3 && new Date().getHours()>=22){ statusClass='failed'; statusText='✗ BELOW THRESHOLD'; }
+  else if(pct<0.5 && new Date().getHours()>=20 && questsDone===0){ statusClass='recovery'; statusText='⚠ RECOVERY NEEDED'; }
+
+  if(todaySess.length===0){ wrap.style.display='none'; return; }
+  wrap.style.display='block';
+
+  grid.innerHTML = `
+    <div class="ps-item">
+      <div class="ps-val" style="color:var(--gold)">+${todayXP}</div>
+      <div class="ps-lbl">XP Gained</div>
+    </div>
+    <div class="ps-item">
+      <div class="ps-val" style="color:var(--accent)">${fmtHM(todayMins)}</div>
+      <div class="ps-lbl">Study Time</div>
+    </div>
+    <div class="ps-item">
+      <div class="ps-val">${todaySess.length}</div>
+      <div class="ps-lbl">Sessions</div>
+    </div>
+    <div class="ps-item">
+      <div class="ps-val" style="color:var(--green)">${questsDone}/${activeQ.length}</div>
+      <div class="ps-lbl">Quests</div>
+    </div>
+    <div class="ps-status ${statusClass}">${statusText}</div>
+  `;
+}
+
+// ── NEXT RANK PROGRESS BAR ──
+function renderNextRankProgress(){
+  const wrap = document.getElementById('sw-rank-progress');
+  const fill = document.getElementById('sw-rank-prog-fill');
+  const lbl = document.getElementById('sw-rank-prog-label');
+  const pctEl = document.getElementById('sw-rank-prog-pct');
+  if(!wrap||!fill) return;
+
+  const RANKS=[
+    {r:'E',min:0,max:500},{r:'D',min:500,max:1500},{r:'C',min:1500,max:3500},
+    {r:'B',min:3500,max:7000},{r:'A',min:7000,max:13000},{r:'S',min:13000,max:22000},
+    {r:'SS',min:22000,max:35000},{r:'SSS',min:35000,max:999999}
+  ];
+  const xp = S.hunter.xp||0;
+  const cur = RANKS.findIndex(rk=>xp>=rk.min&&xp<rk.max);
+  if(cur===-1||cur===RANKS.length-1){ wrap.style.display='none'; return; }
+
+  const rk = RANKS[cur];
+  const next = RANKS[cur+1];
+  const pct = Math.min(100,Math.round((xp-rk.min)/(rk.max-rk.min)*100));
+
+  wrap.style.display='block';
+  lbl.textContent = `Rank ${rk.r} → ${next.r}`;
+  pctEl.textContent = pct + '%  (' + xp + ' / ' + rk.max + ' XP)';
+  setTimeout(()=>{ fill.style.width = pct+'%'; }, 100);
+}
+
+// ── MINI 7-DAY CONSISTENCY GRAPH ──
+function renderMiniConsistencyGraph(){
+  const cont = document.getElementById('mini-consistency-graph');
+  if(!cont) return;
+  const days=[];
+  for(let i=6;i>=0;i--){ const d=new Date(); d.setDate(d.getDate()-i); days.push(d.toISOString().split('T')[0]); }
+  const goal=(S.goals&&S.goals.studyHours||6)*60;
+  const data = days.map(d=>{ const mins=S.sessions.filter(s=>s.date===d&&!s.paused).reduce((a,s)=>a+s.min,0); return{mins,pct:Math.min(1,mins/goal),isToday:d===today()}; });
+  const max = Math.max(...data.map(d=>d.mins),1);
+  const DAY_NAMES=['S','M','T','W','T','F','S'];
+  const todayDow = new Date().getDay();
+
+  cont.innerHTML = data.map((d,i)=>{
+    const h = Math.max(4, Math.round(d.pct*32));
+    const isToday = d.isToday;
+    const dow = (todayDow - 6 + i + 7) % 7;
+    let color;
+    if(d.mins===0) color='rgba(255,255,255,.06)';
+    else if(d.pct>=1) color='var(--green)';
+    else if(d.pct>=0.6) color='var(--accent)';
+    else if(d.pct>=0.3) color='var(--accent2)';
+    else color='rgba(255,59,92,.5)';
+    return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px" title="${d.mins}m studied">
+      <div class="mini-bar${isToday?' today':''}" style="width:100%;height:${h}px;background:${color};${d.pct>=1?'box-shadow:0 0 6px '+color+'80':''}"></div>
+      <div style="font-size:8px;color:${isToday?'var(--accent)':'var(--text3)'};font-weight:${isToday?700:400}">${DAY_NAMES[dow]}</div>
+    </div>`;
+  }).join('');
+}
+
+// ── HOOK INTO EXISTING FUNCTIONS (non-destructive patches) ──
+
+// Patch showToast to detect XP gains and trigger float
+const _origShowToast = showToast;
+showToast = function(msg){
+  _origShowToast(msg);
+  // Extract XP value from common toast patterns
+  const xpMatch = msg.match(/\+(\d+)\s*XP/i);
+  if(xpMatch){
+    const xpVal = parseInt(xpMatch[1]);
+    if(xpVal>0) showXPFloat(xpVal);
+  }
+  // Detect failure/penalty messages
+  if(msg.includes('-') && msg.includes('XP')){
+    const penEl = document.getElementById('penalty-zone');
+    if(penEl) triggerFailureAnim(penEl);
+  }
+  // Quest complete sound
+  if(msg.toLowerCase().includes('quest done')||msg.toLowerCase().includes('quest')){
+    playPremiumSound('quest');
+  }
+};
+
+// Patch checkRankUp to trigger flash
+const _origCheckRankUp = typeof checkRankUp==='function'?checkRankUp:null;
+if(_origCheckRankUp){
+  checkRankUp = function(){
+    const prevRank = getRank(S.hunter.xp).r;
+    _origCheckRankUp();
+    const newRank = getRank(S.hunter.xp).r;
+    if(newRank!==prevRank){ triggerRankUpFlash(); showToast('⚔ RANK UP! You are now Rank '+newRank+' ✨'); }
+  };
+}
+
+// Patch renderDash to also render premium components
+const _origRenderDash = typeof renderDash==='function'?renderDash:null;
+if(_origRenderDash){
+  renderDash = function(){
+    _origRenderDash();
+    renderNextRankProgress();
+    renderMiniConsistencyGraph();
+    renderFeedbackBanner();
+    renderProgressSummary();
+  };
+}
+
+// Intercept quest checkbox clicks to add tick animation
+document.addEventListener('click', function(e){
+  if(e.target && (e.target.classList.contains('qchk')||e.target.classList.contains('rp-qchk'))){
+    if(!e.target.classList.contains('done')){
+      setTimeout(()=>triggerQuestTick(e.target), 10);
+    }
+  }
+  // Click sound on buttons
+  if(e.target && (e.target.classList.contains('btn')||e.target.classList.contains('nav-btn')||e.target.classList.contains('bnav-btn'))){
+    playPremiumSound('click');
+  }
+}, true);
+
+// ── PREMIUM CHART UPGRADES ──
+let chRadar=null;
+
+// Override renderCharts with premium version
+const _origRenderCharts = typeof renderCharts==='function'?renderCharts:null;
+if(_origRenderCharts){
+  renderCharts = function(){
+    _origRenderCharts();
+    // After base charts render, apply premium upgrades
+    setTimeout(upgradeProdChart, 50);
+    setTimeout(upgradeCumChart, 80);
+    setTimeout(renderRadarChart, 120);
+  };
+}
+
+function upgradeProdChart(){
+  // Destroy and recreate productivity chart with neon glow + gradient
+  if(window.chProd){ window.chProd.destroy(); window.chProd=null; }
+  const canvas=document.getElementById('ch-productivity');
+  if(!canvas)return;
+  const ctx=canvas.getContext('2d');
+
+  const QUESTS=getActiveQuests();
+  const last14=[];
+  for(let i=13;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);last14.push(d.toISOString().split('T')[0]);}
+  const prodScores=last14.map(d=>{
+    const dayMins=S.sessions.filter(s=>s.date===d).reduce((a,s)=>a+s.min,0);
+    const studyScore=Math.min(100,Math.round(dayMins/((S.goals&&S.goals.studyHours||6)*60)*60));
+    const comp=S.questComp[d]||{};
+    const questDone=Object.values(comp).filter(Boolean).length;
+    const questScore=QUESTS.length>0?Math.round(questDone/QUESTS.length*40):0;
+    return Math.min(100,studyScore+questScore);
+  });
+
+  // Gradient fill
+  const grad=ctx.createLinearGradient(0,0,0,180);
+  grad.addColorStop(0,'rgba(168,85,247,0.4)');
+  grad.addColorStop(0.5,'rgba(91,110,245,0.15)');
+  grad.addColorStop(1,'rgba(91,110,245,0)');
+
+  // Animated moving dot data: draw full line, then a pulsing dot on the last real value
+  const lastIdx=prodScores.reduce((li,v,i)=>v>0?i:li,-1);
+
+  window.chProd=new Chart(ctx,{
+    type:'line',
+    data:{
+      labels:last14.map(d=>{const dt=new Date(d);return dt.getDate()+'/'+(dt.getMonth()+1);}),
+      datasets:[
+        {
+          label:'Productivity',data:prodScores,
+          borderColor:'rgba(168,85,247,1)',
+          backgroundColor:grad,
+          fill:true,tension:0.45,
+          pointRadius:prodScores.map((_,i)=>i===lastIdx?6:3),
+          pointBackgroundColor:prodScores.map((v,i)=>{
+            if(i===lastIdx)return '#fff';
+            return v>=70?'#00d68f':v>=40?'#f4c430':'#ff3b5c';
+          }),
+          pointBorderColor:prodScores.map((_,i)=>i===lastIdx?'rgba(168,85,247,1)':'transparent'),
+          pointBorderWidth:prodScores.map((_,i)=>i===lastIdx?2:0),
+          pointHoverRadius:7,
+          borderWidth:2.5,
+          shadowColor:'rgba(168,85,247,0.5)',
+          shadowBlur:10,
+          shadowOffsetX:0,shadowOffsetY:4,
+        }
+      ]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      animation:{duration:1200,easing:'easeInOutQuart'},
+      plugins:{
+        legend:{display:false},
+        tooltip:{
+          backgroundColor:'rgba(15,15,30,0.95)',
+          borderColor:'rgba(168,85,247,0.4)',
+          borderWidth:1,
+          padding:10,
+          titleColor:'#e0e3f4',
+          bodyColor:'rgba(168,85,247,1)',
+          callbacks:{
+            title:ctx=>'Day '+ctx[0].label,
+            label:ctx=>'Score: '+ctx.raw+'/100',
+            afterLabel:ctx=>{
+              const v=ctx.raw;
+              if(v>=80)return '⚡ Exceptional';
+              if(v>=60)return '💪 Strong';
+              if(v>=40)return '📈 Progressing';
+              if(v>0)return '⚠ Low output';
+              return '— No data';
+            }
+          }
+        }
+      },
+      scales:{
+        x:{ticks:{color:'rgba(224,227,244,.7)',font:{size:9}},grid:{color:'rgba(255,255,255,.04)'}},
+        y:{min:0,max:100,ticks:{color:'rgba(224,227,244,.7)',font:{size:10},callback:v=>v+'%'},grid:{color:'rgba(255,255,255,.04)'},border:{color:'transparent'}}
+      }
+    }
+  });
+}
+
+function upgradeCumChart(){
+  if(window.chCum){ window.chCum.destroy(); window.chCum=null; }
+  const canvas=document.getElementById('ch-cumulative');
+  if(!canvas)return;
+  const ctx=canvas.getContext('2d');
+
+  const sortedSess=[...S.sessions].sort((a,b)=>a.date.localeCompare(b.date));
+  const cumDates=[],cumHrs=[];let running=0;
+  if(sortedSess.length>0){
+    const first=sortedSess[0].date,lastDate=today();
+    const d=new Date(first);
+    while(d.toISOString().split('T')[0]<=lastDate){
+      const ds=d.toISOString().split('T')[0];
+      running+=S.sessions.filter(s=>s.date===ds).reduce((a,s)=>a+s.min,0)/60;
+      cumDates.push(new Date(d).getDate()+'/'+(new Date(d).getMonth()+1));
+      cumHrs.push(+running.toFixed(1));
+      d.setDate(d.getDate()+1);
+    }
+  }
+  if(cumDates.length<2){
+    const ce=document.getElementById('ch-cumulative');
+    if(ce)ce.parentElement.innerHTML='<div class="empty">Log sessions to see your cumulative progress.</div>';
+    return;
+  }
+
+  const grad=ctx.createLinearGradient(0,0,0,180);
+  grad.addColorStop(0,'rgba(0,214,143,0.35)');
+  grad.addColorStop(0.6,'rgba(0,214,143,0.08)');
+  grad.addColorStop(1,'rgba(0,214,143,0)');
+
+  window.chCum=new Chart(ctx,{
+    type:'line',
+    data:{
+      labels:cumDates,
+      datasets:[{
+        label:'Total Hours',data:cumHrs,
+        borderColor:'rgba(0,214,143,1)',
+        backgroundColor:grad,
+        fill:true,tension:0.45,
+        pointRadius:0,pointHoverRadius:5,
+        pointHoverBackgroundColor:'#00d68f',
+        borderWidth:2.5,
+      }]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      animation:{duration:1400,easing:'easeInOutQuart'},
+      plugins:{
+        legend:{display:false},
+        tooltip:{
+          backgroundColor:'rgba(15,15,30,0.95)',
+          borderColor:'rgba(0,214,143,0.35)',
+          borderWidth:1,padding:10,
+          titleColor:'#e0e3f4',bodyColor:'rgba(0,214,143,1)',
+          callbacks:{label:ctx=>`${ctx.raw}h total`}
+        }
+      },
+      scales:{
+        x:{ticks:{color:'rgba(224,227,244,.7)',font:{size:9},maxTicksLimit:10},grid:{color:'rgba(255,255,255,.04)'}},
+        y:{ticks:{color:'rgba(224,227,244,.7)',font:{size:10}},grid:{color:'rgba(255,255,255,.04)'},title:{display:true,text:'Cumulative Hours',color:'rgba(224,227,244,.5)',font:{size:10}},border:{color:'transparent'}}
+      }
+    }
+  });
+}
+
+function renderRadarChart(){
+  if(chRadar){ chRadar.destroy(); chRadar=null; }
+  const canvas=document.getElementById('ch-radar');
+  if(!canvas)return;
+
+  // Calculate RPG stats from real data
+  const last7=[];for(let i=6;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);last7.push(d.toISOString().split('T')[0]);}
+  const totalMins=S.sessions.reduce((a,s)=>a+s.min,0);
+  const last7mins=last7.map(d=>S.sessions.filter(s=>s.date===d).reduce((a,s)=>a+s.min,0));
+  const goalMins=(S.goals&&S.goals.studyHours||6)*60;
+
+  // ENDURANCE: avg daily hours vs goal (0-100)
+  const avgDaily=last7mins.reduce((a,v)=>a+v,0)/7;
+  const endurance=Math.min(100,Math.round(avgDaily/goalMins*100));
+
+  // CONSISTENCY: days with any study in last 7
+  const activeDays=last7mins.filter(v=>v>0).length;
+  const consistency=Math.round(activeDays/7*100);
+
+  // FOCUS: average session rating (stars 1-5 mapped to 0-100)
+  const ratedSess=S.sessions.filter(s=>s.stars);
+  const avgRating=ratedSess.length?ratedSess.reduce((a,s)=>a+(s.stars||0),0)/ratedSess.length:3;
+  const focus=Math.round((avgRating/5)*100);
+
+  // KNOWLEDGE: overall topic confidence
+  const allT=[...(S.topics.physics11||[]),...(S.topics.physics12||[]),...(S.topics.chemistry11||[]),...(S.topics.chemistry12||[]),...(S.topics.maths11||[]),...(S.topics.maths12||[])];
+  const knowledge=allT.length?Math.round(allT.reduce((a,t)=>a+t.conf,0)/allT.length):0;
+
+  // QUEST RATE: last 7 days
+  const QUESTS=getActiveQuests();
+  let qD=0,qT=0;
+  last7.forEach(d=>{const c=S.questComp[d]||{};qT+=QUESTS.length;qD+=Object.values(c).filter(Boolean).length;});
+  const questRate=qT>0?Math.round(qD/qT*100):0;
+
+  // STREAK POWER: streak mapped 0-100 (max 30 days = 100)
+  const streakPower=Math.min(100,Math.round((S.hunter.streak||0)/30*100));
+
+  const data=[endurance,consistency,focus,knowledge,questRate,streakPower];
+  const ctx=canvas.getContext('2d');
+
+  // Neon glow background fill gradient
+  const grad=ctx.createRadialGradient(canvas.width/2,canvas.height/2,0,canvas.width/2,canvas.height/2,120);
+  grad.addColorStop(0,'rgba(91,110,245,0.18)');
+  grad.addColorStop(0.6,'rgba(124,94,245,0.08)');
+  grad.addColorStop(1,'rgba(91,110,245,0)');
+
+  chRadar=new Chart(ctx,{
+    type:'radar',
+    data:{
+      labels:['Endurance','Consistency','Focus','Knowledge','Quest Rate','Streak Power'],
+      datasets:[{
+        label:'Hunter Stats',
+        data:data,
+        backgroundColor:grad,
+        borderColor:'rgba(91,110,245,0.9)',
+        borderWidth:2,
+        pointBackgroundColor:'rgba(91,110,245,1)',
+        pointBorderColor:'rgba(0,0,0,0)',
+        pointRadius:4,
+        pointHoverRadius:6,
+        pointHoverBackgroundColor:'#fff',
+      }]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      animation:{duration:1200,easing:'easeInOutQuart'},
+      plugins:{
+        legend:{display:false},
+        tooltip:{
+          backgroundColor:'rgba(15,15,30,0.95)',
+          borderColor:'rgba(91,110,245,0.4)',
+          borderWidth:1,padding:10,
+          titleColor:'rgba(91,110,245,1)',
+          bodyColor:'#e0e3f4',
+          callbacks:{label:ctx=>`${ctx.label}: ${ctx.raw}/100`}
+        }
+      },
+      scales:{
+        r:{
+          min:0,max:100,
+          ticks:{
+            display:false,
+            stepSize:25,
+          },
+          grid:{color:'rgba(91,110,245,0.14)',circular:false},
+          angleLines:{color:'rgba(91,110,245,0.18)'},
+          pointLabels:{
+            color:'rgba(224,227,244,0.8)',
+            font:{size:11,family:"'Rajdhani',sans-serif",weight:'600'},
+            padding:8,
+          }
+        }
+      }
+    }
+  });
 }
 </script>
+<!-- SOUND TOGGLE -->
+<button class="sound-toggle on" id="sound-toggle" onclick="toggleSoundFX()" title="Toggle sound effects">🔊</button>
+
 </body>
 </html>
