@@ -260,42 +260,227 @@ section.active{display:block}
 .rank-S{background:rgba(255,120,50,.1);border-color:#f85;color:#f85}
 .rank-SS{background:rgba(255,50,50,.12);border-color:var(--red);color:var(--red)}
 .rank-SSS{background:rgba(200,50,255,.15);border-color:#c35ff5;color:#c35ff5}
-/* ── STATUS WINDOW ── */
+/* ── STATUS WINDOW V2 — SOLO LEVELING RPG STYLE ── */
 .status-window{
-  background:var(--card);
-  border:1px solid rgba(91,110,245,0.35);
+  background:linear-gradient(145deg,rgba(9,9,24,.98) 0%,rgba(13,13,30,.98) 100%);
+  border:1px solid rgba(91,110,245,0.5);
   border-radius:var(--radius);
-  padding:18px 16px 14px;
+  padding:20px 18px 16px;
   margin-bottom:14px;
   position:relative;
   overflow:hidden;
+  box-shadow:
+    0 0 0 1px rgba(91,110,245,.06) inset,
+    0 8px 40px rgba(0,0,0,.6),
+    0 0 60px rgba(91,110,245,.04);
 }
+/* Animated scan line */
 .status-window::before{
-  content:'';position:absolute;inset:0;
-  background:linear-gradient(135deg,rgba(91,110,245,.06) 0%,transparent 60%);
-  pointer-events:none;
+  content:'';position:absolute;left:0;right:0;top:-100%;
+  height:40%;
+  background:linear-gradient(180deg,transparent 0%,rgba(91,110,245,.04) 50%,transparent 100%);
+  animation:swScan 4s ease-in-out infinite;
+  pointer-events:none;z-index:0;
 }
-.sw-header{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:14px}
-.sw-title{font-family:var(--mono);font-size:11px;color:var(--accent);letter-spacing:3px;text-transform:uppercase;white-space:nowrap}
+.status-window::after{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(135deg,rgba(91,110,245,.06) 0%,transparent 50%,rgba(124,94,245,.03) 100%);
+  pointer-events:none;z-index:0;
+}
+@keyframes swScan{0%{top:-100%}100%{top:200%}}
+
+.sw-header{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:16px;position:relative;z-index:1}
+.sw-title{
+  font-family:var(--mono);font-size:11px;color:var(--accent);
+  letter-spacing:4px;text-transform:uppercase;white-space:nowrap;
+  text-shadow:0 0 12px rgba(91,110,245,.7);
+}
 .sw-lines{display:flex;flex-direction:column;gap:3px;flex:1}
-.sw-line{height:1px;background:linear-gradient(90deg,transparent,rgba(91,110,245,.4),transparent)}
-.sw-identity{display:flex;align-items:center;gap:12px;margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid var(--border)}
-.sw-rank-badge{width:44px;height:44px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;font-family:var(--mono);border:2px solid;flex-shrink:0}
+.sw-line{height:1px;background:linear-gradient(90deg,transparent,rgba(91,110,245,.5),transparent);animation:swLinePulse 2s ease-in-out infinite alternate}
+.sw-line:nth-child(2){animation-delay:.3s}
+.sw-line:nth-child(3){animation-delay:.6s}
+@keyframes swLinePulse{0%{opacity:.4}100%{opacity:1}}
+
+/* Identity row */
+.sw-identity{display:flex;align-items:center;gap:14px;margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid rgba(91,110,245,.15);position:relative;z-index:1}
+
+/* RANK BADGE — large, glowing */
+.sw-rank-badge{
+  width:52px;height:52px;border-radius:10px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:20px;font-weight:700;font-family:var(--mono);
+  border:2px solid;flex-shrink:0;
+  position:relative;
+  transition:box-shadow .3s;
+}
+.sw-rank-badge.rank-S,.sw-rank-badge.rank-SS,.sw-rank-badge.rank-SSS{
+  animation:rankBadgePulse 2s ease-in-out infinite;
+}
+@keyframes rankBadgePulse{
+  0%,100%{box-shadow:0 0 8px currentColor,0 0 24px rgba(91,110,245,.1)}
+  50%{box-shadow:0 0 20px currentColor,0 0 40px rgba(91,110,245,.2)}
+}
+
 .sw-name{font-size:17px;font-weight:700;letter-spacing:.3px}
-.sw-class{font-size:10px;color:var(--accent);letter-spacing:1.5px;text-transform:uppercase;margin-top:2px}
+.sw-class{font-size:10px;color:var(--accent);letter-spacing:1.5px;text-transform:uppercase;margin-top:2px;text-shadow:0 0 8px rgba(91,110,245,.5)}
 .sw-xp-block{margin-left:auto;text-align:right}
-.sw-xp-val{font-family:var(--mono);font-size:20px;color:var(--gold)}
+.sw-xp-val{font-family:var(--mono);font-size:22px;color:var(--gold);text-shadow:0 0 12px rgba(244,196,48,.5)}
 .sw-xp-lbl{font-size:9px;color:var(--text2);text-transform:uppercase;letter-spacing:.8px}
-.sw-stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+
+/* Stat bars — PREMIUM segmented */
+.sw-stats{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;position:relative;z-index:1}
 .sw-stat{display:flex;flex-direction:column;gap:5px}
 .sw-stat-hdr{display:flex;justify-content:space-between;align-items:center}
 .sw-stat-name{font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase}
-.sw-stat-val{font-family:var(--mono);font-size:13px}
-.sw-stat-bar{height:5px;background:rgba(255,255,255,.06);border-radius:3px;overflow:hidden}
-.sw-stat-fill{height:100%;border-radius:3px;transition:width .8s cubic-bezier(.4,0,.2,1)}
-.sw-footer{display:flex;justify-content:space-between;padding-top:12px;border-top:1px solid var(--border);font-size:11px;color:var(--text2);font-family:var(--mono)}
-.sw-streak{color:var(--gold)}
+.sw-stat-val{font-family:var(--mono);font-size:13px;font-weight:700}
+
+/* Segmented bar like Solo Leveling */
+.sw-stat-bar{
+  height:7px;background:rgba(255,255,255,.04);border-radius:4px;overflow:hidden;
+  position:relative;
+}
+.sw-stat-fill{
+  height:100%;border-radius:4px;
+  transition:width 1.2s cubic-bezier(.4,0,.2,1);
+  position:relative;
+}
+.sw-stat-fill::after{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(90deg,transparent 0%,rgba(255,255,255,.3) 50%,transparent 100%);
+  animation:statShine 2s ease-in-out infinite;
+}
+@keyframes statShine{
+  0%{transform:translateX(-100%)}
+  60%,100%{transform:translateX(200%)}
+}
+/* Segmented bar overlay (creates block gaps) */
+.sw-stat-segs{
+  position:absolute;inset:0;
+  display:flex;gap:1px;pointer-events:none;
+}
+.sw-stat-seg{flex:1;border-right:1px solid rgba(0,0,0,.4);last-child:{border:none}}
+
+.sw-footer{
+  display:flex;justify-content:space-between;align-items:center;
+  padding-top:12px;border-top:1px solid rgba(91,110,245,.12);
+  font-size:11px;color:var(--text2);font-family:var(--mono);
+  position:relative;z-index:1;
+}
+.sw-streak{
+  color:var(--gold);font-size:12px;font-weight:700;
+  text-shadow:0 0 8px rgba(244,196,48,.5);
+}
 .sw-jee{color:var(--text2)}
+
+/* Rank progress bar — WORKING PREMIUM */
+.sw-rank-prog{margin:12px 0 8px;position:relative;z-index:1}
+.sw-rank-prog-lbl{display:flex;justify-content:space-between;font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:1.2px;margin-bottom:5px;font-weight:700}
+.sw-rank-prog-track{
+  height:8px;background:rgba(255,255,255,.04);border-radius:4px;overflow:hidden;
+  position:relative;
+  box-shadow:0 0 0 1px rgba(91,110,245,.1) inset;
+}
+.sw-rank-prog-fill{
+  height:100%;border-radius:4px;
+  background:linear-gradient(90deg,#7c5ef5 0%,#5b6ef5 40%,#00c9ff 100%);
+  transition:width 1.4s cubic-bezier(.4,0,.2,1);
+  position:relative;
+}
+.sw-rank-prog-fill::after{
+  content:'';position:absolute;right:0;top:0;bottom:0;width:3px;border-radius:2px;
+  background:rgba(255,255,255,.9);
+  box-shadow:0 0 8px rgba(0,201,255,.8);
+  animation:progPulse 1.4s ease-in-out infinite;
+}
+@keyframes progPulse{0%,100%{opacity:.5;width:3px}50%{opacity:1;width:5px}}
+
+/* 7-day mini consistency */
+.sw-mini-graph{display:flex;align-items:flex-end;gap:3px;height:32px;margin-top:10px;position:relative;z-index:1}
+.sw-mini-bar{
+  flex:1;border-radius:2px 2px 0 0;min-height:3px;
+  transition:height .6s cubic-bezier(.4,0,.2,1);
+  position:relative;
+}
+.sw-mini-bar.today{outline:1.5px solid rgba(91,110,245,.8);outline-offset:1px}
+.sw-mini-day{font-size:8px;text-align:center;color:var(--text3);margin-top:3px}
+
+/* ── SL PENALTY OVERLAY ── */
+.sl-penalty-overlay{
+  position:fixed;inset:0;z-index:9800;pointer-events:none;
+  display:flex;align-items:flex-start;justify-content:center;
+  padding-top:12px;
+}
+.sl-penalty-msg{
+  pointer-events:all;
+  max-width:600px;width:calc(100% - 24px);
+  background:rgba(8,8,16,.97);
+  border:1px solid rgba(255,59,92,.6);
+  border-radius:12px;
+  padding:14px 18px;
+  display:flex;align-items:center;gap:14px;
+  box-shadow:0 0 0 1px rgba(255,59,92,.1),0 8px 40px rgba(0,0,0,.8),0 0 40px rgba(255,59,92,.12);
+  animation:slMsgIn .4s cubic-bezier(.34,1.4,.64,1);
+  position:relative;overflow:hidden;
+}
+.sl-penalty-msg::before{
+  content:'';position:absolute;left:0;top:0;bottom:0;width:4px;
+  background:var(--red);box-shadow:0 0 12px var(--red);
+}
+@keyframes slMsgIn{from{transform:translateY(-120%);opacity:0}to{transform:translateY(0);opacity:1}}
+.sl-penalty-msg.warn{border-color:rgba(244,196,48,.5);box-shadow:0 0 0 1px rgba(244,196,48,.08),0 8px 40px rgba(0,0,0,.8),0 0 40px rgba(244,196,48,.1)}
+.sl-penalty-msg.warn::before{background:var(--gold);box-shadow:0 0 12px var(--gold)}
+.sl-penalty-msg.good{border-color:rgba(0,214,143,.5);box-shadow:0 0 0 1px rgba(0,214,143,.08),0 8px 40px rgba(0,0,0,.8),0 0 40px rgba(0,214,143,.1)}
+.sl-penalty-msg.good::before{background:var(--green);box-shadow:0 0 12px var(--green)}
+.sl-pen-icon{font-size:26px;flex-shrink:0}
+.sl-pen-body{flex:1;min-width:0}
+.sl-pen-title{font-size:14px;font-weight:700;color:var(--red);letter-spacing:.3px;margin-bottom:2px}
+.sl-penalty-msg.warn .sl-pen-title{color:var(--gold)}
+.sl-penalty-msg.good .sl-pen-title{color:var(--green)}
+.sl-pen-sub{font-size:11px;color:var(--text2);line-height:1.4}
+.sl-pen-close{background:none;border:none;color:var(--text3);cursor:pointer;font-size:18px;flex-shrink:0;padding:2px 6px;transition:color .2s}
+.sl-pen-close:hover{color:var(--text)}
+/* Pulsing border on danger */
+@keyframes dangerPulse{
+  0%,100%{box-shadow:0 0 0 1px rgba(255,59,92,.1),0 8px 40px rgba(0,0,0,.8),0 0 40px rgba(255,59,92,.12)}
+  50%{box-shadow:0 0 0 1px rgba(255,59,92,.3),0 8px 40px rgba(0,0,0,.8),0 0 60px rgba(255,59,92,.2)}
+}
+.sl-penalty-msg.danger{animation:slMsgIn .4s cubic-bezier(.34,1.4,.64,1),dangerPulse 2s ease-in-out 0.4s infinite}
+
+/* ── DAY-QUEST TAGS ── */
+.quest-day-tag{
+  display:inline-flex;align-items:center;gap:2px;
+  padding:1px 5px;border-radius:3px;
+  font-size:9px;font-weight:700;letter-spacing:.5px;
+  background:rgba(91,110,245,.12);border:1px solid rgba(91,110,245,.25);
+  color:var(--accent);
+}
+.quest-days-row{display:flex;flex-wrap:wrap;gap:3px;margin-top:4px}
+.day-sel-btn{
+  padding:4px 9px;border-radius:5px;font-family:var(--font);font-size:11px;font-weight:700;
+  cursor:pointer;border:1px solid var(--border2);background:transparent;color:var(--text3);
+  transition:all .15s;
+}
+.day-sel-btn.on{background:rgba(91,110,245,.15);border-color:var(--accent);color:var(--accent)}
+
+/* ── HEATMAP PREMIUM ── */
+.heatmap-cell{
+  width:18px!important;height:18px!important;
+  border-radius:4px!important;
+  transition:transform .1s,box-shadow .1s!important;
+  cursor:pointer!important;
+}
+.heatmap-cell:hover{transform:scale(1.3)!important;z-index:2;position:relative}
+
+/* ── CHART GLOW CANVAS WRAPPER ── */
+.chart-wrap{position:relative}
+.chart-wrap::after{
+  content:'';
+  position:absolute;inset:0;
+  background:radial-gradient(ellipse at 50% 100%,rgba(91,110,245,.04) 0%,transparent 70%);
+  pointer-events:none;
+}
+
+/* ── NEON TOOLTIP (via Chart.js custom) ── */
 
 /* ── SESSION RATING MODAL ── */
 .modal-overlay{position:fixed;inset:0;z-index:9500;background:rgba(0,0,0,.82);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;transition:opacity .22s;pointer-events:none}
@@ -688,25 +873,26 @@ input.fi:focus,select.fi:focus{
       </div>
     </div>
     <div class="sw-stats" id="sw-stats"></div>
-    <div id="sw-rank-req"></div>
-    <!-- NEXT RANK PROGRESS BAR -->
-    <div class="rank-progress-wrap" id="sw-rank-progress" style="display:none">
-      <div class="rank-progress-lbl">
+    <!-- RANK PROGRESS — premium bar -->
+    <div class="sw-rank-prog" id="sw-rank-req">
+      <div class="sw-rank-prog-lbl">
         <span id="sw-rank-prog-label">Next Rank</span>
-        <span id="sw-rank-prog-pct" style="font-family:var(--mono);font-size:10px;color:var(--accent)">0%</span>
+        <span id="sw-rank-prog-pct" style="font-family:var(--mono);color:var(--accent)">0%</span>
       </div>
-      <div class="rank-progress-track">
-        <div class="rank-progress-fill" id="sw-rank-prog-fill" style="width:0%"></div>
+      <div class="sw-rank-prog-track">
+        <div class="sw-rank-prog-fill" id="sw-rank-prog-fill" style="width:0%"></div>
       </div>
-    </div>
-    <!-- MINI 7-DAY CONSISTENCY GRAPH -->
-    <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border)">
-      <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">7-Day Consistency</div>
-      <div class="mini-consistency" id="mini-consistency-graph"></div>
     </div>
     <div class="sw-footer">
-      <div class="sw-streak"><span id="sw-streak">0</span> day streak</div>
+      <div class="sw-streak">🔥 <span id="sw-streak">0</span> day streak</div>
       <div class="sw-jee" id="sw-jee-days">— days to exam</div>
+    </div>
+    <!-- 7-DAY MINI CONSISTENCY -->
+    <div style="padding-top:10px;border-top:1px solid rgba(91,110,245,.1);margin-top:10px;position:relative;z-index:1">
+      <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:1.2px;margin-bottom:6px;font-weight:700">7-Day Consistency</div>
+      <div style="display:flex;align-items:flex-end;gap:3px">
+        <div class="sw-mini-graph" id="sw-mini-graph" style="flex:1"></div>
+      </div>
     </div>
   </div>
 
@@ -975,8 +1161,8 @@ input.fi:focus,select.fi:focus{
 
   <!-- Weekly heatmap -->
   <div class="card">
-    <div class="card-hdr"><span class="hl">🗓 Study Heatmap — Last 5 Weeks</span></div>
-    <div id="ch-heatmap" style="margin-top:8px"></div>
+    <div class="card-hdr"><span class="hl">🗓 Study Heatmap — Last 10 Weeks</span></div>
+    <div id="ch-heatmap" style="margin-top:8px;min-height:160px"></div>
   </div>
 
   <!-- Chronicle -->
@@ -1089,6 +1275,14 @@ input.fi:focus,select.fi:focus{
       <button class="btn btn-ghost btn-sm" onclick="addCustomQuest()">+ Add Quest</button>
       <button class="btn btn-primary btn-sm" onclick="saveQuests()">Save Quests</button>
     </div>
+  </div>
+
+  <!-- Day-specific Quest Schedule -->
+  <div class="card">
+    <div class="card-hdr"><span class="hl">📅 Quest Schedule by Day</span></div>
+    <div style="font-size:12px;color:var(--text2);margin-bottom:12px;line-height:1.6">Set which days each quest is active. Quests only appear on selected days.</div>
+    <div id="s-quest-schedule"></div>
+    <button class="btn btn-primary btn-sm" onclick="saveQuestSchedule()" style="margin-top:10px">Save Schedule</button>
   </div>
 
   <!-- Confidence Guide -->
@@ -1727,17 +1921,6 @@ function renderDash(){
   renderQuests();renderGates();renderPenalty();renderTodaysMission();
 }
 
-function getActiveQuests(){
-  if(S.customQuests&&S.customQuests.length>0)return S.customQuests;
-  const goalH=S.goals&&S.goals.questStudyHours?S.goals.questStudyHours:2;
-  return[
-    {id:'q1',name:`Study ${goalH}+ hours`,desc:`Active sessions today`,xp:50,auto:true},
-    {id:'q2',name:'Complete a Pomodoro',desc:'Finish one 25-min block',xp:25,auto:true},
-    {id:'q3',name:'Log workout',desc:'Train body and mind',xp:30,auto:false},
-    {id:'q4',name:'Update confidence',desc:'Review a topic below 50%',xp:20,auto:false},
-    {id:'q5',name:'No mindless scrolling',desc:'Honor quest',xp:20,auto:false},
-  ];
-}
 function renderQuests(){
   const QUESTS=getActiveQuests();
   const goalH=S.goals&&S.goals.questStudyHours?S.goals.questStudyHours:2;
@@ -1819,6 +2002,30 @@ function renderGates(){
   const rg=document.getElementById('rp-gates');if(rg)rg.innerHTML=rp;
 }
 
+// ── SL PENALTY OVERLAY ──
+let slPenaltyActive=false;
+function showSLPenalty(type,icon,title,sub){
+  const overlay=document.getElementById('sl-penalty-overlay');
+  const msg=document.getElementById('sl-penalty-msg');
+  const iconEl=document.getElementById('sl-pen-icon');
+  const titleEl=document.getElementById('sl-pen-title');
+  const subEl=document.getElementById('sl-pen-sub');
+  if(!overlay)return;
+  iconEl.textContent=icon;
+  titleEl.textContent=title;
+  subEl.textContent=sub;
+  msg.className='sl-penalty-msg '+type;
+  overlay.style.display='flex';
+  slPenaltyActive=true;
+  // play SL sound — defer so engine is ready
+  setTimeout(()=>playSLSound(type==='good'?'quest':type==='danger'?'fail':'click'),50);
+}
+function closeSLPenalty(){
+  const o=document.getElementById('sl-penalty-overlay');
+  if(o)o.style.display='none';
+  slPenaltyActive=false;
+}
+
 function renderPenalty(){
   const pz=document.getElementById('penalty-zone');if(!pz)return;
   const t=today();const hour=new Date().getHours();
@@ -1834,18 +2041,18 @@ function renderPenalty(){
     return;
   }
 
-  // Today's real sessions (excluding paused)
   const tSess=S.sessions.filter(s=>s.date===t&&!s.paused);
   const tMins=tSess.reduce((a,s)=>a+s.min,0);
   const tCount=tSess.length;
   const isValid=tCount>=DAILY_MIN.sessions&&tMins>=DAILY_MIN.hours*60;
 
-  // ── ZERO DAY DETECTION ──
+  // SL OVERLAY — critical penalty shown as overlay
   if(tCount===0&&hour>=8){
-    html+=`<div style="background:rgba(255,59,92,.09);border:1.5px solid rgba(255,59,92,.4);border-radius:var(--radius-sm);padding:14px 16px;display:flex;gap:12px;align-items:center;margin-bottom:10px;animation:pulse-border 2s infinite">
-      <span style="font-size:22px;flex-shrink:0">☠</span>
-      <div><div style="font-size:13px;color:var(--red);font-weight:700">⚠ Zero Day Detected — System Failure</div>
-      <div style="font-size:12px;color:var(--text2);margin-top:2px">Start a session NOW to prevent streak reset + -20 XP penalty.</div></div></div>`;
+    showSLPenalty('danger','☠','ZERO DAY DETECTED — SYSTEM FAILURE','Start a session NOW. Streak reset + -20 XP incoming at midnight.');
+  } else if((S.consecutiveFailures||0)>=2&&!slPenaltyActive){
+    showSLPenalty('danger','⚡','FAILURE STREAK: '+S.consecutiveFailures+' DAYS','Rank drop imminent. Two consecutive failures. Grind now to recover.');
+  } else if(!isValid&&hour>=20&&!slPenaltyActive&&tCount>0){
+    showSLPenalty('warn','⚠','MINIMUM STANDARD NOT MET','Log more sessions before midnight to protect your streak.');
   }
 
   // ── RECOVERY MODE ──
@@ -1868,7 +2075,7 @@ function renderPenalty(){
     </div>`;
   }
 
-  // ── CONSECUTIVE FAILURES ──
+  // ── CONSECUTIVE FAILURES (inline) ──
   if((S.consecutiveFailures||0)>=1){
     const rankIdx=RANK_ORDER.indexOf(S.hunter.rank||'E');
     html+=`<div style="background:rgba(255,59,92,.07);border:1px solid rgba(255,59,92,.2);border-radius:var(--radius-sm);padding:12px 16px;margin-bottom:10px;display:flex;gap:10px;align-items:center">
@@ -1877,25 +2084,12 @@ function renderPenalty(){
       <div style="font-size:12px;color:var(--text2);margin-top:2px">${rankIdx>0?'⚠ 2 failures = rank drop.':''} Grind today to recover.</div></div></div>`;
   }
 
-  // ── DAILY MINIMUM STATUS ──
-  if(!isValid&&hour>=20){
-    const sNeed=Math.max(0,DAILY_MIN.sessions-tCount);
-    const mNeed=Math.max(0,DAILY_MIN.hours*60-tMins);
-    html+=`<div style="background:rgba(255,59,92,.07);border:1px solid rgba(255,59,92,.22);border-radius:var(--radius-sm);padding:14px 16px;display:flex;gap:12px;align-items:flex-start;margin-bottom:10px">
-      <span style="font-size:22px;flex-shrink:0">⚠</span>
-      <div><div style="font-size:13px;color:var(--red);font-weight:700">Minimum Standard Not Met</div>
-      <div style="font-size:12px;color:var(--text2);margin-top:4px">
-        ${tCount<DAILY_MIN.sessions?`<span style="color:var(--red)">✗ ${tCount}/${DAILY_MIN.sessions} sessions</span>`:`<span style="color:var(--green)">✓ Sessions ✓</span>`} &nbsp;
-        ${tMins<DAILY_MIN.hours*60?`<span style="color:var(--red)">✗ ${fmtHM(tMins)}/${DAILY_MIN.hours}h study</span>`:`<span style="color:var(--green)">✓ Hours ✓</span>`}
-      </div>
-      <div style="font-size:11px;color:var(--text3);margin-top:4px">Streak resets + -20 XP at midnight if not met.</div></div></div>`;
-  }
-
   // ── ALL GOOD ──
   if(isValid&&!(S.recoveryMode&&S.recoveryMode.active)){
     html+=`<div style="background:rgba(0,214,143,.06);border:1px solid rgba(0,214,143,.18);border-radius:var(--radius-sm);padding:11px 14px;display:flex;gap:10px;align-items:center;margin-bottom:10px">
       <span style="font-size:18px">✅</span>
       <div style="font-size:13px;color:var(--green);font-weight:600">Day Valid — Streak Protected</div></div>`;
+    if(hour>=18)showSLPenalty('good','✅','DAILY MISSION SECURED','Streak is safe. Keep building momentum, Hunter.');
   }
 
   pz.innerHTML=html;
@@ -2074,6 +2268,8 @@ function getAudioCtx(){
     audioCtx=new(window.AudioContext||window.webkitAudioContext)();
   }
   if(audioCtx.state==='suspended')audioCtx.resume();
+  // Also keep SL audio in sync
+  _audioCtxSL=audioCtx;
   return audioCtx;
 }
 function playChime(isBreak){
@@ -2973,6 +3169,28 @@ function renderWoLog(){
 
 // ANALYTICS
 let chS=null,chT=null,chProd=null,chCum=null,chSplit=null;
+
+// ── SHARED PREMIUM CHART CONFIG ──
+const SL_TOOLTIP={
+  backgroundColor:'rgba(8,8,20,.96)',
+  borderColor:'rgba(91,110,245,.5)',
+  borderWidth:1,
+  padding:{x:14,y:10},
+  titleColor:'rgba(224,227,244,.9)',
+  bodyColor:'rgba(91,110,245,1)',
+  titleFont:{family:"'Share Tech Mono',monospace",size:11},
+  bodyFont:{family:"'Rajdhani',sans-serif",size:13,weight:'600'},
+  cornerRadius:8,
+  caretSize:5,
+};
+const SL_GRID={color:'rgba(255,255,255,.04)'};
+const SL_TICK={color:'rgba(200,203,220,.55)',font:{size:9,family:"'Share Tech Mono',monospace"}};
+
+function makeGradient(ctx,h,topColor,botColor){
+  const g=ctx.createLinearGradient(0,0,0,h);
+  g.addColorStop(0,topColor);g.addColorStop(1,botColor);return g;
+}
+
 function renderCharts(){
   const totalMins=S.sessions.reduce((a,s)=>a+s.min,0);
   el('an-hrs',(totalMins/60).toFixed(1)+'h');
@@ -2983,29 +3201,57 @@ function renderCharts(){
   let qT=0,qD=0;last7.forEach(d=>{const c=S.questComp[d]||{};qT+=QUESTS.length;qD+=Object.values(c).filter(Boolean).length;});
   el('an-qr',qT>0?Math.round(qD/qT*100)+'%':'0%');
   el('an-streak',S.hunter.streak);
-  const gc={tc:'rgba(224,227,244,.7)',gr:'rgba(255,255,255,.04)'};
 
-  // PRODUCTIVITY CHART (last 14 days)
+  // ── 1. PRODUCTIVITY LINE — neon green glow ──
   const last14=[];for(let i=13;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);last14.push(d.toISOString().split('T')[0]);}
   const prodScores=last14.map(d=>{
     const dayMins=S.sessions.filter(s=>s.date===d).reduce((a,s)=>a+s.min,0);
-    const studyScore=Math.min(100,Math.round(dayMins/(S.goals.studyHours*60)*60));
+    const studyScore=Math.min(100,Math.round(dayMins/((S.goals&&S.goals.studyHours||6)*60)*60));
     const comp=S.questComp[d]||{};const questDone=Object.values(comp).filter(Boolean).length;
-    const questScore=Math.round(questDone/QUESTS.length*40);
+    const questScore=QUESTS.length>0?Math.round(questDone/QUESTS.length*40):0;
     return Math.min(100,studyScore+questScore);
   });
   if(chProd)chProd.destroy();
-  chProd=new Chart(document.getElementById('ch-productivity').getContext('2d'),{type:'line',data:{
-    labels:last14.map(d=>{const dt=new Date(d);return dt.getDate()+'/'+(dt.getMonth()+1);}),
-    datasets:[{
-      label:'Productivity',data:prodScores,
-      borderColor:'#a855f7',backgroundColor:'rgba(168,85,247,.15)',
-      fill:true,tension:.4,pointRadius:3,pointBackgroundColor:prodScores.map(v=>v>=70?'#00d68f':v>=40?'#f4c430':'#ff3b5c'),
-      pointBorderWidth:0,borderWidth:2,
-    }]
-  },options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`Score: ${ctx.raw}/100`}}},scales:{x:{ticks:{color:gc.tc,font:{size:9}},grid:{color:gc.gr}},y:{min:0,max:100,ticks:{color:gc.tc,font:{size:10},callback:v=>v+'%'},grid:{color:gc.gr}}}}});
+  const prodCanvas=document.getElementById('ch-productivity');
+  if(prodCanvas){
+    const pCtx=prodCanvas.getContext('2d');
+    const pGrad=makeGradient(pCtx,180,'rgba(0,255,150,0.40)','rgba(0,255,150,0.00)');
+    const lastNonZero=prodScores.reduce((li,v,i)=>v>0?i:li,-1);
+    chProd=new Chart(pCtx,{
+      type:'line',
+      data:{
+        labels:last14.map(d=>{const dt=new Date(d);return dt.getDate()+'/'+(dt.getMonth()+1);}),
+        datasets:[{
+          label:'Score',data:prodScores,
+          borderColor:'#00ff96',borderWidth:3,
+          backgroundColor:pGrad,fill:true,tension:0.45,
+          pointRadius:prodScores.map((_,i)=>i===lastNonZero?7:4),
+          pointBackgroundColor:prodScores.map((v,i)=>i===lastNonZero?'#fff':v>=70?'#00ff96':v>=40?'#f4c430':'#ff3b5c'),
+          pointBorderColor:prodScores.map((_,i)=>i===lastNonZero?'#00ffcc':'transparent'),
+          pointBorderWidth:prodScores.map((_,i)=>i===lastNonZero?2:0),
+          pointHoverRadius:8,
+        }]
+      },
+      options:{
+        responsive:true,maintainAspectRatio:false,
+        animation:{duration:1200,easing:'easeOutQuart'},
+        plugins:{
+          legend:{display:false},
+          tooltip:{...SL_TOOLTIP,callbacks:{
+            title:c=>'Day '+c[0].label,
+            label:c=>`Score: ${c.raw}/100`,
+            afterLabel:c=>{const v=c.raw;return v>=80?'⚡ Exceptional':v>=60?'💪 Strong':v>=40?'📈 Building':v>0?'⚠ Low output':'— No data';}
+          }}
+        },
+        scales:{
+          x:{ticks:{...SL_TICK,maxTicksLimit:7},grid:{...SL_GRID},border:{color:'transparent'}},
+          y:{min:0,max:100,ticks:{...SL_TICK,callback:v=>v+'%'},grid:{...SL_GRID},border:{color:'transparent'}}
+        }
+      }
+    });
+  }
 
-  // STUDY HOURS — Custom HTML bar chart (better looking)
+  // ── 2. STUDY HOURS — Premium Chart.js bar with gradient per bar ──
   (()=>{
     const cont=document.getElementById('ch-study-custom');if(!cont)return;
     const data=last7.map(d=>{
@@ -3017,60 +3263,73 @@ function renderCharts(){
       const dt=new Date(d);
       const dayStr=dt.toLocaleDateString('en-IN',{weekday:'short'});
       const dateStr=dt.getDate()+'/'+(dt.getMonth()+1);
-      const isToday=d===today();
-      return{phy,che,mat,oth,total,dayStr,dateStr,isToday};
+      return{phy,che,mat,oth,total,dayStr,dateStr,isToday:d===today()};
     });
     const maxH=Math.max(...data.map(d=>d.total),1);
     const goalH=S.goals&&S.goals.studyHours?S.goals.studyHours:6;
     const goalPct=Math.min(100,goalH/maxH*100);
-    const barAreaH=180;
+    const barAreaH=200;
     const segs=[
-      {key:'phy',color:'rgba(91,110,245,.85)',label:'PHY'},
-      {key:'che',color:'rgba(0,214,143,.85)',label:'CHE'},
-      {key:'mat',color:'rgba(244,196,48,.85)',label:'MAT'},
-      {key:'oth',color:'rgba(150,150,200,.7)',label:'OTH'},
+      {key:'phy',label:'PHY'},
+      {key:'che',label:'CHE'},
+      {key:'mat',label:'MAT'},
+      {key:'oth',label:'OTH'},
     ];
-    // Y-axis labels (0h, maxH/2h, maxH h)
-    const yTicks=[0, maxH/2, maxH].map(v=>+(v).toFixed(1));
     const totalWeek=data.reduce((a,d)=>a+d.total,0);
     const avgDay=totalWeek/7;
+    // Color based on % of goal: red→orange→green
+    function barColor(total){
+      const p=total/goalH;
+      if(p<=0)return 'rgba(255,255,255,.06)';
+      if(p<0.4)return '#ff4d4d';
+      if(p<0.7)return '#ffaa00';
+      if(p<1.0)return '#00ccff';
+      return '#00ff88';
+    }
+    function barGlow(total){
+      const p=total/goalH;
+      if(p<=0)return '';
+      if(p<0.4)return 'box-shadow:0 0 10px rgba(255,77,77,.4)';
+      if(p<0.7)return 'box-shadow:0 0 10px rgba(255,170,0,.4)';
+      if(p<1.0)return 'box-shadow:0 0 10px rgba(0,204,255,.4)';
+      return 'box-shadow:0 0 14px rgba(0,255,136,.5)';
+    }
+    const yTicks=[0,maxH/2,maxH].map(v=>+(v).toFixed(1));
     cont.innerHTML=`
       <div style="font-size:11px;color:var(--text2);display:flex;gap:16px;margin-bottom:10px;flex-wrap:wrap">
-        <span>This week: <b style="color:var(--text)">${totalWeek.toFixed(1)}h</b></span>
-        <span>Daily avg: <b style="color:var(--accent)">${avgDay.toFixed(1)}h</b></span>
+        <span>Week: <b style="color:var(--text)">${totalWeek.toFixed(1)}h</b></span>
+        <span>Avg: <b style="color:var(--accent)">${avgDay.toFixed(1)}h/day</b></span>
         <span>Goal: <b style="color:var(--gold)">${goalH}h/day</b></span>
       </div>
       <div style="display:flex;gap:0;position:relative">
-        <!-- Y axis -->
-        <div style="display:flex;flex-direction:column;justify-content:space-between;padding-bottom:28px;margin-right:4px;flex-shrink:0">
-          ${[...yTicks].reverse().map(v=>`<div style="font-size:9px;color:var(--text3);text-align:right;padding-right:4px;white-space:nowrap">${v.toFixed(1)}h</div>`).join('')}
+        <div style="display:flex;flex-direction:column;justify-content:space-between;padding-bottom:28px;margin-right:6px;flex-shrink:0">
+          ${[...yTicks].reverse().map(v=>`<div style="font-size:9px;color:var(--text3);text-align:right;padding-right:4px;white-space:nowrap;font-family:var(--mono)">${v.toFixed(1)}h</div>`).join('')}
         </div>
         <div style="flex:1;position:relative">
-          <!-- Goal line -->
-          <div style="position:absolute;left:0;right:0;top:${Math.round((1-goalPct/100)*barAreaH)}px;height:1px;background:rgba(244,196,48,.4);z-index:2;pointer-events:none">
-            <span style="position:absolute;right:2px;top:-9px;font-size:8px;color:rgba(244,196,48,.7)">goal</span>
+          <div style="position:absolute;left:0;right:0;top:${Math.round((1-goalPct/100)*barAreaH)}px;height:1px;background:rgba(244,196,48,.5);z-index:2;pointer-events:none;box-shadow:0 0 4px rgba(244,196,48,.4)">
+            <span style="position:absolute;right:2px;top:-9px;font-size:8px;color:rgba(244,196,48,.9);font-family:var(--mono)">GOAL</span>
           </div>
-          <!-- Grid lines -->
           ${[0.25,0.5,0.75].map(f=>`<div style="position:absolute;left:0;right:0;top:${Math.round(f*barAreaH)}px;height:1px;background:rgba(255,255,255,.04);pointer-events:none"></div>`).join('')}
-          <!-- Bars -->
           <div style="display:flex;align-items:flex-end;gap:6px;height:${barAreaH}px;position:relative;z-index:1">
             ${data.map(d=>{
               const totalPct=d.total/maxH;
-              const barH=Math.max(totalPct*barAreaH,d.total>0?3:0);
+              const barH=Math.max(totalPct*barAreaH,d.total>0?4:0);
               const isToday=d.isToday;
+              const col=barColor(d.total);
+              const glow=barGlow(d.total);
               return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;position:relative" title="${d.dayStr}: ${d.total.toFixed(1)}h">
-                ${d.total>0?`<div style="font-size:9px;color:${isToday?'var(--accent)':'var(--text2)'};margin-bottom:3px;font-weight:${isToday?700:400}">${d.total.toFixed(1)}h</div>`:''}
-                <div style="width:100%;height:${barH}px;display:flex;flex-direction:column;justify-content:flex-end;border-radius:5px 5px 0 0;overflow:hidden;${isToday?'box-shadow:0 0 0 1.5px var(--accent)':''}">
-                  ${segs.filter(s=>d[s.key]>0).map(s=>{
-                    const sh=Math.max(1,Math.round(d[s.key]/d.total*barH));
-                    return `<div style="height:${sh}px;background:${s.color};flex-shrink:0" title="${s.label}: ${d[s.key].toFixed(1)}h"></div>`;
-                  }).join('')}
-                  ${d.total===0?`<div style="height:3px;background:rgba(255,255,255,.04);width:100%"></div>`:''}
+                ${d.total>0?`<div style="font-size:9px;color:${isToday?'var(--accent)':'var(--text2)'};margin-bottom:3px;font-weight:${isToday?700:400};font-family:var(--mono)">${d.total.toFixed(1)}h</div>`:''}
+                <div style="width:100%;height:${barH}px;border-radius:6px 6px 0 0;overflow:hidden;${glow};${isToday?'outline:2px solid var(--accent);outline-offset:2px':''}
+                  background:linear-gradient(180deg,${col} 0%,${col}aa 100%);
+                  transition:height .5s cubic-bezier(.4,0,.2,1);
+                  position:relative;" 
+                  onmouseover="this.style.filter='brightness(1.3)'" 
+                  onmouseout="this.style.filter=''">
+                  ${d.total===0?'<div style="height:3px;background:rgba(255,255,255,.04);width:100%"></div>':''}
                 </div>
               </div>`;
             }).join('')}
           </div>
-          <!-- X labels -->
           <div style="display:flex;gap:6px;margin-top:6px">
             ${data.map(d=>`<div style="flex:1;text-align:center;font-size:9px;color:${d.isToday?'var(--accent)':'var(--text3)'};font-weight:${d.isToday?700:400}">${d.dayStr}<br><span style="font-size:8px;color:var(--text3)">${d.dateStr}</span></div>`).join('')}
           </div>
@@ -3078,7 +3337,7 @@ function renderCharts(){
       </div>`;
   })();
 
-  // CUMULATIVE STUDY
+  // ── 3. CUMULATIVE STUDY — neon emerald ──
   if(chCum)chCum.destroy();
   const sortedSess=[...S.sessions].sort((a,b)=>a.date.localeCompare(b.date));
   const cumDates=[],cumHrs=[];let running=0;
@@ -3093,50 +3352,135 @@ function renderCharts(){
       d.setDate(d.getDate()+1);
     }
   }
-  if(chCum)chCum.destroy();
   if(cumDates.length>1){
-    chCum=new Chart(document.getElementById('ch-cumulative').getContext('2d'),{type:'line',data:{
-      labels:cumDates,
-      datasets:[{label:'Total Hours',data:cumHrs,borderColor:'#00d68f',backgroundColor:'rgba(0,214,143,.1)',fill:true,tension:.4,pointRadius:0,borderWidth:2}]
-    },options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:gc.tc,font:{size:9},maxTicksLimit:10},grid:{color:gc.gr}},y:{ticks:{color:gc.tc,font:{size:10}},grid:{color:gc.gr},title:{display:true,text:'Cumulative Hours',color:gc.tc,font:{size:10}}}}}});
-  }else{document.getElementById('ch-cumulative').parentElement.innerHTML='<div class="empty">Log sessions to see your cumulative progress.</div>';}
+    const cCanvas=document.getElementById('ch-cumulative');
+    if(cCanvas){
+      const cCtx=cCanvas.getContext('2d');
+      const cGrad=makeGradient(cCtx,180,'rgba(0,255,150,0.35)','rgba(0,255,150,0.00)');
+      chCum=new Chart(cCtx,{
+        type:'line',
+        data:{labels:cumDates,datasets:[{
+          label:'Total Hours',data:cumHrs,
+          borderColor:'#00ff96',borderWidth:3,
+          backgroundColor:cGrad,fill:true,tension:0.45,
+          pointRadius:0,pointHoverRadius:6,pointHoverBackgroundColor:'#00ff96',
+        }]},
+        options:{
+          responsive:true,maintainAspectRatio:false,
+          animation:{duration:1400,easing:'easeOutQuart'},
+          plugins:{legend:{display:false},tooltip:{...SL_TOOLTIP,callbacks:{label:c=>`${c.raw}h total`}}},
+          scales:{
+            x:{ticks:{...SL_TICK,maxTicksLimit:10},grid:{...SL_GRID},border:{color:'transparent'}},
+            y:{ticks:{...SL_TICK},grid:{...SL_GRID},border:{color:'transparent'},title:{display:true,text:'Cumulative Hours',color:'rgba(200,203,220,.4)',font:{size:9}}}
+          }
+        }
+      });
+    }
+  }else{const ce=document.getElementById('ch-cumulative');if(ce)ce.parentElement.innerHTML='<div class="empty">Log sessions to see cumulative progress.</div>';}
 
-  // SUBJECT SPLIT PIE
+  // ── 4. SUBJECT SPLIT — neon doughnut ──
   const subMins={physics:0,chemistry:0,maths:0,other:0};
   S.sessions.forEach(s=>{if(subMins[s.sub]!==undefined)subMins[s.sub]+=s.min;else subMins.other+=s.min;});
   if(chSplit)chSplit.destroy();
   if(Object.values(subMins).some(v=>v>0)){
-    chSplit=new Chart(document.getElementById('ch-split').getContext('2d'),{type:'doughnut',data:{
-      labels:['Physics','Chemistry','Maths','Other'],
-      datasets:[{data:[subMins.physics/60,subMins.chemistry/60,subMins.maths/60,subMins.other/60].map(v=>+v.toFixed(1)),
-        backgroundColor:['rgba(91,110,245,.85)','rgba(0,214,143,.85)','rgba(244,196,48,.85)','rgba(150,150,200,.6)'],borderWidth:0}]
-    },options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right',labels:{color:gc.tc,font:{size:12}}},tooltip:{callbacks:{label:ctx=>`${ctx.label}: ${ctx.raw}h`}}}}});
-  }else{document.getElementById('ch-split').parentElement.innerHTML='<div class="empty">No sessions logged yet.</div>';}
+    const spCanvas=document.getElementById('ch-split');
+    if(spCanvas){
+      chSplit=new Chart(spCanvas.getContext('2d'),{
+        type:'doughnut',
+        data:{
+          labels:['Physics','Chemistry','Maths','Other'],
+          datasets:[{
+            data:[subMins.physics/60,subMins.chemistry/60,subMins.maths/60,subMins.other/60].map(v=>+v.toFixed(1)),
+            backgroundColor:['rgba(91,110,245,.9)','rgba(0,214,143,.9)','rgba(244,196,48,.9)','rgba(150,150,200,.7)'],
+            borderColor:['#5b6ef5','#00d68f','#f4c430','rgba(150,150,200,.5)'],
+            borderWidth:2,
+            hoverOffset:8,
+            hoverBorderColor:'#fff',
+          }]
+        },
+        options:{
+          responsive:true,maintainAspectRatio:false,
+          animation:{animateRotate:true,duration:1000,easing:'easeOutQuart'},
+          plugins:{
+            legend:{position:'right',labels:{color:'rgba(224,227,244,.8)',font:{family:"'Rajdhani',sans-serif",size:13},padding:14,usePointStyle:true,pointStyleWidth:10}},
+            tooltip:{...SL_TOOLTIP,callbacks:{label:c=>`${c.label}: ${c.raw}h`}}
+          },
+          cutout:'68%',
+        }
+      });
+    }
+  }else{const sp=document.getElementById('ch-split');if(sp)sp.parentElement.innerHTML='<div class="empty">No sessions logged yet.</div>';}
 
-  // TEST TREND
+  // ── 5. TEST SCORE TREND — premium multi-line with area fills ──
   if(chT)chT.destroy();
-  const tests=S.tests.slice(-10);
+  const tests=S.tests.slice(-12);
   if(tests.length>=2){
-    chT=new Chart(document.getElementById('ch-tests').getContext('2d'),{type:'line',data:{
-      labels:tests.map(t=>fmtDate(t.date)),
-      datasets:[
-        {label:'Physics',data:tests.map(t=>t.phy),borderColor:'#5b6ef5',backgroundColor:'transparent',tension:.3,pointRadius:4,pointBackgroundColor:'#5b6ef5'},
-        {label:'Chemistry',data:tests.map(t=>t.che),borderColor:'#00d68f',backgroundColor:'transparent',tension:.3,pointRadius:4,pointBackgroundColor:'#00d68f'},
-        {label:'Maths',data:tests.map(t=>t.mat),borderColor:'#f4c430',backgroundColor:'transparent',tension:.3,pointRadius:4,pointBackgroundColor:'#f4c430'},
-        {label:'Total',data:tests.map(t=>t.total),borderColor:'rgba(255,255,255,.4)',backgroundColor:'transparent',tension:.3,pointRadius:3,borderDash:[4,3]},
-      ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:gc.tc,font:{size:11}}}},scales:{x:{ticks:{color:gc.tc,font:{size:10}},grid:{color:gc.gr}},y:{ticks:{color:gc.tc,font:{size:10}},grid:{color:gc.gr}}}}
-    });
+    const tCanvas=document.getElementById('ch-tests');
+    if(tCanvas){
+      const tCtx=tCanvas.getContext('2d');
+      const phyGrad=makeGradient(tCtx,200,'rgba(91,110,245,0.25)','rgba(91,110,245,0.0)');
+      const cheGrad=makeGradient(tCtx,200,'rgba(0,214,143,0.20)','rgba(0,214,143,0.0)');
+      const matGrad=makeGradient(tCtx,200,'rgba(244,196,48,0.20)','rgba(244,196,48,0.0)');
+      chT=new Chart(tCtx,{
+        type:'line',
+        data:{
+          labels:tests.map(t=>fmtDate(t.date)),
+          datasets:[
+            {label:'Physics',data:tests.map(t=>t.phy),
+              borderColor:'#5b6ef5',borderWidth:2.5,backgroundColor:phyGrad,fill:true,
+              tension:0.45,pointRadius:5,pointBackgroundColor:'#5b6ef5',
+              pointBorderColor:'rgba(91,110,245,.3)',pointBorderWidth:3,pointHoverRadius:8},
+            {label:'Chemistry',data:tests.map(t=>t.che),
+              borderColor:'#00d68f',borderWidth:2.5,backgroundColor:cheGrad,fill:true,
+              tension:0.45,pointRadius:5,pointBackgroundColor:'#00d68f',
+              pointBorderColor:'rgba(0,214,143,.3)',pointBorderWidth:3,pointHoverRadius:8},
+            {label:'Maths',data:tests.map(t=>t.mat),
+              borderColor:'#f4c430',borderWidth:2.5,backgroundColor:matGrad,fill:true,
+              tension:0.45,pointRadius:5,pointBackgroundColor:'#f4c430',
+              pointBorderColor:'rgba(244,196,48,.3)',pointBorderWidth:3,pointHoverRadius:8},
+            {label:'Total',data:tests.map(t=>t.total),
+              borderColor:'rgba(255,255,255,.5)',borderWidth:2,backgroundColor:'transparent',
+              tension:0.35,pointRadius:3,pointBackgroundColor:'rgba(255,255,255,.7)',borderDash:[6,4]},
+          ]
+        },
+        options:{
+          responsive:true,maintainAspectRatio:false,
+          animation:{duration:1200,easing:'easeOutQuart'},
+          interaction:{mode:'index',intersect:false},
+          plugins:{
+            legend:{labels:{color:'rgba(224,227,244,.8)',font:{family:"'Rajdhani',sans-serif",size:12},padding:14,usePointStyle:true,pointStyleWidth:10}},
+            tooltip:{...SL_TOOLTIP,callbacks:{
+              title:c=>c[0].label,
+              label:c=>`${c.dataset.label}: ${c.raw}`,
+              afterBody:items=>{
+                const total=items.find(i=>i.dataset.label==='Total');
+                if(total){
+                  const max=S.tests[S.tests.length-1]?.max||300;
+                  return `Pct: ${Math.round(total.raw/max*100)}%`;
+                }
+              }
+            }}
+          },
+          scales:{
+            x:{ticks:{...SL_TICK},grid:{...SL_GRID},border:{color:'transparent'}},
+            y:{ticks:{...SL_TICK},grid:{...SL_GRID},border:{color:'transparent'},
+              title:{display:true,text:'Score',color:'rgba(200,203,220,.4)',font:{size:9}}}
+          }
+        }
+      });
+    }
   }else{const ce=document.getElementById('ch-tests');if(ce)ce.parentElement.innerHTML='<div class="empty">Log at least 2 tests to see the trend.</div>';}
 
-  // HEATMAP
+  // ── 6. RADAR — RPG stats ──
+  renderRadarChart();
+  // ── 7. HEATMAP ──
   renderHeatmap();
   renderChronicle();
 }
 
 function renderHeatmap(){
   const hm=document.getElementById('ch-heatmap');if(!hm)return;
-  // Build 10 weeks of data (70 days), arranged Mon→Sun columns like GitHub
-  const WEEKS=10;const TOTAL=WEEKS*7;
+  const WEEKS=12;const TOTAL=WEEKS*7;
   const cells=[];
   const todayStr=today();
   for(let i=TOTAL-1;i>=0;i--){
@@ -3147,23 +3491,21 @@ function renderHeatmap(){
     const isToday=ds===todayStr;
     const isFuture=ds>todayStr;
     let lvl=0;
-    if(!isFuture&&hrs>0)lvl=hrs<1?1:hrs<2?2:hrs<4?3:4;
-    const colors=['rgba(255,255,255,.03)','rgba(91,110,245,.22)','rgba(91,110,245,.5)','rgba(91,110,245,.78)','#5b6ef5'];
-    const todayBorder=isToday?'2px solid var(--gold)':'1px solid rgba(91,110,245,.08)';
+    if(!isFuture&&hrs>0)lvl=hrs<1?1:hrs<2?2:hrs<4?3:hrs<6?4:5;
+    // Neon green scale like SL
+    const colors=['rgba(255,255,255,.03)','rgba(0,255,150,.12)','rgba(0,255,150,.28)','rgba(0,255,150,.5)','rgba(0,255,150,.75)','rgba(0,255,150,1)'];
+    const glows=['','','box-shadow:0 0 4px rgba(0,255,150,.3)','box-shadow:0 0 6px rgba(0,255,150,.5)','box-shadow:0 0 8px rgba(0,255,150,.7)','box-shadow:0 0 12px rgba(0,255,150,1)'];
+    const todayBorder=isToday?'2px solid var(--gold)':'1px solid rgba(0,255,150,.08)';
     const weekday=d.toLocaleDateString('en-IN',{weekday:'short'});
     const dateStr=d.toLocaleDateString('en-IN',{day:'numeric',month:'short'});
-    cells.push({ds,hrs,lvl,color:isFuture?'rgba(255,255,255,.015)':colors[lvl],border:todayBorder,label:weekday+' '+dateStr,mins,isToday,isFuture});
+    cells.push({ds,hrs,lvl,color:isFuture?'rgba(255,255,255,.015)':colors[lvl],glow:isFuture?'':glows[lvl],border:todayBorder,label:weekday+' '+dateStr,mins,isToday,isFuture});
   }
-  // Group into columns by week (each column = 1 week Mon-Sun)
-  // We want rows = Mon,Tue,Wed,Thu,Fri,Sat,Sun (7 rows), cols = weeks
   const ROW_LABELS=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
-  // Pad so first cell aligns to Monday
   const firstD=new Date();firstD.setDate(firstD.getDate()-(TOTAL-1));
-  const startDow=(firstD.getDay()+6)%7; // 0=Mon
+  const startDow=(firstD.getDay()+6)%7;
   const paddedCells=[...Array(startDow).fill(null),...cells];
   while(paddedCells.length%7!==0)paddedCells.push(null);
   const totalCols=paddedCells.length/7;
-  // month labels: find first cell of each month
   const monthMap={};
   cells.forEach((c,rawIdx)=>{
     const paddedIdx=rawIdx+startDow;
@@ -3176,37 +3518,37 @@ function renderHeatmap(){
   const totalSess=S.sessions.filter(s=>!s.paused).length;
   const totalHrs=(S.sessions.filter(s=>!s.paused).reduce((a,s)=>a+s.min,0)/60).toFixed(1);
   const activeDays=new Set(cells.filter(c=>c.hrs>0).map(c=>c.ds)).size;
+  const CELL=20; // px — bigger than before
 
   hm.innerHTML=`
-    <div style="display:flex;gap:16px;font-size:11px;color:var(--text2);margin-bottom:10px;flex-wrap:wrap">
+    <div style="display:flex;gap:20px;font-size:11px;color:var(--text2);margin-bottom:12px;flex-wrap:wrap">
       <span>📅 <b style="color:var(--text)">${activeDays}</b> active days</span>
-      <span>📚 <b style="color:var(--accent)">${totalHrs}h</b> total</span>
+      <span>📚 <b style="color:#00ff96">${totalHrs}h</b> total</span>
       <span>⚡ <b style="color:var(--gold)">${totalSess}</b> sessions</span>
     </div>
-    <div style="overflow-x:auto;padding-bottom:4px">
-      <div style="display:inline-grid;grid-template-columns:28px repeat(${totalCols},1fr);gap:3px;min-width:max-content">
-        <!-- Month labels row -->
+    <div style="overflow-x:auto;padding-bottom:8px">
+      <div style="display:inline-grid;grid-template-columns:32px repeat(${totalCols},${CELL}px);gap:4px;min-width:max-content">
         <div></div>
-        ${monthRow.map(m=>`<div style="font-size:9px;color:var(--text3);padding-bottom:3px;font-weight:600;text-align:center">${m}</div>`).join('')}
-        <!-- Day rows -->
+        ${monthRow.map(m=>`<div style="font-size:9px;color:var(--text3);padding-bottom:4px;font-weight:700;text-align:center;font-family:var(--mono)">${m}</div>`).join('')}
         ${ROW_LABELS.map((rowLbl,row)=>{
           const rowCells=[];
           for(let col=0;col<totalCols;col++)rowCells.push(paddedCells[col*7+row]);
-          return `<div style="font-size:9px;color:var(--text3);display:flex;align-items:center;padding-right:4px;white-space:nowrap">${rowLbl}</div>`+
+          return `<div style="font-size:9px;color:var(--text3);display:flex;align-items:center;padding-right:4px;white-space:nowrap;font-family:var(--mono)">${rowLbl}</div>`+
             rowCells.map(c=>{
-              if(!c)return `<div style="width:14px;height:14px;border-radius:3px"></div>`;
-              return `<div title="${c.label}: ${c.hrs.toFixed(1)}h${c.isToday?' (today)':''}" 
-                style="width:14px;height:14px;border-radius:3px;background:${c.color};border:${c.border};cursor:default;position:relative;transition:transform .1s"
-                onmouseover="showHeatTip(event,'${c.label}: ${c.hrs>0?c.hrs.toFixed(1)+'h':c.isFuture?'—':'No study'}')"
-                onmouseout="hideHeatTip()"></div>`;
+              if(!c)return `<div style="width:${CELL}px;height:${CELL}px;border-radius:4px"></div>`;
+              return `<div title="${c.label}: ${c.hrs>0?c.hrs.toFixed(1)+'h':c.isFuture?'Future':'No study'}"
+                style="width:${CELL}px;height:${CELL}px;border-radius:4px;background:${c.color};border:${c.border};${c.glow};
+                cursor:pointer;transition:transform .12s,box-shadow .12s;box-sizing:border-box;"
+                onmouseover="this.style.transform='scale(1.4)';this.style.zIndex='5';this.style.position='relative';showHeatTip(event,'${c.label}: ${c.hrs>0?c.hrs.toFixed(1)+'h':c.isFuture?'—':'No study'}')"
+                onmouseout="this.style.transform='';this.style.zIndex='';hideHeatTip()"></div>`;
             }).join('');
         }).join('')}
       </div>
     </div>
-    <div id="heat-tip" style="position:fixed;background:var(--card2);border:1px solid var(--border2);border-radius:7px;padding:5px 10px;font-size:11px;color:var(--text);pointer-events:none;opacity:0;transition:opacity .15s;z-index:9999;white-space:nowrap"></div>
-    <div style="display:flex;align-items:center;gap:6px;margin-top:8px;font-size:10px;color:var(--text3)">
+    <div id="heat-tip" style="position:fixed;background:rgba(8,8,20,.96);border:1px solid rgba(0,255,150,.3);border-radius:8px;padding:6px 12px;font-size:11px;color:var(--text);pointer-events:none;opacity:0;transition:opacity .15s;z-index:9999;white-space:nowrap;font-family:var(--mono);box-shadow:0 0 16px rgba(0,255,150,.15)"></div>
+    <div style="display:flex;align-items:center;gap:6px;margin-top:10px;font-size:10px;color:var(--text3)">
       Less
-      ${['rgba(255,255,255,.03)','rgba(91,110,245,.22)','rgba(91,110,245,.5)','rgba(91,110,245,.78)','#5b6ef5'].map((c,i)=>`<div title="${['0h','<1h','1-2h','2-4h','4h+'][i]}" style="width:12px;height:12px;border-radius:3px;background:${c};border:1px solid rgba(91,110,245,.12)"></div>`).join('')}
+      ${['rgba(255,255,255,.03)','rgba(0,255,150,.12)','rgba(0,255,150,.28)','rgba(0,255,150,.5)','rgba(0,255,150,.75)','rgba(0,255,150,1)'].map((c,i)=>`<div title="${['0h','<1h','1-2h','2-4h','4-6h','6h+'][i]}" style="width:${CELL}px;height:${CELL}px;border-radius:4px;background:${c};border:1px solid rgba(0,255,150,.1)"></div>`).join('')}
       More
     </div>`;
 }
@@ -3305,8 +3647,29 @@ function saveHunterName(){
   showToast('Name updated to '+hn+' ⚡');
 }
 
+const DAY_NAMES_FULL=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+function getActiveQuests(){
+  const todayDow=new Date().getDay(); // 0=Sun,6=Sat
+  const allQ=(S.customQuests&&S.customQuests.length>0)?S.customQuests:[
+    {id:'q1',name:`Study ${S.goals&&S.goals.questStudyHours||2}+ hours`,desc:`Active sessions today`,xp:50,auto:true,days:[0,1,2,3,4,5,6]},
+    {id:'q2',name:'Complete a Pomodoro',desc:'Finish one 25-min block',xp:25,auto:true,days:[0,1,2,3,4,5,6]},
+    {id:'q3',name:'Log workout',desc:'Train body and mind',xp:30,auto:false,days:[0,1,2,3,4,5,6]},
+    {id:'q4',name:'Update confidence',desc:'Review a topic below 50%',xp:20,auto:false,days:[0,1,2,3,4,5,6]},
+    {id:'q5',name:'No mindless scrolling',desc:'Honor quest',xp:20,auto:false,days:[0,1,2,3,4,5,6]},
+  ];
+  // Filter by today's day — if no days set, show all days
+  return allQ.filter(q=>!q.days||q.days.length===0||q.days.includes(todayDow));
+}
+
 function renderQuestEditor(){
-  const QUESTS=getActiveQuests();
+  const QUESTS=(S.customQuests&&S.customQuests.length>0)?S.customQuests:[
+    {id:'q1',name:`Study ${S.goals&&S.goals.questStudyHours||2}+ hours`,desc:'Active sessions today',xp:50,auto:true,days:[0,1,2,3,4,5,6]},
+    {id:'q2',name:'Complete a Pomodoro',desc:'Finish one 25-min block',xp:25,auto:true,days:[0,1,2,3,4,5,6]},
+    {id:'q3',name:'Log workout',desc:'Train body and mind',xp:30,auto:false,days:[0,1,2,3,4,5,6]},
+    {id:'q4',name:'Update confidence',desc:'Review a topic below 50%',xp:20,auto:false,days:[0,1,2,3,4,5,6]},
+    {id:'q5',name:'No mindless scrolling',desc:'Honor quest',xp:20,auto:false,days:[0,1,2,3,4,5,6]},
+  ];
   const qe=document.getElementById('s-quest-editor');if(!qe)return;
   let h='';
   QUESTS.forEach((q,i)=>{
@@ -3322,6 +3685,45 @@ function renderQuestEditor(){
   });
   if(!h)h='<div class="empty">No quests. Add some below.</div>';
   qe.innerHTML=h;
+
+  // Schedule editor
+  const qs=document.getElementById('s-quest-schedule');
+  if(!qs)return;
+  let sh='';
+  QUESTS.forEach((q,i)=>{
+    const qDays=q.days||[0,1,2,3,4,5,6];
+    sh+=`<div style="padding:10px 0;border-bottom:1px solid var(--border)">
+      <div style="font-size:12px;font-weight:700;margin-bottom:6px;color:var(--text)">${q.name}</div>
+      <div style="display:flex;gap:4px;flex-wrap:wrap">
+        ${DAY_NAMES_FULL.map((d,dow)=>`<button class="day-sel-btn${qDays.includes(dow)?' on':''}" 
+          onclick="toggleQuestDay(${i},${dow},this)">${d}</button>`).join('')}
+      </div>
+    </div>`;
+  });
+  qs.innerHTML=sh||'<div class="empty">Add quests first.</div>';
+}
+
+function toggleQuestDay(questIdx,dow,btn){
+  const QUESTS=(S.customQuests&&S.customQuests.length>0)?S.customQuests:[
+    {id:'q1',name:`Study ${S.goals&&S.goals.questStudyHours||2}+ hours`,desc:'Active sessions today',xp:50,auto:true,days:[0,1,2,3,4,5,6]},
+    {id:'q2',name:'Complete a Pomodoro',desc:'Finish one 25-min block',xp:25,auto:true,days:[0,1,2,3,4,5,6]},
+    {id:'q3',name:'Log workout',desc:'Train body and mind',xp:30,auto:false,days:[0,1,2,3,4,5,6]},
+    {id:'q4',name:'Update confidence',desc:'Review a topic below 50%',xp:20,auto:false,days:[0,1,2,3,4,5,6]},
+    {id:'q5',name:'No mindless scrolling',desc:'Honor quest',xp:20,auto:false,days:[0,1,2,3,4,5,6]},
+  ];
+  if(!S.customQuests||!S.customQuests.length)S.customQuests=[...QUESTS];
+  const q=S.customQuests[questIdx];if(!q)return;
+  if(!q.days)q.days=[0,1,2,3,4,5,6];
+  const idx=q.days.indexOf(dow);
+  if(idx>=0)q.days.splice(idx,1); else q.days.push(dow);
+  btn.classList.toggle('on',q.days.includes(dow));
+}
+
+function saveQuestSchedule(){
+  // Schedule is already stored in S.customQuests via toggleQuestDay
+  save();
+  showToast('Quest schedule saved! ✅ Days updated.');
+  renderDash();
 }
 
 function addCustomQuest(){
@@ -3463,68 +3865,110 @@ function renderStatusWindow(){
   if(!S)return;
   const stats=calcStats();
   const rk=getRank(S.hunter.xp);
-  const name=S.hunter?.name||S.settings?.hunterName||'Gautam';
+  const name=S.hunter?.name||'Gautam';
   const cls=getClass(rk.r);
 
-  // Update identity
+  // Identity
   const sb=document.getElementById('sw-rank');
   if(sb){sb.textContent=rk.r;sb.className='sw-rank-badge rank-'+rk.r;}
   const sn=document.getElementById('sw-name');if(sn)sn.textContent='Hunter '+name;
   const sc=document.getElementById('sw-class');if(sc)sc.textContent=cls;
-  const sx=document.getElementById('sw-xp');if(sx)sx.textContent=S.hunter.xp;
+  const sx=document.getElementById('sw-xp');if(sx)sx.textContent=S.hunter.xp.toLocaleString();
   const ss=document.getElementById('sw-streak');if(ss)ss.textContent=S.hunter.streak||0;
 
-  // ── Rank requirements display ──
-  const reqEl=document.getElementById('sw-rank-req');
-  if(reqEl){
-    const xp2=S.hunter.xp,streak2=S.hunter.streak;
-    const curRank=S.hunter.rank||'E';
-    const req2=RANK_REQS.find(r=>r.from===curRank);
-    if(req2){
-      const xpP=Math.min(100,Math.round(xp2/req2.xp*100));
-      const stP=Math.min(100,Math.round(streak2/req2.streak*100));
-      const perfOK=getDailyQuestPct(today())>=60||!!(S.weeklyBoss&&S.weeklyBoss[getWeekKey(today())]);
-      reqEl.innerHTML=`<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
-        <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:1.2px;margin-bottom:6px;font-weight:700">→ Rank ${curRank} to ${req2.to} Requirements</div>
-        <div style="margin-bottom:4px"><div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text2);margin-bottom:2px"><span>XP</span><span style="color:${xp2>=req2.xp?'var(--green)':'var(--text2)'}">${xp2}/${req2.xp}</span></div><div style="height:3px;background:rgba(255,255,255,.06);border-radius:2px"><div style="height:100%;width:${xpP}%;background:${xp2>=req2.xp?'var(--green)':'var(--gold)'};border-radius:2px"></div></div></div>
-        <div style="margin-bottom:4px"><div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text2);margin-bottom:2px"><span>Streak</span><span style="color:${streak2>=req2.streak?'var(--green)':'var(--text2)'}">${streak2}/${req2.streak}d</span></div><div style="height:3px;background:rgba(255,255,255,.06);border-radius:2px"><div style="height:100%;width:${stP}%;background:${streak2>=req2.streak?'var(--green)':'var(--accent)'};border-radius:2px"></div></div></div>
-        <div style="font-size:10px;color:${perfOK?'var(--green)':'var(--text2)'}">${perfOK?'✓':'○'} Quest performance (≥60% or weekly boss)</div>
-      </div>`;
-    } else {
-      reqEl.innerHTML=curRank==='SSS'?`<div style="margin-top:8px;font-size:11px;color:var(--gold);text-align:center">👑 Maximum Rank Achieved</div>`:'';
-    }
-  }
   // JEE days
-  const jeeDate=new Date(S.examDate||S.settings?.jeeDate||'2027-05-18');
+  const jeeDate=new Date(S.examDate||'2026-05-18');
   const dLeft=Math.max(0,Math.ceil((jeeDate-new Date())/86400000));
   const jd=document.getElementById('sw-jee-days');
   if(jd)jd.textContent=dLeft+' days to exam';
 
-  // Stat definitions
+  // ── PREMIUM STAT BARS ──
   const statDefs=[
-    {key:'intelligence', label:'Intelligence', color:'#5b6ef5', icon:'📘'},
-    {key:'focus',        label:'Focus',        color:'#00b4d8', icon:'🎯'},
-    {key:'strength',     label:'Strength',     color:'#ff3b5c', icon:'💪'},
-    {key:'endurance',    label:'Endurance',    color:'#00d68f', icon:'🏃'},
-    {key:'discipline',   label:'Discipline',   color:'#f4c430', icon:'⚔️'},
-    {key:'perception',   label:'Perception',   color:'#7c5ef5', icon:'🧠'},
+    {key:'intelligence',label:'INT',color:'#5b7ef5',icon:'📘'},
+    {key:'focus',       label:'FOC',color:'#00c9ff',icon:'🎯'},
+    {key:'strength',    label:'STR',color:'#ff3b5c',icon:'💪'},
+    {key:'endurance',   label:'END',color:'#00d68f',icon:'🏃'},
+    {key:'discipline',  label:'DIS',color:'#f4c430',icon:'⚔'},
+    {key:'perception',  label:'PER',color:'#a855f7',icon:'🧠'},
   ];
-
   const container=document.getElementById('sw-stats');
-  if(!container)return;
-  container.innerHTML=statDefs.map(d=>{
-    const v=stats[d.key]||0;
-    const bars=Math.round(v/10); // 0-10 filled blocks
-    return `<div class="sw-stat">
-      <div class="sw-stat-hdr">
-        <span class="sw-stat-name" style="color:${d.color}">${d.icon} ${d.label}</span>
-        <span class="sw-stat-val" style="color:${d.color}">${v}</span>
-      </div>
-      <div class="sw-stat-bar">
-        <div class="sw-stat-fill" style="width:${v}%;background:${d.color}"></div>
-      </div>
-    </div>`;
-  }).join('');
+  if(container){
+    container.innerHTML=statDefs.map(d=>{
+      const v=stats[d.key]||0;
+      const segsTotal=10;
+      const segsOn=Math.round(v/10);
+      // Build segmented bar
+      const segsHtml=Array.from({length:segsTotal},(_,i)=>`<div style="flex:1;height:100%;background:${i<segsOn?d.color:'rgba(255,255,255,.05)'};${i===segsOn-1?'box-shadow:0 0 6px '+d.color+'90':''};border-radius:${i===0?'3px 0 0 3px':i===segsTotal-1?'0 3px 3px 0':'0'}"></div>`).join('');
+      return `<div class="sw-stat">
+        <div class="sw-stat-hdr">
+          <span class="sw-stat-name" style="color:${d.color}">${d.icon} ${d.label}</span>
+          <span class="sw-stat-val" style="color:${d.color}">${v}</span>
+        </div>
+        <div class="sw-stat-bar">
+          <div style="display:flex;gap:1px;height:100%;width:100%">${segsHtml}</div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  // ── RANK PROGRESS BAR (correct calculation) ──
+  const reqEl=document.getElementById('sw-rank-req');
+  const progFill=document.getElementById('sw-rank-prog-fill');
+  const progLbl=document.getElementById('sw-rank-prog-label');
+  const progPct=document.getElementById('sw-rank-prog-pct');
+
+  const xp=S.hunter.xp;
+  const curRank=S.hunter.rank||getRankByXPStatic(xp);
+  const req2=RANK_REQS.find(r=>r.from===curRank);
+  const rankObj=RANKS.find(r=>r.r===curRank)||RANKS[0];
+  const nextRankObj=RANKS.find(r=>r.r===(req2?req2.to:'SSS'));
+
+  if(reqEl&&req2&&rankObj&&nextRankObj&&nextRankObj.max!==Infinity){
+    const xpPct=Math.min(100,Math.round((xp-rankObj.min)/(rankObj.max-rankObj.min)*100));
+    if(progLbl)progLbl.textContent=`Rank ${curRank} → ${req2.to}`;
+    if(progPct)progPct.textContent=`${xp.toLocaleString()} / ${rankObj.max.toLocaleString()} XP  (${xpPct}%)`;
+    setTimeout(()=>{ if(progFill)progFill.style.width=xpPct+'%'; },150);
+  } else if(reqEl&&curRank==='SSS'){
+    if(progLbl)progLbl.textContent='MAX RANK — SHADOW MONARCH';
+    if(progPct){progPct.textContent='👑';progPct.style.color='var(--gold)';}
+    if(progFill)progFill.style.width='100%';
+  } else if(reqEl){
+    // Pure XP-based for SS/SSS
+    const cur=RANKS.find(r=>r.r===curRank)||RANKS[0];
+    const next=RANKS[Math.min(RANKS.length-1,RANKS.indexOf(cur)+1)];
+    const xpPct=cur&&next&&next.max!==Infinity?Math.min(100,Math.round((xp-cur.min)/(cur.max-cur.min)*100)):100;
+    if(progLbl)progLbl.textContent=next?`Rank ${curRank} → ${next.r}`:'MAX RANK';
+    if(progPct)progPct.textContent=`${xp.toLocaleString()} XP  (${xpPct}%)`;
+    setTimeout(()=>{ if(progFill)progFill.style.width=xpPct+'%'; },150);
+  }
+
+  // ── 7-DAY MINI CONSISTENCY GRAPH ──
+  const miniGraph=document.getElementById('sw-mini-graph');
+  if(miniGraph){
+    const days=[];
+    for(let i=6;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);days.push(d.toISOString().split('T')[0]);}
+    const goalMins=(S.goals&&S.goals.studyHours||6)*60;
+    const DOW_NAMES=['Su','Mo','Tu','We','Th','Fr','Sa'];
+    const todayDow=new Date().getDay();
+    miniGraph.innerHTML=days.map((d,i)=>{
+      const mins=S.sessions.filter(s=>s.date===d&&!s.paused).reduce((a,s)=>a+s.min,0);
+      const pct=Math.min(1,mins/goalMins);
+      const h=Math.max(4,Math.round(pct*28));
+      const isToday=d===today();
+      const dow=(todayDow-6+i+7)%7;
+      let bg;
+      if(mins===0)bg='rgba(255,255,255,.05)';
+      else if(pct>=1)bg='var(--green)';
+      else if(pct>=.6)bg='var(--accent)';
+      else if(pct>=.3)bg='rgba(124,94,245,.8)';
+      else bg='rgba(255,59,92,.5)';
+      const glow=pct>=1?`box-shadow:0 0 6px var(--green)`:pct>=.6?`box-shadow:0 0 4px var(--accent)`:'';
+      return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px" title="${d}: ${mins}m">
+        <div style="width:100%;height:${h}px;background:${bg};border-radius:2px 2px 0 0;${glow};${isToday?'outline:1.5px solid rgba(91,110,245,.8);outline-offset:1px':''}"></div>
+        <div style="font-size:8px;color:${isToday?'var(--accent)':'var(--text3)'};font-weight:${isToday?700:400}">${DOW_NAMES[dow]}</div>
+      </div>`;
+    }).join('');
+  }
 }
 const YT_PRESETS={
   lofi:     {id:'jfKfPfyJRdk', title:'Lofi Hip Hop Radio'},
@@ -3671,66 +4115,87 @@ function initApp(){
   PREMIUM VISUAL LAYER
   ═══════════════════════════════════════════════════════ */
 
-// ── SOUND FX SYSTEM ──
-let soundFXEnabled = true;
+// ══════════════════════════════════════════
+//  SOLO LEVELING SOUND ENGINE
+//  Synthesised SL-vibe sounds via Web Audio
+// ══════════════════════════════════════════
+let soundFXEnabled=true;
+let _audioCtxSL=null;
+
+function getSLAudio(){
+  if(!_audioCtxSL||_audioCtxSL.state==='closed'){
+    _audioCtxSL=new(window.AudioContext||window.webkitAudioContext)();
+  }
+  if(_audioCtxSL.state==='suspended')_audioCtxSL.resume();
+  return _audioCtxSL;
+}
+
 function toggleSoundFX(){
-  soundFXEnabled = !soundFXEnabled;
-  const btn = document.getElementById('sound-toggle');
-  if(btn){ btn.textContent = soundFXEnabled ? '🔊' : '🔇'; btn.classList.toggle('on', soundFXEnabled); }
+  soundFXEnabled=!soundFXEnabled;
+  const btn=document.getElementById('sound-toggle');
+  if(btn){btn.textContent=soundFXEnabled?'🔊':'🔇';btn.classList.toggle('on',soundFXEnabled);}
+  if(soundFXEnabled)playSLSound('click');
 }
-function playPremiumSound(type){
-  if(!soundFXEnabled) return;
+
+// Core tone builder
+function _slTone(ctx,type,freq,start,dur,peakVol,fadeIn,fadeOut){
+  const osc=ctx.createOscillator();
+  const env=ctx.createGain();
+  osc.connect(env);env.connect(ctx.destination);
+  osc.type=type;osc.frequency.value=freq;
+  const t=ctx.currentTime+start;
+  env.gain.setValueAtTime(0,t);
+  env.gain.linearRampToValueAtTime(peakVol,t+fadeIn);
+  env.gain.exponentialRampToValueAtTime(0.001,t+dur-fadeOut);
+  osc.start(t);osc.stop(t+dur);
+}
+
+function playSLSound(type){
+  if(!soundFXEnabled)return;
   try{
-    const ctx = audioCtx || new (window.AudioContext||window.webkitAudioContext)();
-    if(type === 'xp'){
-      // Soft ding
-      const o=ctx.createOscillator(), g=ctx.createGain();
-      o.connect(g); g.connect(ctx.destination);
-      o.type='sine'; o.frequency.setValueAtTime(880,ctx.currentTime);
-      o.frequency.exponentialRampToValueAtTime(1200,ctx.currentTime+0.08);
-      g.gain.setValueAtTime(0,ctx.currentTime);
-      g.gain.linearRampToValueAtTime(0.12,ctx.currentTime+0.02);
-      g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+0.35);
-      o.start(ctx.currentTime); o.stop(ctx.currentTime+0.35);
-    } else if(type === 'rankup'){
-      // Fanfare - three ascending notes
-      [[440,0],[554,0.12],[660,0.24],[880,0.36]].forEach(([freq,t])=>{
-        const o=ctx.createOscillator(),g=ctx.createGain();
-        o.connect(g); g.connect(ctx.destination);
-        o.type='triangle'; o.frequency.value=freq;
-        const start=ctx.currentTime+t;
-        g.gain.setValueAtTime(0,start); g.gain.linearRampToValueAtTime(0.22,start+0.04);
-        g.gain.exponentialRampToValueAtTime(0.001,start+0.28);
-        o.start(start); o.stop(start+0.3);
-      });
-    } else if(type === 'quest'){
-      // Soft pop
-      const o=ctx.createOscillator(),g=ctx.createGain();
-      o.connect(g); g.connect(ctx.destination);
-      o.type='sine'; o.frequency.setValueAtTime(660,ctx.currentTime);
-      o.frequency.exponentialRampToValueAtTime(880,ctx.currentTime+0.06);
-      g.gain.setValueAtTime(0,ctx.currentTime); g.gain.linearRampToValueAtTime(0.1,ctx.currentTime+0.02);
-      g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+0.25);
-      o.start(ctx.currentTime); o.stop(ctx.currentTime+0.25);
-    } else if(type === 'click'){
-      // Tiny tick
-      const o=ctx.createOscillator(),g=ctx.createGain();
-      o.connect(g); g.connect(ctx.destination);
-      o.type='square'; o.frequency.value=2000;
-      g.gain.setValueAtTime(0.04,ctx.currentTime);
-      g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+0.04);
-      o.start(ctx.currentTime); o.stop(ctx.currentTime+0.05);
-    } else if(type === 'fail'){
-      // Low thud
-      const o=ctx.createOscillator(),g=ctx.createGain();
-      o.connect(g); g.connect(ctx.destination);
-      o.type='sawtooth'; o.frequency.value=80;
-      g.gain.setValueAtTime(0.15,ctx.currentTime);
-      g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+0.3);
-      o.start(ctx.currentTime); o.stop(ctx.currentTime+0.3);
+    const ctx=getSLAudio();
+    if(type==='xp'){
+      // Rising ding — SL power gain
+      _slTone(ctx,'sine',660,0,.28,.13,.01,.06);
+      _slTone(ctx,'sine',880,.06,.22,.07,.01,.06);
+      _slTone(ctx,'triangle',1100,.12,.18,.04,.01,.05);
     }
-  } catch(e){}
+    else if(type==='rankup'){
+      // Triumphant 4-note arpeggio — SL awakening
+      [[261.6,0,.5,.28],[329.6,.12,.44,.22],[392,.26,.4,.18],[523.2,.42,.6,.22]].forEach(([f,s,d,v])=>{
+        _slTone(ctx,'triangle',f,s,d,v,.03,.1);
+        _slTone(ctx,'sine',f*2,s,d,v*.4,.03,.1);
+      });
+      // Low impact thud
+      _slTone(ctx,'sawtooth',55,.38,.35,.18,.01,.15);
+    }
+    else if(type==='quest'){
+      // Clean accept sound
+      _slTone(ctx,'sine',523,.0,.15,.12,.02,.05);
+      _slTone(ctx,'sine',659,.08,.12,.09,.01,.05);
+      _slTone(ctx,'sine',784,.14,.14,.06,.01,.08);
+    }
+    else if(type==='fail'){
+      // Heavy low thud + dissonant buzz
+      _slTone(ctx,'sawtooth',80,.0,.4,.2,.005,.15);
+      _slTone(ctx,'square',90,.0,.25,.08,.005,.15);
+      _slTone(ctx,'sine',55,.1,.35,.12,.005,.15);
+    }
+    else if(type==='click'){
+      // Subtle synthetic click
+      _slTone(ctx,'square',1200,.0,.04,.06,.002,.03);
+      _slTone(ctx,'sine',800,.0,.06,.03,.001,.04);
+    }
+    else if(type==='penalty'){
+      // Alert system sound
+      _slTone(ctx,'sawtooth',220,.0,.18,.22,.01,.08);
+      _slTone(ctx,'sawtooth',220,.2,.18,.18,.01,.08);
+    }
+  }catch(e){}
 }
+
+// ── alias for backward compat ──
+function playPremiumSound(type){ playSLSound(type); }
 
 // ── FLOATING XP TEXT ──
 function showXPFloat(xp, sourceEl){
@@ -4268,6 +4733,18 @@ function renderRadarChart(){
   });
 }
 </script>
+<!-- SL PENALTY OVERLAY — top priority messages -->
+<div class="sl-penalty-overlay" id="sl-penalty-overlay" style="display:none">
+  <div class="sl-penalty-msg" id="sl-penalty-msg">
+    <div class="sl-pen-icon" id="sl-pen-icon">☠</div>
+    <div class="sl-pen-body">
+      <div class="sl-pen-title" id="sl-pen-title">System Alert</div>
+      <div class="sl-pen-sub" id="sl-pen-sub"></div>
+    </div>
+    <button class="sl-pen-close" onclick="closeSLPenalty()">✕</button>
+  </div>
+</div>
+
 <!-- SOUND TOGGLE -->
 <button class="sound-toggle on" id="sound-toggle" onclick="toggleSoundFX()" title="Toggle sound effects">🔊</button>
 
