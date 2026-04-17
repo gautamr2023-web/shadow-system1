@@ -236,34 +236,6 @@ section.active{display:block}
 .edit-fi{background:var(--bg3);border:1px solid var(--border2);border-radius:5px;color:var(--text);font-family:var(--font);font-size:12px;padding:5px 7px;outline:none}
 .edit-num{background:var(--bg3);border:1px solid var(--border2);border-radius:5px;color:var(--text);font-family:var(--mono);font-size:11px;padding:5px;width:38px;text-align:center;outline:none}
 
-/* ── WORKOUT PREMIUM ── */
-.wo-stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
-.wo-stat{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 8px;text-align:center;transition:border-color .25s,transform .2s,box-shadow .25s}
-.wo-stat:hover{border-color:rgba(0,214,143,.35);transform:translateY(-2px);box-shadow:0 4px 16px rgba(0,214,143,.08)}
-.wo-stat-val{font-family:var(--mono);font-size:20px;font-weight:700;line-height:1.2}
-.wo-stat-lbl{font-size:9px;color:var(--text2);text-transform:uppercase;letter-spacing:.7px;margin-top:3px}
-.wo-feedback{border-radius:var(--radius-sm);padding:11px 14px;margin-bottom:14px;display:flex;align-items:center;gap:10px;font-size:13px;font-weight:600;border:1px solid;position:relative;overflow:hidden}
-.wo-feedback::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;border-radius:3px 0 0 3px}
-.wo-feedback.good{background:rgba(0,214,143,.06);border-color:rgba(0,214,143,.2);color:var(--green)}
-.wo-feedback.good::before{background:var(--green);box-shadow:0 0 8px var(--green)}
-.wo-feedback.warn{background:rgba(244,196,48,.06);border-color:rgba(244,196,48,.2);color:var(--gold)}
-.wo-feedback.warn::before{background:var(--gold)}
-.wo-feedback.miss{background:rgba(255,59,92,.05);border-color:rgba(255,59,92,.18);color:var(--red)}
-.wo-feedback.miss::before{background:var(--red)}
-.wo-streak-badge{display:inline-flex;align-items:center;gap:6px;background:rgba(244,196,48,.08);border:1px solid rgba(244,196,48,.3);border-radius:20px;padding:4px 12px;font-size:13px;font-weight:700;color:var(--gold);font-family:var(--mono)}
-.wo-log-item{display:flex;align-items:center;gap:10px;padding:10px 8px;border-bottom:1px solid var(--border);border-radius:var(--radius-sm);transition:background .18s}
-.wo-log-item:hover{background:rgba(0,214,143,.03)}
-.wo-log-item:last-child{border:none}
-.wo-log-icon{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;background:rgba(0,214,143,.08);border:1px solid rgba(0,214,143,.2);transition:box-shadow .3s}
-.wo-log-item.complete .wo-log-icon{box-shadow:0 0 12px rgba(0,214,143,.35);animation:woPulse 2.5s ease-in-out infinite}
-@keyframes woPulse{0%,100%{box-shadow:0 0 6px rgba(0,214,143,.25)}50%{box-shadow:0 0 18px rgba(0,214,143,.55)}}
-.wo-log-info{flex:1;min-width:0}
-.wo-log-name{font-size:13px;font-weight:700}
-.wo-log-meta{font-size:11px;color:var(--text2);margin-top:2px}
-.wo-log-xp{font-family:var(--mono);font-size:13px;font-weight:700;color:var(--green);flex-shrink:0}
-@keyframes exCheckAnim{0%{transform:scale(1)}40%{transform:scale(1.4)}70%{transform:scale(.9)}100%{transform:scale(1)}}
-.ex-chk.anim{animation:exCheckAnim .35s cubic-bezier(.34,1.4,.64,1)}
-
 /* ── ANALYTICS ── */
 .stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
 .stat-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px}
@@ -288,42 +260,227 @@ section.active{display:block}
 .rank-S{background:rgba(255,120,50,.1);border-color:#f85;color:#f85}
 .rank-SS{background:rgba(255,50,50,.12);border-color:var(--red);color:var(--red)}
 .rank-SSS{background:rgba(200,50,255,.15);border-color:#c35ff5;color:#c35ff5}
-/* ── STATUS WINDOW ── */
+/* ── STATUS WINDOW V2 — SOLO LEVELING RPG STYLE ── */
 .status-window{
-  background:var(--card);
-  border:1px solid rgba(91,110,245,0.35);
+  background:linear-gradient(145deg,rgba(9,9,24,.98) 0%,rgba(13,13,30,.98) 100%);
+  border:1px solid rgba(91,110,245,0.5);
   border-radius:var(--radius);
-  padding:18px 16px 14px;
+  padding:20px 18px 16px;
   margin-bottom:14px;
   position:relative;
   overflow:hidden;
+  box-shadow:
+    0 0 0 1px rgba(91,110,245,.06) inset,
+    0 8px 40px rgba(0,0,0,.6),
+    0 0 60px rgba(91,110,245,.04);
 }
+/* Animated scan line */
 .status-window::before{
-  content:'';position:absolute;inset:0;
-  background:linear-gradient(135deg,rgba(91,110,245,.06) 0%,transparent 60%);
-  pointer-events:none;
+  content:'';position:absolute;left:0;right:0;top:-100%;
+  height:40%;
+  background:linear-gradient(180deg,transparent 0%,rgba(91,110,245,.04) 50%,transparent 100%);
+  animation:swScan 4s ease-in-out infinite;
+  pointer-events:none;z-index:0;
 }
-.sw-header{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:14px}
-.sw-title{font-family:var(--mono);font-size:11px;color:var(--accent);letter-spacing:3px;text-transform:uppercase;white-space:nowrap}
+.status-window::after{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(135deg,rgba(91,110,245,.06) 0%,transparent 50%,rgba(124,94,245,.03) 100%);
+  pointer-events:none;z-index:0;
+}
+@keyframes swScan{0%{top:-100%}100%{top:200%}}
+
+.sw-header{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:16px;position:relative;z-index:1}
+.sw-title{
+  font-family:var(--mono);font-size:11px;color:var(--accent);
+  letter-spacing:4px;text-transform:uppercase;white-space:nowrap;
+  text-shadow:0 0 12px rgba(91,110,245,.7);
+}
 .sw-lines{display:flex;flex-direction:column;gap:3px;flex:1}
-.sw-line{height:1px;background:linear-gradient(90deg,transparent,rgba(91,110,245,.4),transparent)}
-.sw-identity{display:flex;align-items:center;gap:12px;margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid var(--border)}
-.sw-rank-badge{width:44px;height:44px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;font-family:var(--mono);border:2px solid;flex-shrink:0}
+.sw-line{height:1px;background:linear-gradient(90deg,transparent,rgba(91,110,245,.5),transparent);animation:swLinePulse 2s ease-in-out infinite alternate}
+.sw-line:nth-child(2){animation-delay:.3s}
+.sw-line:nth-child(3){animation-delay:.6s}
+@keyframes swLinePulse{0%{opacity:.4}100%{opacity:1}}
+
+/* Identity row */
+.sw-identity{display:flex;align-items:center;gap:14px;margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid rgba(91,110,245,.15);position:relative;z-index:1}
+
+/* RANK BADGE — large, glowing */
+.sw-rank-badge{
+  width:52px;height:52px;border-radius:10px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:20px;font-weight:700;font-family:var(--mono);
+  border:2px solid;flex-shrink:0;
+  position:relative;
+  transition:box-shadow .3s;
+}
+.sw-rank-badge.rank-S,.sw-rank-badge.rank-SS,.sw-rank-badge.rank-SSS{
+  animation:rankBadgePulse 2s ease-in-out infinite;
+}
+@keyframes rankBadgePulse{
+  0%,100%{box-shadow:0 0 8px currentColor,0 0 24px rgba(91,110,245,.1)}
+  50%{box-shadow:0 0 20px currentColor,0 0 40px rgba(91,110,245,.2)}
+}
+
 .sw-name{font-size:17px;font-weight:700;letter-spacing:.3px}
-.sw-class{font-size:10px;color:var(--accent);letter-spacing:1.5px;text-transform:uppercase;margin-top:2px}
+.sw-class{font-size:10px;color:var(--accent);letter-spacing:1.5px;text-transform:uppercase;margin-top:2px;text-shadow:0 0 8px rgba(91,110,245,.5)}
 .sw-xp-block{margin-left:auto;text-align:right}
-.sw-xp-val{font-family:var(--mono);font-size:20px;color:var(--gold)}
+.sw-xp-val{font-family:var(--mono);font-size:22px;color:var(--gold);text-shadow:0 0 12px rgba(244,196,48,.5)}
 .sw-xp-lbl{font-size:9px;color:var(--text2);text-transform:uppercase;letter-spacing:.8px}
-.sw-stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+
+/* Stat bars — PREMIUM segmented */
+.sw-stats{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;position:relative;z-index:1}
 .sw-stat{display:flex;flex-direction:column;gap:5px}
 .sw-stat-hdr{display:flex;justify-content:space-between;align-items:center}
 .sw-stat-name{font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase}
-.sw-stat-val{font-family:var(--mono);font-size:13px}
-.sw-stat-bar{height:5px;background:rgba(255,255,255,.06);border-radius:3px;overflow:hidden}
-.sw-stat-fill{height:100%;border-radius:3px;transition:width .8s cubic-bezier(.4,0,.2,1)}
-.sw-footer{display:flex;justify-content:space-between;padding-top:12px;border-top:1px solid var(--border);font-size:11px;color:var(--text2);font-family:var(--mono)}
-.sw-streak{color:var(--gold)}
+.sw-stat-val{font-family:var(--mono);font-size:13px;font-weight:700}
+
+/* Segmented bar like Solo Leveling */
+.sw-stat-bar{
+  height:7px;background:rgba(255,255,255,.04);border-radius:4px;overflow:hidden;
+  position:relative;
+}
+.sw-stat-fill{
+  height:100%;border-radius:4px;
+  transition:width 1.2s cubic-bezier(.4,0,.2,1);
+  position:relative;
+}
+.sw-stat-fill::after{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(90deg,transparent 0%,rgba(255,255,255,.3) 50%,transparent 100%);
+  animation:statShine 2s ease-in-out infinite;
+}
+@keyframes statShine{
+  0%{transform:translateX(-100%)}
+  60%,100%{transform:translateX(200%)}
+}
+/* Segmented bar overlay (creates block gaps) */
+.sw-stat-segs{
+  position:absolute;inset:0;
+  display:flex;gap:1px;pointer-events:none;
+}
+.sw-stat-seg{flex:1;border-right:1px solid rgba(0,0,0,.4);last-child:{border:none}}
+
+.sw-footer{
+  display:flex;justify-content:space-between;align-items:center;
+  padding-top:12px;border-top:1px solid rgba(91,110,245,.12);
+  font-size:11px;color:var(--text2);font-family:var(--mono);
+  position:relative;z-index:1;
+}
+.sw-streak{
+  color:var(--gold);font-size:12px;font-weight:700;
+  text-shadow:0 0 8px rgba(244,196,48,.5);
+}
 .sw-jee{color:var(--text2)}
+
+/* Rank progress bar — WORKING PREMIUM */
+.sw-rank-prog{margin:12px 0 8px;position:relative;z-index:1}
+.sw-rank-prog-lbl{display:flex;justify-content:space-between;font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:1.2px;margin-bottom:5px;font-weight:700}
+.sw-rank-prog-track{
+  height:8px;background:rgba(255,255,255,.04);border-radius:4px;overflow:hidden;
+  position:relative;
+  box-shadow:0 0 0 1px rgba(91,110,245,.1) inset;
+}
+.sw-rank-prog-fill{
+  height:100%;border-radius:4px;
+  background:linear-gradient(90deg,#7c5ef5 0%,#5b6ef5 40%,#00c9ff 100%);
+  transition:width 1.4s cubic-bezier(.4,0,.2,1);
+  position:relative;
+}
+.sw-rank-prog-fill::after{
+  content:'';position:absolute;right:0;top:0;bottom:0;width:3px;border-radius:2px;
+  background:rgba(255,255,255,.9);
+  box-shadow:0 0 8px rgba(0,201,255,.8);
+  animation:progPulse 1.4s ease-in-out infinite;
+}
+@keyframes progPulse{0%,100%{opacity:.5;width:3px}50%{opacity:1;width:5px}}
+
+/* 7-day mini consistency */
+.sw-mini-graph{display:flex;align-items:flex-end;gap:3px;height:32px;margin-top:10px;position:relative;z-index:1}
+.sw-mini-bar{
+  flex:1;border-radius:2px 2px 0 0;min-height:3px;
+  transition:height .6s cubic-bezier(.4,0,.2,1);
+  position:relative;
+}
+.sw-mini-bar.today{outline:1.5px solid rgba(91,110,245,.8);outline-offset:1px}
+.sw-mini-day{font-size:8px;text-align:center;color:var(--text3);margin-top:3px}
+
+/* ── SL PENALTY OVERLAY ── */
+.sl-penalty-overlay{
+  position:fixed;inset:0;z-index:9800;pointer-events:none;
+  display:flex;align-items:flex-start;justify-content:center;
+  padding-top:12px;
+}
+.sl-penalty-msg{
+  pointer-events:all;
+  max-width:600px;width:calc(100% - 24px);
+  background:rgba(8,8,16,.97);
+  border:1px solid rgba(255,59,92,.6);
+  border-radius:12px;
+  padding:14px 18px;
+  display:flex;align-items:center;gap:14px;
+  box-shadow:0 0 0 1px rgba(255,59,92,.1),0 8px 40px rgba(0,0,0,.8),0 0 40px rgba(255,59,92,.12);
+  animation:slMsgIn .4s cubic-bezier(.34,1.4,.64,1);
+  position:relative;overflow:hidden;
+}
+.sl-penalty-msg::before{
+  content:'';position:absolute;left:0;top:0;bottom:0;width:4px;
+  background:var(--red);box-shadow:0 0 12px var(--red);
+}
+@keyframes slMsgIn{from{transform:translateY(-120%);opacity:0}to{transform:translateY(0);opacity:1}}
+.sl-penalty-msg.warn{border-color:rgba(244,196,48,.5);box-shadow:0 0 0 1px rgba(244,196,48,.08),0 8px 40px rgba(0,0,0,.8),0 0 40px rgba(244,196,48,.1)}
+.sl-penalty-msg.warn::before{background:var(--gold);box-shadow:0 0 12px var(--gold)}
+.sl-penalty-msg.good{border-color:rgba(0,214,143,.5);box-shadow:0 0 0 1px rgba(0,214,143,.08),0 8px 40px rgba(0,0,0,.8),0 0 40px rgba(0,214,143,.1)}
+.sl-penalty-msg.good::before{background:var(--green);box-shadow:0 0 12px var(--green)}
+.sl-pen-icon{font-size:26px;flex-shrink:0}
+.sl-pen-body{flex:1;min-width:0}
+.sl-pen-title{font-size:14px;font-weight:700;color:var(--red);letter-spacing:.3px;margin-bottom:2px}
+.sl-penalty-msg.warn .sl-pen-title{color:var(--gold)}
+.sl-penalty-msg.good .sl-pen-title{color:var(--green)}
+.sl-pen-sub{font-size:11px;color:var(--text2);line-height:1.4}
+.sl-pen-close{background:none;border:none;color:var(--text3);cursor:pointer;font-size:18px;flex-shrink:0;padding:2px 6px;transition:color .2s}
+.sl-pen-close:hover{color:var(--text)}
+/* Pulsing border on danger */
+@keyframes dangerPulse{
+  0%,100%{box-shadow:0 0 0 1px rgba(255,59,92,.1),0 8px 40px rgba(0,0,0,.8),0 0 40px rgba(255,59,92,.12)}
+  50%{box-shadow:0 0 0 1px rgba(255,59,92,.3),0 8px 40px rgba(0,0,0,.8),0 0 60px rgba(255,59,92,.2)}
+}
+.sl-penalty-msg.danger{animation:slMsgIn .4s cubic-bezier(.34,1.4,.64,1),dangerPulse 2s ease-in-out 0.4s infinite}
+
+/* ── DAY-QUEST TAGS ── */
+.quest-day-tag{
+  display:inline-flex;align-items:center;gap:2px;
+  padding:1px 5px;border-radius:3px;
+  font-size:9px;font-weight:700;letter-spacing:.5px;
+  background:rgba(91,110,245,.12);border:1px solid rgba(91,110,245,.25);
+  color:var(--accent);
+}
+.quest-days-row{display:flex;flex-wrap:wrap;gap:3px;margin-top:4px}
+.day-sel-btn{
+  padding:4px 9px;border-radius:5px;font-family:var(--font);font-size:11px;font-weight:700;
+  cursor:pointer;border:1px solid var(--border2);background:transparent;color:var(--text3);
+  transition:all .15s;
+}
+.day-sel-btn.on{background:rgba(91,110,245,.15);border-color:var(--accent);color:var(--accent)}
+
+/* ── HEATMAP PREMIUM ── */
+.heatmap-cell{
+  width:18px!important;height:18px!important;
+  border-radius:4px!important;
+  transition:transform .1s,box-shadow .1s!important;
+  cursor:pointer!important;
+}
+.heatmap-cell:hover{transform:scale(1.3)!important;z-index:2;position:relative}
+
+/* ── CHART GLOW CANVAS WRAPPER ── */
+.chart-wrap{position:relative}
+.chart-wrap::after{
+  content:'';
+  position:absolute;inset:0;
+  background:radial-gradient(ellipse at 50% 100%,rgba(91,110,245,.04) 0%,transparent 70%);
+  pointer-events:none;
+}
+
+/* ── NEON TOOLTIP (via Chart.js custom) ── */
 
 /* ── SESSION RATING MODAL ── */
 .modal-overlay{position:fixed;inset:0;z-index:9500;background:rgba(0,0,0,.82);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;transition:opacity .22s;pointer-events:none}
@@ -345,6 +502,268 @@ section.active{display:block}
 .done-pulse-focus{background:var(--green)}
 .done-pulse-break{background:var(--mana)}
 @keyframes dpulse{0%,100%{box-shadow:0 0 0 0 rgba(0,214,143,.7)}60%{box-shadow:0 0 0 9px rgba(0,214,143,0)}}
+
+/* ══════════════════════════════════════
+   ██████╗ ██████╗ ███████╗███╗   ███╗
+   ██╔══██╗██╔══██╗██╔════╝████╗ ████║
+   ██████╔╝██████╔╝█████╗  ██╔████╔██║
+   ██╔═══╝ ██╔══██╗██╔══╝  ██║╚██╔╝██║
+   ██║     ██║  ██║███████╗██║ ╚═╝ ██║
+   ╚═╝     ╚═╝  ╚═╝╚══════╝╚═╝     ╚═╝
+   PREMIUM VISUAL LAYER — DO NOT REMOVE
+   ══════════════════════════════════════ */
+
+/* ── CARD PREMIUM SHADOWS & HOVER GLOW ── */
+.card{
+  box-shadow:0 4px 24px rgba(0,0,0,.35),0 1px 0 rgba(255,255,255,.03) inset;
+  transition:border-color .25s,box-shadow .25s;
+}
+.card:hover{
+  border-color:rgba(91,110,245,.28);
+  box-shadow:0 4px 32px rgba(0,0,0,.45),0 0 0 1px rgba(91,110,245,.08),0 1px 0 rgba(255,255,255,.04) inset;
+}
+.stat-card{
+  box-shadow:0 3px 16px rgba(0,0,0,.3);
+  transition:border-color .25s,box-shadow .25s,transform .2s;
+}
+.stat-card:hover{
+  border-color:rgba(91,110,245,.3);
+  box-shadow:0 0 0 1px rgba(91,110,245,.12),0 6px 24px rgba(91,110,245,.12);
+  transform:translateY(-2px);
+}
+.dstat{
+  box-shadow:0 2px 12px rgba(0,0,0,.25);
+  transition:border-color .25s,box-shadow .25s,transform .2s;
+}
+.dstat:hover{
+  border-color:rgba(91,110,245,.3);
+  box-shadow:0 0 0 1px rgba(91,110,245,.1),0 4px 20px rgba(91,110,245,.1);
+  transform:translateY(-2px);
+}
+.btn{transition:all .2s;position:relative;overflow:hidden}
+.btn-primary{box-shadow:0 0 16px rgba(91,110,245,.3)}
+.btn-primary:hover{box-shadow:0 0 24px rgba(91,110,245,.5);transform:translateY(-1px)}
+.btn-primary:active{transform:translateY(0)}
+.nav-btn{transition:all .2s,color .15s}
+.nav-btn:hover{box-shadow:0 0 16px rgba(91,110,245,.08)}
+
+/* ── STATUS WINDOW PREMIUM ── */
+.status-window{
+  box-shadow:0 4px 32px rgba(0,0,0,.4),0 0 0 1px rgba(91,110,245,.08);
+  transition:box-shadow .3s;
+}
+.status-window:hover{
+  box-shadow:0 4px 40px rgba(0,0,0,.5),0 0 0 1px rgba(91,110,245,.18),0 0 48px rgba(91,110,245,.04);
+}
+
+/* ── XP FLOAT ANIMATION ── */
+.xp-float{
+  position:fixed;
+  pointer-events:none;
+  font-family:var(--mono);
+  font-size:15px;
+  font-weight:700;
+  color:var(--gold);
+  text-shadow:0 0 12px rgba(244,196,48,.8);
+  z-index:99999;
+  animation:xpFloat 1.6s ease-out forwards;
+  white-space:nowrap;
+}
+@keyframes xpFloat{
+  0%{opacity:1;transform:translateY(0) scale(1)}
+  20%{opacity:1;transform:translateY(-8px) scale(1.15)}
+  80%{opacity:.7;transform:translateY(-52px) scale(.95)}
+  100%{opacity:0;transform:translateY(-72px) scale(.85)}
+}
+
+/* ── RANK UP FLASH ── */
+.rankup-flash{
+  position:fixed;inset:0;z-index:99990;pointer-events:none;
+  background:radial-gradient(ellipse at center,rgba(244,196,48,.25) 0%,rgba(91,110,245,.15) 40%,transparent 70%);
+  animation:rankFlash .9s ease-out forwards;
+}
+@keyframes rankFlash{
+  0%{opacity:0}10%{opacity:1}30%{opacity:.8}60%{opacity:.4}100%{opacity:0}
+}
+.rankup-text-glow{
+  animation:rankGlow 2.5s ease-in-out infinite;
+}
+@keyframes rankGlow{
+  0%,100%{text-shadow:0 0 8px currentColor}
+  50%{text-shadow:0 0 20px currentColor,0 0 40px currentColor}
+}
+
+/* ── FAILURE / PENALTY ANIMATION ── */
+@keyframes failPulse{
+  0%{box-shadow:0 0 0 0 rgba(255,59,92,.0)}
+  30%{box-shadow:0 0 0 8px rgba(255,59,92,.35)}
+  60%{box-shadow:0 0 0 16px rgba(255,59,92,.15)}
+  100%{box-shadow:0 0 0 0 rgba(255,59,92,.0)}
+}
+@keyframes failShake{
+  0%,100%{transform:translateX(0)}
+  15%{transform:translateX(-5px)}
+  30%{transform:translateX(5px)}
+  45%{transform:translateX(-4px)}
+  60%{transform:translateX(4px)}
+  75%{transform:translateX(-2px)}
+  90%{transform:translateX(2px)}
+}
+.fail-shake{animation:failShake .45s ease-out}
+.fail-pulse{animation:failPulse .6s ease-out}
+
+/* ── QUEST TICK ANIMATION ── */
+@keyframes questTick{
+  0%{transform:scale(1)}
+  40%{transform:scale(1.35)}
+  60%{transform:scale(.9)}
+  80%{transform:scale(1.12)}
+  100%{transform:scale(1)}
+}
+@keyframes questGlow{
+  0%{box-shadow:0 0 0 0 rgba(0,214,143,.0)}
+  30%{box-shadow:0 0 0 6px rgba(0,214,143,.4)}
+  100%{box-shadow:0 0 0 0 rgba(0,214,143,.0)}
+}
+.quest-tick-anim{
+  animation:questTick .4s cubic-bezier(.34,1.6,.64,1),questGlow .6s ease-out;
+}
+
+/* ── DYNAMIC FEEDBACK BANNER ── */
+.feedback-banner{
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  padding:12px 16px;
+  margin-bottom:14px;
+  display:flex;
+  align-items:center;
+  gap:12px;
+  box-shadow:0 3px 20px rgba(0,0,0,.3);
+  position:relative;
+  overflow:hidden;
+  transition:border-color .3s,box-shadow .3s;
+}
+.feedback-banner::before{
+  content:'';position:absolute;left:0;top:0;bottom:0;width:3px;border-radius:3px 0 0 3px;
+}
+.feedback-banner.good::before{background:var(--green)}
+.feedback-banner.low::before{background:var(--red)}
+.feedback-banner.streak::before{background:var(--gold)}
+.feedback-banner.neutral::before{background:var(--accent)}
+.feedback-msg{font-size:13px;font-weight:600;flex:1}
+.feedback-sub{font-size:11px;color:var(--text2);margin-top:2px}
+.daily-rating{display:flex;align-items:center;gap:3px;margin-left:auto}
+.daily-star{font-size:15px;line-height:1;opacity:.25;transition:opacity .2s}
+.daily-star.lit{opacity:1}
+
+/* ── PROGRESS SUMMARY CARD ── */
+.progress-summary{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:8px;
+  margin-bottom:14px;
+}
+@media(max-width:500px){.progress-summary{grid-template-columns:repeat(2,1fr)}}
+.ps-item{
+  background:var(--bg2);
+  border:1px solid var(--border);
+  border-radius:var(--radius-sm);
+  padding:12px 10px;
+  text-align:center;
+  transition:border-color .2s,transform .2s,box-shadow .2s;
+}
+.ps-item:hover{border-color:rgba(91,110,245,.3);transform:translateY(-2px);box-shadow:0 4px 16px rgba(91,110,245,.1)}
+.ps-val{font-family:var(--mono);font-size:17px;color:var(--text);line-height:1.2}
+.ps-lbl{font-size:9px;color:var(--text2);text-transform:uppercase;letter-spacing:.7px;margin-top:3px}
+.ps-status{
+  grid-column:1/-1;
+  text-align:center;
+  font-family:var(--mono);
+  font-size:11px;
+  letter-spacing:2px;
+  font-weight:700;
+  padding:8px;
+  border-radius:var(--radius-sm);
+  border:1px solid;
+}
+.ps-status.success{background:rgba(0,214,143,.06);border-color:rgba(0,214,143,.25);color:var(--green)}
+.ps-status.failed{background:rgba(255,59,92,.06);border-color:rgba(255,59,92,.25);color:var(--red)}
+.ps-status.recovery{background:rgba(244,196,48,.06);border-color:rgba(244,196,48,.25);color:var(--gold)}
+.ps-status.ongoing{background:rgba(91,110,245,.06);border-color:rgba(91,110,245,.25);color:var(--accent)}
+
+/* ── NEXT RANK PROGRESS BAR ── */
+.rank-progress-wrap{margin:12px 0 6px}
+.rank-progress-lbl{display:flex;justify-content:space-between;font-size:10px;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px}
+.rank-progress-track{height:6px;background:rgba(255,255,255,.05);border-radius:3px;overflow:hidden;position:relative}
+.rank-progress-fill{
+  height:100%;border-radius:3px;
+  background:linear-gradient(90deg,var(--accent2),var(--accent),#00c9ff);
+  transition:width .8s cubic-bezier(.4,0,.2,1);
+  position:relative;
+}
+.rank-progress-fill::after{
+  content:'';position:absolute;right:-1px;top:0;bottom:0;width:3px;
+  background:rgba(255,255,255,.7);border-radius:2px;
+  animation:rpPulse 1.5s ease-in-out infinite;
+}
+@keyframes rpPulse{0%,100%{opacity:.4}50%{opacity:1}}
+
+/* ── MINI CONSISTENCY GRAPH ── */
+.mini-consistency{
+  position:relative;
+  height:36px;
+  display:flex;
+  align-items:flex-end;
+  gap:2px;
+  margin-top:6px;
+}
+.mini-bar{
+  flex:1;
+  border-radius:2px 2px 0 0;
+  min-height:2px;
+  transition:height .5s cubic-bezier(.4,0,.2,1),background .3s;
+  position:relative;
+}
+.mini-bar.today{outline:1.5px solid rgba(91,110,245,.6);outline-offset:1px}
+
+/* ── CHART NEON GLOW (Canvas filter trick) ── */
+.chart-wrap canvas{filter:drop-shadow(0 0 0 transparent);transition:filter .3s}
+.chart-wrap:hover canvas{filter:drop-shadow(0 0 6px rgba(91,110,245,.15))}
+
+/* ── SOUND TOGGLE ── */
+.sound-toggle{
+  position:fixed;bottom:80px;right:16px;z-index:500;
+  width:38px;height:38px;border-radius:50%;
+  background:var(--card2);border:1px solid var(--border2);
+  color:var(--text2);font-size:16px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 4px 16px rgba(0,0,0,.3);
+  transition:all .2s;
+}
+.sound-toggle:hover{border-color:var(--accent);color:var(--accent);box-shadow:0 0 16px rgba(91,110,245,.2)}
+.sound-toggle.on{border-color:var(--accent);color:var(--accent);background:rgba(91,110,245,.08)}
+@media(min-width:900px){.sound-toggle{bottom:24px;right:320px}}
+
+/* ── SMOOTH GLOBAL TRANSITIONS ── */
+.rp-bar-fill,.bar-fill,.pb-fill{transition:width .6s cubic-bezier(.4,0,.2,1)!important}
+.qchk,.rp-qchk,.ex-chk{transition:all .2s cubic-bezier(.34,1.4,.64,1)!important}
+.tab-btn{transition:all .2s!important}
+.tmode-btn,.subj-btn,.day-chip,.btn{transition:all .2s!important}
+input.fi:focus,select.fi:focus{
+  border-color:var(--accent);
+  box-shadow:0 0 0 3px rgba(91,110,245,.12);
+  transition:border-color .2s,box-shadow .2s;
+}
+
+/* ── RADAR CHART GLOW ── */
+#ch-radar{filter:drop-shadow(0 0 12px rgba(91,110,245,.25))}
+
+/* ── PREMIUM SCROLLBAR ── */
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:rgba(255,255,255,.02)}
+::-webkit-scrollbar-thumb{background:linear-gradient(180deg,var(--accent2),var(--accent));border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:var(--accent)}
 
 </style>
 </head>
@@ -409,6 +828,20 @@ section.active{display:block}
 <main class="main-content">
 
 <section id="s-dashboard" class="active">
+  <!-- DYNAMIC FEEDBACK BANNER -->
+  <div id="feedback-banner" class="feedback-banner neutral" style="display:none">
+    <div style="flex:1">
+      <div class="feedback-msg" id="feedback-msg">⚡ System online</div>
+      <div class="feedback-sub" id="feedback-sub"></div>
+    </div>
+    <div class="daily-rating" id="daily-rating"></div>
+  </div>
+
+  <!-- PROGRESS SUMMARY CARD -->
+  <div id="progress-summary-wrap" style="display:none">
+    <div class="progress-summary" id="progress-summary"></div>
+  </div>
+
   <div id="ins-banner" class="ins-banner" style="display:none">
     <div style="flex:1">
       <div style="font-size:13px;font-weight:700;margin-bottom:4px">📱 Install as App</div>
@@ -440,10 +873,26 @@ section.active{display:block}
       </div>
     </div>
     <div class="sw-stats" id="sw-stats"></div>
-    <div id="sw-rank-req"></div>
+    <!-- RANK PROGRESS — premium bar -->
+    <div class="sw-rank-prog" id="sw-rank-req">
+      <div class="sw-rank-prog-lbl">
+        <span id="sw-rank-prog-label">Next Rank</span>
+        <span id="sw-rank-prog-pct" style="font-family:var(--mono);color:var(--accent)">0%</span>
+      </div>
+      <div class="sw-rank-prog-track">
+        <div class="sw-rank-prog-fill" id="sw-rank-prog-fill" style="width:0%"></div>
+      </div>
+    </div>
     <div class="sw-footer">
-      <div class="sw-streak"><span id="sw-streak">0</span> day streak</div>
+      <div class="sw-streak">🔥 <span id="sw-streak">0</span> day streak</div>
       <div class="sw-jee" id="sw-jee-days">— days to exam</div>
+    </div>
+    <!-- 7-DAY MINI CONSISTENCY -->
+    <div style="padding-top:10px;border-top:1px solid rgba(91,110,245,.1);margin-top:10px;position:relative;z-index:1">
+      <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:1.2px;margin-bottom:6px;font-weight:700">7-Day Consistency</div>
+      <div style="display:flex;align-items:flex-end;gap:3px">
+        <div class="sw-mini-graph" id="sw-mini-graph" style="flex:1"></div>
+      </div>
     </div>
   </div>
 
@@ -645,69 +1094,14 @@ section.active{display:block}
 </section>
 
 <section id="s-workout">
-  <div class="sec-title">⚔ Training Grounds</div>
-
-  <!-- WORKOUT SUMMARY STATS -->
-  <div class="wo-stat-grid" id="wo-summary-grid">
-    <div class="wo-stat">
-      <div class="wo-stat-val" id="wo-week-count" style="color:var(--green)">0</div>
-      <div class="wo-stat-lbl">💪 This Week</div>
-    </div>
-    <div class="wo-stat">
-      <div class="wo-stat-val" id="wo-streak-val" style="color:var(--gold)">0</div>
-      <div class="wo-stat-lbl">🔥 Streak</div>
-    </div>
-    <div class="wo-stat">
-      <div class="wo-stat-val" id="wo-avg-dur" style="color:var(--accent)">—</div>
-      <div class="wo-stat-lbl">⏱ Avg Duration</div>
-    </div>
-  </div>
-
-  <!-- FEEDBACK BANNER -->
-  <div class="wo-feedback miss" id="wo-feedback" style="display:none">
-    <span id="wo-feedback-icon">⚠</span>
-    <div>
-      <div id="wo-feedback-msg">No training logged today</div>
-      <div id="wo-feedback-sub" style="font-size:11px;opacity:.7;margin-top:2px"></div>
-    </div>
-  </div>
-
-  <!-- WORKOUT STREAK DISPLAY -->
-  <div style="margin-bottom:14px;display:flex;align-items:center;justify-content:space-between">
-    <div class="wo-streak-badge" id="wo-streak-badge">🔥 0 day streak</div>
-    <div style="font-size:11px;color:var(--text2)" id="wo-total-label">0 total workouts</div>
-  </div>
-
-  <!-- WEEKLY PLAN CARD -->
+  <div class="sec-title">Training Grounds</div>
   <div class="card">
-    <div class="card-hdr"><span class="hl">📅 Weekly Plan</span></div>
+    <div class="card-hdr"><span class="hl">Weekly Plan</span></div>
     <div class="days-grid" id="days-grid"></div>
     <div id="day-view"></div>
   </div>
-  <button class="btn btn-ghost" id="edit-btn" onclick="toggleEdit()" style="width:100%;margin-bottom:14px">✏ Edit Plan</button>
-
-  <!-- WORKOUT CONSISTENCY GRAPH -->
-  <div class="card">
-    <div class="card-hdr"><span class="hl">📊 Workout Consistency — Last 14 Days</span></div>
-    <div style="font-size:11px;color:var(--text2);margin-bottom:8px">Green bar = workout done. Height = % exercises completed.</div>
-    <div style="position:relative;height:160px"><canvas id="ch-wo-consistency"></canvas></div>
-  </div>
-
-  <!-- STRENGTH PROGRESSION GRAPH -->
-  <div class="card">
-    <div class="card-hdr"><span class="hl">⚡ Strength Progression</span></div>
-    <div style="font-size:11px;color:var(--text2);margin-bottom:8px">How your Strength stat has grown over time based on workout history.</div>
-    <div style="position:relative;height:160px"><canvas id="ch-wo-strength"></canvas></div>
-  </div>
-
-  <!-- RECENT LOGS -->
-  <div class="card">
-    <div class="card-hdr" style="display:flex;align-items:center;justify-content:space-between">
-      <span class="hl">🗒 Training Log</span>
-      <span id="wo-log-count" style="font-size:11px;color:var(--text2);font-family:var(--mono)"></span>
-    </div>
-    <div id="wo-log"></div>
-  </div>
+  <button class="btn btn-ghost" id="edit-btn" onclick="toggleEdit()" style="width:100%;margin-bottom:14px">Edit Plan</button>
+  <div class="card"><div class="card-hdr"><span class="hl">Recent Logs</span></div><div id="wo-log"></div></div>
 </section>
 
 <section id="s-analytics">
@@ -758,10 +1152,17 @@ section.active{display:block}
     <div class="chart-wrap" style="height:200px"><canvas id="ch-tests"></canvas></div>
   </div>
 
+  <!-- RPG STATS RADAR -->
+  <div class="card">
+    <div class="card-hdr"><span class="hl">⚔ Hunter Ability Radar</span></div>
+    <div style="font-size:11px;color:var(--text2);margin-bottom:8px">Combat stats derived from your study patterns.</div>
+    <div class="chart-wrap" style="height:240px"><canvas id="ch-radar"></canvas></div>
+  </div>
+
   <!-- Weekly heatmap -->
   <div class="card">
-    <div class="card-hdr"><span class="hl">🗓 Study Heatmap — Last 5 Weeks</span></div>
-    <div id="ch-heatmap" style="margin-top:8px"></div>
+    <div class="card-hdr"><span class="hl">🗓 Study Heatmap — Last 10 Weeks</span></div>
+    <div id="ch-heatmap" style="margin-top:8px;min-height:160px"></div>
   </div>
 
   <!-- Chronicle -->
@@ -874,6 +1275,14 @@ section.active{display:block}
       <button class="btn btn-ghost btn-sm" onclick="addCustomQuest()">+ Add Quest</button>
       <button class="btn btn-primary btn-sm" onclick="saveQuests()">Save Quests</button>
     </div>
+  </div>
+
+  <!-- Day-specific Quest Schedule -->
+  <div class="card">
+    <div class="card-hdr"><span class="hl">📅 Quest Schedule by Day</span></div>
+    <div style="font-size:12px;color:var(--text2);margin-bottom:12px;line-height:1.6">Set which days each quest is active. Quests only appear on selected days.</div>
+    <div id="s-quest-schedule"></div>
+    <button class="btn btn-primary btn-sm" onclick="saveQuestSchedule()" style="margin-top:10px">Save Schedule</button>
   </div>
 
   <!-- Confidence Guide -->
@@ -1139,7 +1548,7 @@ const DEF={
     maths11:JEE_TOPICS.maths11.map((n,i)=>({id:'m11_'+i,name:n,conf:0})),
     maths12:JEE_TOPICS.maths12.map((n,i)=>({id:'m12_'+i,name:n,conf:0})),
   },
-  workout:{plan:JSON.parse(JSON.stringify(DEF_PLAN)),logs:[],streak:0,lastDate:null,strengthLog:[]},
+  workout:{plan:JSON.parse(JSON.stringify(DEF_PLAN)),logs:[]},
   jeeTarget:250,
   examDate:'2026-05-18',
   examName:'JEE Advanced',
@@ -1211,12 +1620,7 @@ function ensureKeys(){
   if(!S.topics.chemistry12)S.topics.chemistry12=JEE_TOPICS.chemistry12.map((n,i)=>({id:'c12_'+i,name:n,conf:0}));
   if(!S.topics.maths11)S.topics.maths11=JEE_TOPICS.maths11.map((n,i)=>({id:'m11_'+i,name:n,conf:0}));
   if(!S.topics.maths12)S.topics.maths12=JEE_TOPICS.maths12.map((n,i)=>({id:'m12_'+i,name:n,conf:0}));
-  if(!S.workout)S.workout={plan:JSON.parse(JSON.stringify(DEF_PLAN)),logs:[],streak:0,lastDate:null,strengthLog:[]};
-  if(!S.workout.plan)S.workout.plan=JSON.parse(JSON.stringify(DEF_PLAN));
-  if(!S.workout.logs)S.workout.logs=[];
-  if(S.workout.streak===undefined)S.workout.streak=0;
-  if(S.workout.lastDate===undefined)S.workout.lastDate=null;
-  if(!S.workout.strengthLog)S.workout.strengthLog=[];
+  if(!S.workout)S.workout={plan:JSON.parse(JSON.stringify(DEF_PLAN)),logs:[]};
   if(!S.jeeTarget)S.jeeTarget=250;
   if(!S.hunter.startDate)S.hunter.startDate=new Date().toISOString().split('T')[0];
   if(S.hunter.mana===undefined)S.hunter.mana=100;
@@ -1517,17 +1921,6 @@ function renderDash(){
   renderQuests();renderGates();renderPenalty();renderTodaysMission();
 }
 
-function getActiveQuests(){
-  if(S.customQuests&&S.customQuests.length>0)return S.customQuests;
-  const goalH=S.goals&&S.goals.questStudyHours?S.goals.questStudyHours:2;
-  return[
-    {id:'q1',name:`Study ${goalH}+ hours`,desc:`Active sessions today`,xp:50,auto:true},
-    {id:'q2',name:'Complete a Pomodoro',desc:'Finish one 25-min block',xp:25,auto:true},
-    {id:'q3',name:'Log workout',desc:'Train body and mind',xp:30,auto:false},
-    {id:'q4',name:'Update confidence',desc:'Review a topic below 50%',xp:20,auto:false},
-    {id:'q5',name:'No mindless scrolling',desc:'Honor quest',xp:20,auto:false},
-  ];
-}
 function renderQuests(){
   const QUESTS=getActiveQuests();
   const goalH=S.goals&&S.goals.questStudyHours?S.goals.questStudyHours:2;
@@ -1609,6 +2002,30 @@ function renderGates(){
   const rg=document.getElementById('rp-gates');if(rg)rg.innerHTML=rp;
 }
 
+// ── SL PENALTY OVERLAY ──
+let slPenaltyActive=false;
+function showSLPenalty(type,icon,title,sub){
+  const overlay=document.getElementById('sl-penalty-overlay');
+  const msg=document.getElementById('sl-penalty-msg');
+  const iconEl=document.getElementById('sl-pen-icon');
+  const titleEl=document.getElementById('sl-pen-title');
+  const subEl=document.getElementById('sl-pen-sub');
+  if(!overlay)return;
+  iconEl.textContent=icon;
+  titleEl.textContent=title;
+  subEl.textContent=sub;
+  msg.className='sl-penalty-msg '+type;
+  overlay.style.display='flex';
+  slPenaltyActive=true;
+  // play SL sound — defer so engine is ready
+  setTimeout(()=>playSLSound(type==='good'?'quest':type==='danger'?'fail':'click'),50);
+}
+function closeSLPenalty(){
+  const o=document.getElementById('sl-penalty-overlay');
+  if(o)o.style.display='none';
+  slPenaltyActive=false;
+}
+
 function renderPenalty(){
   const pz=document.getElementById('penalty-zone');if(!pz)return;
   const t=today();const hour=new Date().getHours();
@@ -1624,18 +2041,18 @@ function renderPenalty(){
     return;
   }
 
-  // Today's real sessions (excluding paused)
   const tSess=S.sessions.filter(s=>s.date===t&&!s.paused);
   const tMins=tSess.reduce((a,s)=>a+s.min,0);
   const tCount=tSess.length;
   const isValid=tCount>=DAILY_MIN.sessions&&tMins>=DAILY_MIN.hours*60;
 
-  // ── ZERO DAY DETECTION ──
+  // SL OVERLAY — critical penalty shown as overlay
   if(tCount===0&&hour>=8){
-    html+=`<div style="background:rgba(255,59,92,.09);border:1.5px solid rgba(255,59,92,.4);border-radius:var(--radius-sm);padding:14px 16px;display:flex;gap:12px;align-items:center;margin-bottom:10px;animation:pulse-border 2s infinite">
-      <span style="font-size:22px;flex-shrink:0">☠</span>
-      <div><div style="font-size:13px;color:var(--red);font-weight:700">⚠ Zero Day Detected — System Failure</div>
-      <div style="font-size:12px;color:var(--text2);margin-top:2px">Start a session NOW to prevent streak reset + -20 XP penalty.</div></div></div>`;
+    showSLPenalty('danger','☠','ZERO DAY DETECTED — SYSTEM FAILURE','Start a session NOW. Streak reset + -20 XP incoming at midnight.');
+  } else if((S.consecutiveFailures||0)>=2&&!slPenaltyActive){
+    showSLPenalty('danger','⚡','FAILURE STREAK: '+S.consecutiveFailures+' DAYS','Rank drop imminent. Two consecutive failures. Grind now to recover.');
+  } else if(!isValid&&hour>=20&&!slPenaltyActive&&tCount>0){
+    showSLPenalty('warn','⚠','MINIMUM STANDARD NOT MET','Log more sessions before midnight to protect your streak.');
   }
 
   // ── RECOVERY MODE ──
@@ -1658,7 +2075,7 @@ function renderPenalty(){
     </div>`;
   }
 
-  // ── CONSECUTIVE FAILURES ──
+  // ── CONSECUTIVE FAILURES (inline) ──
   if((S.consecutiveFailures||0)>=1){
     const rankIdx=RANK_ORDER.indexOf(S.hunter.rank||'E');
     html+=`<div style="background:rgba(255,59,92,.07);border:1px solid rgba(255,59,92,.2);border-radius:var(--radius-sm);padding:12px 16px;margin-bottom:10px;display:flex;gap:10px;align-items:center">
@@ -1667,25 +2084,12 @@ function renderPenalty(){
       <div style="font-size:12px;color:var(--text2);margin-top:2px">${rankIdx>0?'⚠ 2 failures = rank drop.':''} Grind today to recover.</div></div></div>`;
   }
 
-  // ── DAILY MINIMUM STATUS ──
-  if(!isValid&&hour>=20){
-    const sNeed=Math.max(0,DAILY_MIN.sessions-tCount);
-    const mNeed=Math.max(0,DAILY_MIN.hours*60-tMins);
-    html+=`<div style="background:rgba(255,59,92,.07);border:1px solid rgba(255,59,92,.22);border-radius:var(--radius-sm);padding:14px 16px;display:flex;gap:12px;align-items:flex-start;margin-bottom:10px">
-      <span style="font-size:22px;flex-shrink:0">⚠</span>
-      <div><div style="font-size:13px;color:var(--red);font-weight:700">Minimum Standard Not Met</div>
-      <div style="font-size:12px;color:var(--text2);margin-top:4px">
-        ${tCount<DAILY_MIN.sessions?`<span style="color:var(--red)">✗ ${tCount}/${DAILY_MIN.sessions} sessions</span>`:`<span style="color:var(--green)">✓ Sessions ✓</span>`} &nbsp;
-        ${tMins<DAILY_MIN.hours*60?`<span style="color:var(--red)">✗ ${fmtHM(tMins)}/${DAILY_MIN.hours}h study</span>`:`<span style="color:var(--green)">✓ Hours ✓</span>`}
-      </div>
-      <div style="font-size:11px;color:var(--text3);margin-top:4px">Streak resets + -20 XP at midnight if not met.</div></div></div>`;
-  }
-
   // ── ALL GOOD ──
   if(isValid&&!(S.recoveryMode&&S.recoveryMode.active)){
     html+=`<div style="background:rgba(0,214,143,.06);border:1px solid rgba(0,214,143,.18);border-radius:var(--radius-sm);padding:11px 14px;display:flex;gap:10px;align-items:center;margin-bottom:10px">
       <span style="font-size:18px">✅</span>
       <div style="font-size:13px;color:var(--green);font-weight:600">Day Valid — Streak Protected</div></div>`;
+    if(hour>=18)showSLPenalty('good','✅','DAILY MISSION SECURED','Streak is safe. Keep building momentum, Hunter.');
   }
 
   pz.innerHTML=html;
@@ -1864,6 +2268,8 @@ function getAudioCtx(){
     audioCtx=new(window.AudioContext||window.webkitAudioContext)();
   }
   if(audioCtx.state==='suspended')audioCtx.resume();
+  // Also keep SL audio in sync
+  _audioCtxSL=audioCtx;
   return audioCtx;
 }
 function playChime(isBreak){
@@ -2632,204 +3038,45 @@ function renderJeeMks(){
 }
 function saveJeeTgt(){const v=parseInt(document.getElementById('jee-tgt').value);if(v>0){S.jeeTarget=v;save();renderJeeMks();showToast('Target set: '+v+' marks');}}
 
-// ══════════════════════════════════════════════════════
-//  WORKOUT SYSTEM — PREMIUM REBUILD
-//  Fixes: persistence, streak, duration, XP dedup,
-//         graphs, summary cards, feedback
-// ══════════════════════════════════════════════════════
-
+// WORKOUT
 let selDay=DAYS_ORDER[new Date().getDay()===0?6:new Date().getDay()-1];
 let editMode=false;
-let chWoConsistency=null,chWoStrength=null;
-
-// ── WORKOUT STREAK ENGINE ──
-// Called once per app load, mirrors the study streak logic
-function checkWorkoutStreak(){
-  const t=today();
-  const last=S.workout.lastDate;
-  if(last===t)return; // already evaluated today
-
-  if(last){
-    const yesterday=new Date();yesterday.setDate(yesterday.getDate()-1);
-    const yStr=yesterday.toISOString().split('T')[0];
-    // Was yesterday a workout day in the plan?
-    const dayOfWeek=new Date(yStr).getDay(); // 0=Sun
-    const dayKey=DAYS_ORDER[dayOfWeek===0?6:dayOfWeek-1];
-    const plan=S.workout.plan[dayKey];
-    const yLog=S.workout.logs.find(l=>l.date===yStr);
-    const yDone=yLog&&plan&&plan.active&&plan.exercises.length>0&&
-      Object.values(yLog.comp||{}).filter(Boolean).length===plan.exercises.length;
-
-    if(plan&&plan.active&&plan.exercises.length>0&&!yDone){
-      // Active day was skipped — reset streak
-      S.workout.streak=0;
-    } else if(yDone){
-      // Yesterday was complete — increment already happened when togEx completed
-      // Just verify continuity
-    }
-    // If rest day — streak neither incremented nor reset
-  }
-  S.workout.lastDate=t;
-  save();
-}
-
-// ── WORKOUT STATS HELPERS ──
-function getWorkoutWeekCount(){
-  const last7=[];
-  for(let i=6;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);last7.push(d.toISOString().split('T')[0]);}
-  return last7.filter(date=>{
-    const log=S.workout.logs.find(l=>l.date===date);
-    return log&&Object.values(log.comp||{}).some(Boolean);
-  }).length;
-}
-
-function getAvgWorkoutDuration(){
-  const logsWithDur=S.workout.logs.filter(l=>l.duration&&l.duration>0);
-  if(!logsWithDur.length)return null;
-  return Math.round(logsWithDur.reduce((a,l)=>a+l.duration,0)/logsWithDur.length);
-}
-
-function getTodayWorkoutDone(){
-  const t=today();
-  const log=S.workout.logs.find(l=>l.date===t);
-  if(!log)return false;
-  return Object.values(log.comp||{}).some(Boolean);
-}
-
-function isWorkoutComplete(date,dayKey){
-  const plan=S.workout.plan[dayKey||selDay];
-  const log=S.workout.logs.find(l=>l.date===(date||today())&&l.day===(dayKey||selDay));
-  if(!plan||!log||!plan.exercises.length)return false;
-  return Object.values(log.comp||{}).filter(Boolean).length===plan.exercises.length;
-}
-
-// ── LOG A STRENGTH SNAPSHOT (for progression graph) ──
-function snapshotStrength(){
-  const workoutDays=new Set(S.workout.logs.filter(l=>Object.values(l.comp||{}).some(Boolean)).map(l=>l.date)).size;
-  const strength=Math.min(99,Math.round((workoutDays/30)*100));
-  const t=today();
-  // Only snapshot once per day
-  const existing=S.workout.strengthLog.find(s=>s.date===t);
-  if(!existing){
-    S.workout.strengthLog.push({date:t,strength});
-    // Trim to last 60 snapshots
-    if(S.workout.strengthLog.length>60)S.workout.strengthLog=S.workout.strengthLog.slice(-60);
-  }else{
-    existing.strength=strength; // update in-place
-  }
-}
-
-// ── MAIN RENDER ──
 function renderWorkout(){
-  renderWorkoutSummary();
-  renderWorkoutFeedback();
   let gh='';
   DAYS_ORDER.forEach(d=>{
     const plan=S.workout.plan[d];
     const log=S.workout.logs.find(l=>l.date===today()&&l.day===d);
-    const isDone=log&&plan.exercises.length>0&&
-      Object.values(log.comp||{}).filter(Boolean).length===plan.exercises.length;
+    const isDone=log&&plan.exercises.length>0&&Object.values(log.comp||{}).filter(Boolean).length===plan.exercises.length;
     const cls=['day-chip',d===selDay?'sel':'',isDone?'done':'',!plan.active?'rest':''].filter(Boolean).join(' ');
     gh+=`<div class="${cls}" onclick="selD('${d}')">${DAYS_S[d]}</div>`;
   });
   document.getElementById('days-grid').innerHTML=gh;
-  renderDayView();
-  renderWoLog();
-  renderWorkoutCharts();
+  renderDayView();renderWoLog();
 }
-
-// ── SUMMARY CARDS ──
-function renderWorkoutSummary(){
-  const weekCount=getWorkoutWeekCount();
-  const streak=S.workout.streak||0;
-  const avgDur=getAvgWorkoutDuration();
-  const totalLogs=S.workout.logs.filter(l=>Object.values(l.comp||{}).some(Boolean)).length;
-
-  const wc=document.getElementById('wo-week-count');if(wc)wc.textContent=weekCount;
-  const ws=document.getElementById('wo-streak-val');if(ws)ws.textContent=streak;
-  const wa=document.getElementById('wo-avg-dur');
-  if(wa)wa.textContent=avgDur?Math.floor(avgDur/60)+'m':'—';
-
-  const sb=document.getElementById('wo-streak-badge');
-  if(sb){
-    sb.textContent=streak>=1?`🔥 ${streak} day streak`:streak===0?'⚡ Start your streak':'🏆 '+streak+' days';
-    sb.style.opacity=streak>0?'1':'0.6';
-  }
-  const tl=document.getElementById('wo-total-label');
-  if(tl)tl.textContent=totalLogs+' total workout'+(totalLogs!==1?'s':'');
-  const lc=document.getElementById('wo-log-count');
-  if(lc)lc.textContent=S.workout.logs.length+' logged';
-}
-
-// ── FEEDBACK BANNER ──
-function renderWorkoutFeedback(){
-  const fb=document.getElementById('wo-feedback');
-  const fm=document.getElementById('wo-feedback-msg');
-  const fs=document.getElementById('wo-feedback-sub');
-  const fi=document.getElementById('wo-feedback-icon');
-  if(!fb)return;
-
-  const t=today();
-  const todayDow=new Date().getDay();
-  const todayKey=DAYS_ORDER[todayDow===0?6:todayDow-1];
-  const plan=S.workout.plan[todayKey];
-  const log=S.workout.logs.find(l=>l.date===t&&l.day===todayKey);
-  const done=log&&Object.values(log.comp||{}).filter(Boolean).length;
-  const total=plan?plan.exercises.length:0;
-  const complete=done&&done===total&&total>0;
-  const isRestDay=!plan||!plan.active||total===0;
-  const streak=S.workout.streak||0;
-
-  fb.style.display='flex';
-  if(isRestDay){
-    fb.className='wo-feedback warn';
-    fi.textContent='🌙';
-    fm.textContent='Rest day — recovery is part of training.';
-    fs.textContent='Enjoy the rest, Hunter. Your muscles are rebuilding.';
-  } else if(complete){
-    fb.className='wo-feedback good';
-    fi.textContent='💪';
-    fm.textContent='Strength increased! Training complete for today.';
-    fs.textContent=streak>1?`🔥 ${streak}-day streak — keep the momentum.`:`Well done! Log again tomorrow to start a streak.`;
-  } else if(done&&done>0){
-    fb.className='wo-feedback warn';
-    fi.textContent='⚡';
-    fm.textContent=`Training in progress — ${done}/${total} exercises done.`;
-    fs.textContent='Finish all exercises to complete today\'s session.';
-  } else {
-    const hour=new Date().getHours();
-    fb.className='wo-feedback miss';
-    fi.textContent='⚠';
-    fm.textContent=hour<12?'No training logged yet today.':hour<18?'⚠ No training logged today — time is running out.':'⚠ No training today. Streak at risk.';
-    fs.textContent='Start your workout to protect your streak, Hunter.';
-  }
-}
-
 function selD(d){selDay=d;renderWorkout();}
-
 function renderDayView(){
   const plan=S.workout.plan[selDay];
   const log=S.workout.logs.find(l=>l.date===today()&&l.day===selDay);
   const comp=(log&&log.comp)||{};
-  let h=`<div style="border-top:1px solid var(--border);padding-top:14px;margin-top:8px">
-    <div id="day-title-display" style="font-size:15px;font-weight:700;margin-bottom:12px">${plan.name}</div>`;
+  let h=`<div style="border-top:1px solid var(--border);padding-top:14px;margin-top:8px"><div id="day-title-display" style="font-size:15px;font-weight:700;margin-bottom:12px">${plan.name}</div>`;
   if(editMode){
+    // ── Edit mode: name field + exercise list + add button ──
     h+=`<div style="margin-bottom:14px">
       <div style="font-size:10px;color:var(--text2);text-transform:uppercase;letter-spacing:.6px;margin-bottom:5px;font-weight:700">Day Name</div>
-      <input class="fi" style="font-size:14px;font-weight:700;padding:9px 12px"
-        value="${plan.name}"
+      <input class="fi" style="font-size:14px;font-weight:700;padding:9px 12px" 
+        value="${plan.name}" 
         oninput="S.workout.plan['${selDay}'].name=this.value;document.getElementById('day-title-display').textContent=this.value"
         placeholder="e.g. Push Day, Leg Day...">
     </div>`;
     h+=`<div style="font-size:10px;color:var(--text2);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px;font-weight:700">Exercises <span style="color:var(--text3);font-weight:400;font-size:9px">(Name · Sets · Reps)</span></div>`;
     h+=`<div id="ex-edit-list">`;
-    if(!plan.exercises.length)h+=`<div style="color:var(--text3);font-size:13px;padding:8px 0 12px">No exercises yet.</div>`;
+    if(!plan.exercises.length){h+=`<div style="color:var(--text3);font-size:13px;padding:8px 0 12px">No exercises yet. Add one below.</div>`;}
     plan.exercises.forEach((ex,i)=>{
       h+=`<div class="ex-item" style="gap:7px;align-items:center;padding:8px 0">
         <div style="flex:1;min-width:0"><input class="edit-fi" style="width:100%;font-size:13px" value="${ex.name}" oninput="S.workout.plan['${selDay}'].exercises[${i}].name=this.value" placeholder="Exercise name"></div>
         <input class="edit-num" type="number" value="${ex.sets}" oninput="S.workout.plan['${selDay}'].exercises[${i}].sets=parseInt(this.value)||1" min="1" style="width:42px" title="Sets">
         <span style="color:var(--text3);font-size:11px;flex-shrink:0">×</span>
-        <input class="edit-fi" style="width:52px;font-size:12px" value="${ex.reps}" oninput="S.workout.plan['${selDay}'].exercises[${i}].reps=this.value" placeholder="Reps" title="Reps">
+        <input class="edit-fi" style="width:52px;font-size:12px" value="${ex.reps}" oninput="S.workout.plan['${selDay}'].exercises[${i}].reps=this.value" placeholder="Reps" title="Reps/Duration">
         <button onclick="rmEx(${i})" style="background:none;border:1px solid rgba(255,59,92,.3);border-radius:5px;color:var(--red);cursor:pointer;font-size:13px;padding:3px 8px;flex-shrink:0;transition:all .15s" onmouseover="this.style.background='rgba(255,59,92,.1)'" onmouseout="this.style.background='none'">✕</button>
       </div>`;
     });
@@ -2843,116 +3090,61 @@ function renderDayView(){
         </div>
       </div>
     </div>`;
-  } else if(!plan.active||!plan.exercises.length){
-    h+='<div style="color:var(--text2);font-size:14px;padding:12px 0">🌙 Rest day. Recover and recharge.</div>';
+  }else if(!plan.active||!plan.exercises.length){
+    h+='<div style="color:var(--text2);font-size:14px;padding:12px 0">Rest day. Recover and recharge 🌙</div>';
     h+=`<div style="margin-top:8px"><button onclick="toggleEditFromDay()" style="background:rgba(91,110,245,.07);border:1px solid var(--border2);border-radius:var(--radius-sm);color:var(--accent);font-size:12px;font-weight:700;padding:8px 14px;cursor:pointer;font-family:var(--font)">✏ Edit this day</button></div>`;
-  } else {
-    // ── EXERCISE CHECKLIST ──
+  }else{
+    // ── View mode: exercise checklist ──
     plan.exercises.forEach((ex,i)=>{
       const d=!!comp[i];
-      h+=`<div class="ex-item">
-        <div class="ex-chk${d?' done':''}" id="exchk-${i}" onclick="togEx(${i})">${d?'<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>':''}</div>
-        <span class="ex-name" style="${d?'text-decoration:line-through;color:var(--text3)':''}">${ex.name}</span>
-        <span class="ex-sets">${ex.sets}×${ex.reps}</span>
-      </div>`;
+      h+=`<div class="ex-item"><div class="ex-chk${d?' done':''}" onclick="togEx(${i})">${d?'<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>':''}</div><span class="ex-name" style="${d?'text-decoration:line-through;color:var(--text3)':''}">${ex.name}</span><span class="ex-sets">${ex.sets}×${ex.reps}</span></div>`;
     });
     const dc=Object.values(comp).filter(Boolean).length,tot=plan.exercises.length;
     const pct=tot>0?Math.round(dc/tot*100):0;
-    const bonusXP=dc===tot&&dc>0?30:0;
     h+=`<div style="margin-top:12px">
       <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text2);margin-bottom:5px">
-        <span>${dc}/${tot} exercises</span>
-        <span style="color:var(--gold);font-family:var(--mono)">+${dc*5+(dc===tot&&dc>0?30:0)} XP${bonusXP?' ✓':''}</span>
+        <span>${dc}/${tot} done</span>
+        <span style="color:var(--gold);font-family:var(--mono)">+${dc===tot&&dc>0?dc*5+30:dc*5} XP</span>
       </div>
-      <div style="height:5px;background:rgba(255,255,255,.05);border-radius:3px;overflow:hidden">
-        <div style="height:100%;width:${pct}%;background:${pct===100?'var(--green)':'var(--accent)'};border-radius:3px;transition:width .4s;${pct===100?'box-shadow:0 0 8px var(--green)':''}"></div>
+      <div style="height:4px;background:rgba(255,255,255,.05);border-radius:2px;overflow:hidden">
+        <div style="height:100%;width:${pct}%;background:${pct===100?'var(--green)':'var(--accent)'};border-radius:2px;transition:width .3s"></div>
       </div>
-      ${pct===100?`<div style="margin-top:8px;text-align:center;font-size:12px;color:var(--green);font-weight:700;letter-spacing:.5px">💪 TRAINING COMPLETE</div>`:''}
     </div>
     <div style="margin-top:8px;text-align:right">
       <button onclick="toggleEditFromDay()" style="background:none;border:none;color:var(--text3);font-size:11px;cursor:pointer;font-family:var(--font)">✏ Edit / Add exercises</button>
     </div>`;
   }
-  h+='</div>';
-  document.getElementById('day-view').innerHTML=h;
+  h+='</div>';document.getElementById('day-view').innerHTML=h;
 }
-
-// ── TOGGLE EXERCISE — the core XP + persistence logic ──
 function togEx(i){
   const t=today();
-  const plan=S.workout.plan[selDay];
-
-  // Find or create today's log for this day
   let log=S.workout.logs.find(l=>l.date===t&&l.day===selDay);
-  if(!log){
-    // NEW LOG — record start time
-    log={date:t,day:selDay,comp:{},xp:0,xpRewarded:0,startTime:Date.now(),duration:0};
-    S.workout.logs.push(log);
-  }
+  if(!log){log={date:t,day:selDay,comp:{},xp:0,xpRewarded:0};S.workout.logs.push(log);}
   if(!log.comp)log.comp={};
   if(log.xpRewarded===undefined)log.xpRewarded=0;
-  if(!log.startTime)log.startTime=Date.now();
-
-  // Toggle exercise
   log.comp[i]=!log.comp[i];
-
-  // ── XP: 5 per exercise, no double-counting ──
-  // We track xpRewarded as the total exercise XP already given
+  const plan=S.workout.plan[selDay];
   const dc=Object.values(log.comp).filter(Boolean).length;
+  // Each exercise = 5 XP, tracked via xpRewarded to avoid double-add
   const targetXP=dc*5;
   const delta=targetXP-log.xpRewarded;
   if(delta>0){S.hunter.xp+=delta;log.xpRewarded=targetXP;}
   else if(delta<0){S.hunter.xp=Math.max(0,S.hunter.xp+delta);log.xpRewarded=targetXP;}
   log.xp=targetXP;
-
-  // ── COMPLETION BONUS: +30 XP once per day per day-key ──
-  if(dc===plan.exercises.length&&plan.exercises.length>0){
-    // Duration = time from first check to completion
-    log.duration=Math.round((Date.now()-log.startTime)/1000); // seconds
-    log.completedAt=t;
-
+  // Completion bonus: +30 XP quest when all done (once)
+  if(dc===plan.exercises.length){
     const qc=S.questComp[t]||{};
     if(!qc.q3){
       qc.q3=true;S.questComp[t]=qc;
       S.hunter.xp+=30;log.xpRewarded+=30;log.xp+=30;
-      showToast('💪 Training complete! +30 XP — Strength increased!');
+      showToast('Workout complete! +30 XP 💪');
       if(typeof renderPenalty==='function')renderPenalty();
       if(typeof renderTodaysMission==='function')renderTodaysMission();
-
-      // ── INCREMENT WORKOUT STREAK ──
-      const last=S.workout.lastDate;
-      if(last===t){
-        // Same day completing again — no streak increment
-      } else if(!last){
-        S.workout.streak=1;
-      } else {
-        const yesterday=new Date();yesterday.setDate(yesterday.getDate()-1);
-        const yStr=yesterday.toISOString().split('T')[0];
-        if(last===yStr||last===t){
-          S.workout.streak=(S.workout.streak||0)+1;
-        } else {
-          // Gap — reset streak
-          S.workout.streak=1;
-        }
-      }
-      S.workout.lastDate=t;
-      snapshotStrength(); // save strength snapshot on workout completion
     }
   }
-
-  // Animate the checkbox
-  const chk=document.getElementById('exchk-'+i);
-  if(chk){chk.classList.add('anim');setTimeout(()=>chk.classList.remove('anim'),400);}
-
   updateHeader();save();renderWorkout();
 }
-
-function toggleEdit(){
-  editMode=!editMode;
-  document.getElementById('edit-btn').textContent=editMode?'💾 Save Plan':'✏ Edit Plan';
-  if(!editMode)save();
-  renderDayView();
-}
+function toggleEdit(){editMode=!editMode;document.getElementById('edit-btn').textContent=editMode?'💾 Save Plan':'✏ Edit Plan';if(!editMode)save();renderDayView();}
 function toggleEditFromDay(){editMode=true;document.getElementById('edit-btn').textContent='💾 Save Plan';renderDayView();}
 function toggleDayActive(){S.workout.plan[selDay].active=!S.workout.plan[selDay].active;renderDayView();}
 function rmEx(i){S.workout.plan[selDay].exercises.splice(i,1);renderDayView();}
@@ -2960,224 +3152,45 @@ function addEx(){
   if(!S.workout.plan[selDay].exercises)S.workout.plan[selDay].exercises=[];
   S.workout.plan[selDay].exercises.push({name:'',sets:3,reps:'10'});
   renderDayView();
+  // Focus the last name input
   setTimeout(()=>{const inputs=document.querySelectorAll('#ex-edit-list .edit-fi');if(inputs.length)inputs[inputs.length-1].focus();},50);
 }
-
-// ── RENDER LOG LIST (all history, paginated to 14) ──
 function renderWoLog(){
-  const allLogs=[...S.workout.logs]
-    .filter(l=>Object.values(l.comp||{}).some(Boolean)) // only logs with at least 1 exercise done
-    .sort((a,b)=>b.date.localeCompare(a.date))
-    .slice(0,14);
-
-  if(!allLogs.length){
-    document.getElementById('wo-log').innerHTML='<div class="empty">💪 No workouts logged yet.<br>Check off your first exercise above!</div>';
-    return;
-  }
+  const logs=[...S.workout.logs].reverse().slice(0,7);
+  if(!logs.length){document.getElementById('wo-log').innerHTML='<div class="empty">No workouts logged yet 💪</div>';return;}
   let h='';
-  allLogs.forEach(l=>{
+  logs.forEach(l=>{
     const plan=S.workout.plan[l.day];
     const dc=Object.values(l.comp||{}).filter(Boolean).length;
-    const tot=plan?plan.exercises.length:0;
-    const complete=tot>0&&dc===tot;
-    const dur=l.duration?Math.floor(l.duration/60)+'m':null;
-    const pct=tot>0?Math.round(dc/tot*100):0;
-    h+=`<div class="wo-log-item${complete?' complete':''}">
-      <div class="wo-log-icon">${complete?'💪':'⚡'}</div>
-      <div class="wo-log-info">
-        <div class="wo-log-name">${plan?plan.name:l.day} <span style="font-size:10px;font-weight:400;color:var(--text3)">${DAYS_S[l.day]||l.day}</span></div>
-        <div class="wo-log-meta">${fmtDate(l.date)} · ${dc}/${tot} exercises${dur?' · ⏱ '+dur:''}</div>
-        <div style="margin-top:5px;height:3px;background:rgba(255,255,255,.05);border-radius:2px;overflow:hidden">
-          <div style="height:100%;width:${pct}%;background:${complete?'var(--green)':'var(--accent)'};border-radius:2px;${complete?'box-shadow:0 0 6px var(--green)':''}"></div>
-        </div>
-      </div>
-      <div class="wo-log-xp">+${l.xp||0}<br><span style="font-size:9px;color:var(--text2)">XP</span></div>
-    </div>`;
+    h+=`<div class="sess-item"><div class="sess-tag" style="background:rgba(0,214,143,.1);color:var(--green);font-size:18px">💪</div><div class="sess-info"><div class="sess-name">${plan?plan.name:l.day}</div><div class="sess-meta">${fmtDate(l.date)} · ${dc}/${plan?plan.exercises.length:0} exercises</div></div><div class="sess-dur" style="color:var(--green)">+${l.xp} XP</div></div>`;
   });
   document.getElementById('wo-log').innerHTML=h;
 }
 
-// ── WORKOUT CHARTS ──
-const SL_GRID_WO={color:'rgba(255,255,255,.04)'};
-const SL_TICK_WO={color:'rgba(200,203,220,.5)',font:{size:9,family:"'Share Tech Mono',monospace"}};
-
-function renderWorkoutCharts(){
-  renderWoConsistencyChart();
-  renderWoStrengthChart();
-}
-
-function renderWoConsistencyChart(){
-  if(chWoConsistency){chWoConsistency.destroy();chWoConsistency=null;}
-  const canvas=document.getElementById('ch-wo-consistency');if(!canvas)return;
-
-  const last14=[];
-  for(let i=13;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);last14.push(d.toISOString().split('T')[0]);}
-
-  const labels=last14.map(d=>{const dt=new Date(d);return dt.getDate()+'/'+(dt.getMonth()+1);});
-  const data=last14.map(date=>{
-    const dayDow=new Date(date).getDay();
-    const dayKey=DAYS_ORDER[dayDow===0?6:dayDow-1];
-    const plan=S.workout.plan[dayKey];
-    const log=S.workout.logs.find(l=>l.date===date&&l.day===dayKey);
-    if(!plan||!plan.active||!plan.exercises.length)return null; // rest day → null (skip)
-    if(!log)return 0;
-    const dc=Object.values(log.comp||{}).filter(Boolean).length;
-    const tot=plan.exercises.length;
-    return tot>0?Math.round(dc/tot*100):0;
-  });
-
-  const ctx=canvas.getContext('2d');
-  const grad=ctx.createLinearGradient(0,0,0,140);
-  grad.addColorStop(0,'rgba(0,255,150,0.45)');
-  grad.addColorStop(1,'rgba(0,255,150,0.02)');
-
-  chWoConsistency=new Chart(ctx,{
-    type:'bar',
-    data:{
-      labels,
-      datasets:[{
-        label:'Completion %',
-        data,
-        backgroundColor:data.map(v=>{
-          if(v===null)return 'rgba(255,255,255,.04)';
-          if(v===100)return 'rgba(0,255,150,.85)';
-          if(v>=50)return 'rgba(0,200,255,.6)';
-          if(v>0)return 'rgba(255,170,0,.55)';
-          return 'rgba(255,59,92,.35)';
-        }),
-        borderColor:data.map(v=>{
-          if(v===null)return 'transparent';
-          if(v===100)return '#00ff96';
-          if(v>=50)return '#00c9ff';
-          if(v>0)return '#ffaa00';
-          return '#ff3b5c';
-        }),
-        borderWidth:1.5,
-        borderRadius:6,
-        borderSkipped:false,
-      }]
-    },
-    options:{
-      responsive:true,maintainAspectRatio:false,
-      animation:{duration:900,easing:'easeOutQuart'},
-      plugins:{
-        legend:{display:false},
-        tooltip:{
-          backgroundColor:'rgba(8,8,20,.95)',
-          borderColor:'rgba(0,255,150,.4)',
-          borderWidth:1,padding:{x:12,y:8},
-          titleColor:'rgba(224,227,244,.9)',
-          bodyColor:'#00ff96',
-          cornerRadius:8,
-          callbacks:{
-            title:c=>c[0].label,
-            label:c=>{
-              const v=c.raw;
-              if(v===null)return 'Rest day';
-              if(v===100)return '✓ Training complete (100%)';
-              if(v>0)return `⚡ ${v}% done`;
-              return '✗ No training';
-            }
-          }
-        }
-      },
-      scales:{
-        x:{ticks:{...SL_TICK_WO},grid:{...SL_GRID_WO},border:{color:'transparent'}},
-        y:{
-          min:0,max:100,
-          ticks:{...SL_TICK_WO,callback:v=>v+'%',stepSize:25},
-          grid:{...SL_GRID_WO},border:{color:'transparent'}
-        }
-      }
-    }
-  });
-}
-
-function renderWoStrengthChart(){
-  if(chWoStrength){chWoStrength.destroy();chWoStrength=null;}
-  const canvas=document.getElementById('ch-wo-strength');if(!canvas)return;
-
-  // Ensure we have at least today's snapshot
-  snapshotStrength();
-
-  const log=[...S.workout.strengthLog].sort((a,b)=>a.date.localeCompare(b.date)).slice(-30);
-  if(log.length<2){
-    canvas.parentElement.innerHTML=`<div class="empty" style="height:160px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px">
-      <div style="font-size:28px">⚡</div>
-      <div>Complete workouts to see strength progression</div>
-    </div>`;
-    return;
-  }
-
-  const labels=log.map(s=>{const dt=new Date(s.date);return dt.getDate()+'/'+(dt.getMonth()+1);});
-  const values=log.map(s=>s.strength);
-
-  const ctx=canvas.getContext('2d');
-  const grad=ctx.createLinearGradient(0,0,0,140);
-  grad.addColorStop(0,'rgba(255,59,92,0.35)');
-  grad.addColorStop(0.5,'rgba(255,170,0,0.18)');
-  grad.addColorStop(1,'rgba(0,255,150,0.05)');
-
-  chWoStrength=new Chart(ctx,{
-    type:'line',
-    data:{
-      labels,
-      datasets:[{
-        label:'Strength',
-        data:values,
-        borderColor:'#ff6b6b',
-        borderWidth:2.5,
-        backgroundColor:grad,
-        fill:true,
-        tension:0.45,
-        pointRadius:values.map((_,i)=>i===values.length-1?6:3),
-        pointBackgroundColor:values.map((_,i)=>i===values.length-1?'#fff':'#ff6b6b'),
-        pointBorderColor:values.map((_,i)=>i===values.length-1?'#ff6b6b':'transparent'),
-        pointBorderWidth:values.map((_,i)=>i===values.length-1?2:0),
-        pointHoverRadius:7,
-      }]
-    },
-    options:{
-      responsive:true,maintainAspectRatio:false,
-      animation:{duration:1100,easing:'easeOutQuart'},
-      plugins:{
-        legend:{display:false},
-        tooltip:{
-          backgroundColor:'rgba(8,8,20,.95)',
-          borderColor:'rgba(255,107,107,.4)',
-          borderWidth:1,padding:{x:12,y:8},
-          titleColor:'rgba(224,227,244,.9)',
-          bodyColor:'#ff6b6b',
-          cornerRadius:8,
-          callbacks:{
-            title:c=>c[0].label,
-            label:c=>`STR: ${c.raw}/99`,
-            afterLabel:c=>{
-              const v=c.raw;
-              if(v>=80)return '⚔ Elite Hunter physique';
-              if(v>=60)return '💪 Strong output';
-              if(v>=40)return '📈 Building strength';
-              if(v>0)return '⚡ Early stage';
-              return '— Begin training';
-            }
-          }
-        }
-      },
-      scales:{
-        x:{ticks:{...SL_TICK_WO,maxTicksLimit:8},grid:{...SL_GRID_WO},border:{color:'transparent'}},
-        y:{
-          min:0,max:99,
-          ticks:{...SL_TICK_WO,stepSize:20},
-          grid:{...SL_GRID_WO},border:{color:'transparent'},
-          title:{display:true,text:'STR',color:'rgba(200,203,220,.4)',font:{size:9}}
-        }
-      }
-    }
-  });
-}
-
 // ANALYTICS
 let chS=null,chT=null,chProd=null,chCum=null,chSplit=null;
+
+// ── SHARED PREMIUM CHART CONFIG ──
+const SL_TOOLTIP={
+  backgroundColor:'rgba(8,8,20,.96)',
+  borderColor:'rgba(91,110,245,.5)',
+  borderWidth:1,
+  padding:{x:14,y:10},
+  titleColor:'rgba(224,227,244,.9)',
+  bodyColor:'rgba(91,110,245,1)',
+  titleFont:{family:"'Share Tech Mono',monospace",size:11},
+  bodyFont:{family:"'Rajdhani',sans-serif",size:13,weight:'600'},
+  cornerRadius:8,
+  caretSize:5,
+};
+const SL_GRID={color:'rgba(255,255,255,.04)'};
+const SL_TICK={color:'rgba(200,203,220,.55)',font:{size:9,family:"'Share Tech Mono',monospace"}};
+
+function makeGradient(ctx,h,topColor,botColor){
+  const g=ctx.createLinearGradient(0,0,0,h);
+  g.addColorStop(0,topColor);g.addColorStop(1,botColor);return g;
+}
+
 function renderCharts(){
   const totalMins=S.sessions.reduce((a,s)=>a+s.min,0);
   el('an-hrs',(totalMins/60).toFixed(1)+'h');
@@ -3188,29 +3201,57 @@ function renderCharts(){
   let qT=0,qD=0;last7.forEach(d=>{const c=S.questComp[d]||{};qT+=QUESTS.length;qD+=Object.values(c).filter(Boolean).length;});
   el('an-qr',qT>0?Math.round(qD/qT*100)+'%':'0%');
   el('an-streak',S.hunter.streak);
-  const gc={tc:'rgba(224,227,244,.7)',gr:'rgba(255,255,255,.04)'};
 
-  // PRODUCTIVITY CHART (last 14 days)
+  // ── 1. PRODUCTIVITY LINE — neon green glow ──
   const last14=[];for(let i=13;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);last14.push(d.toISOString().split('T')[0]);}
   const prodScores=last14.map(d=>{
     const dayMins=S.sessions.filter(s=>s.date===d).reduce((a,s)=>a+s.min,0);
-    const studyScore=Math.min(100,Math.round(dayMins/(S.goals.studyHours*60)*60));
+    const studyScore=Math.min(100,Math.round(dayMins/((S.goals&&S.goals.studyHours||6)*60)*60));
     const comp=S.questComp[d]||{};const questDone=Object.values(comp).filter(Boolean).length;
-    const questScore=Math.round(questDone/QUESTS.length*40);
+    const questScore=QUESTS.length>0?Math.round(questDone/QUESTS.length*40):0;
     return Math.min(100,studyScore+questScore);
   });
   if(chProd)chProd.destroy();
-  chProd=new Chart(document.getElementById('ch-productivity').getContext('2d'),{type:'line',data:{
-    labels:last14.map(d=>{const dt=new Date(d);return dt.getDate()+'/'+(dt.getMonth()+1);}),
-    datasets:[{
-      label:'Productivity',data:prodScores,
-      borderColor:'#a855f7',backgroundColor:'rgba(168,85,247,.15)',
-      fill:true,tension:.4,pointRadius:3,pointBackgroundColor:prodScores.map(v=>v>=70?'#00d68f':v>=40?'#f4c430':'#ff3b5c'),
-      pointBorderWidth:0,borderWidth:2,
-    }]
-  },options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`Score: ${ctx.raw}/100`}}},scales:{x:{ticks:{color:gc.tc,font:{size:9}},grid:{color:gc.gr}},y:{min:0,max:100,ticks:{color:gc.tc,font:{size:10},callback:v=>v+'%'},grid:{color:gc.gr}}}}});
+  const prodCanvas=document.getElementById('ch-productivity');
+  if(prodCanvas){
+    const pCtx=prodCanvas.getContext('2d');
+    const pGrad=makeGradient(pCtx,180,'rgba(0,255,150,0.40)','rgba(0,255,150,0.00)');
+    const lastNonZero=prodScores.reduce((li,v,i)=>v>0?i:li,-1);
+    chProd=new Chart(pCtx,{
+      type:'line',
+      data:{
+        labels:last14.map(d=>{const dt=new Date(d);return dt.getDate()+'/'+(dt.getMonth()+1);}),
+        datasets:[{
+          label:'Score',data:prodScores,
+          borderColor:'#00ff96',borderWidth:3,
+          backgroundColor:pGrad,fill:true,tension:0.45,
+          pointRadius:prodScores.map((_,i)=>i===lastNonZero?7:4),
+          pointBackgroundColor:prodScores.map((v,i)=>i===lastNonZero?'#fff':v>=70?'#00ff96':v>=40?'#f4c430':'#ff3b5c'),
+          pointBorderColor:prodScores.map((_,i)=>i===lastNonZero?'#00ffcc':'transparent'),
+          pointBorderWidth:prodScores.map((_,i)=>i===lastNonZero?2:0),
+          pointHoverRadius:8,
+        }]
+      },
+      options:{
+        responsive:true,maintainAspectRatio:false,
+        animation:{duration:1200,easing:'easeOutQuart'},
+        plugins:{
+          legend:{display:false},
+          tooltip:{...SL_TOOLTIP,callbacks:{
+            title:c=>'Day '+c[0].label,
+            label:c=>`Score: ${c.raw}/100`,
+            afterLabel:c=>{const v=c.raw;return v>=80?'⚡ Exceptional':v>=60?'💪 Strong':v>=40?'📈 Building':v>0?'⚠ Low output':'— No data';}
+          }}
+        },
+        scales:{
+          x:{ticks:{...SL_TICK,maxTicksLimit:7},grid:{...SL_GRID},border:{color:'transparent'}},
+          y:{min:0,max:100,ticks:{...SL_TICK,callback:v=>v+'%'},grid:{...SL_GRID},border:{color:'transparent'}}
+        }
+      }
+    });
+  }
 
-  // STUDY HOURS — Custom HTML bar chart (better looking)
+  // ── 2. STUDY HOURS — Premium Chart.js bar with gradient per bar ──
   (()=>{
     const cont=document.getElementById('ch-study-custom');if(!cont)return;
     const data=last7.map(d=>{
@@ -3222,60 +3263,73 @@ function renderCharts(){
       const dt=new Date(d);
       const dayStr=dt.toLocaleDateString('en-IN',{weekday:'short'});
       const dateStr=dt.getDate()+'/'+(dt.getMonth()+1);
-      const isToday=d===today();
-      return{phy,che,mat,oth,total,dayStr,dateStr,isToday};
+      return{phy,che,mat,oth,total,dayStr,dateStr,isToday:d===today()};
     });
     const maxH=Math.max(...data.map(d=>d.total),1);
     const goalH=S.goals&&S.goals.studyHours?S.goals.studyHours:6;
     const goalPct=Math.min(100,goalH/maxH*100);
-    const barAreaH=180;
+    const barAreaH=200;
     const segs=[
-      {key:'phy',color:'rgba(91,110,245,.85)',label:'PHY'},
-      {key:'che',color:'rgba(0,214,143,.85)',label:'CHE'},
-      {key:'mat',color:'rgba(244,196,48,.85)',label:'MAT'},
-      {key:'oth',color:'rgba(150,150,200,.7)',label:'OTH'},
+      {key:'phy',label:'PHY'},
+      {key:'che',label:'CHE'},
+      {key:'mat',label:'MAT'},
+      {key:'oth',label:'OTH'},
     ];
-    // Y-axis labels (0h, maxH/2h, maxH h)
-    const yTicks=[0, maxH/2, maxH].map(v=>+(v).toFixed(1));
     const totalWeek=data.reduce((a,d)=>a+d.total,0);
     const avgDay=totalWeek/7;
+    // Color based on % of goal: red→orange→green
+    function barColor(total){
+      const p=total/goalH;
+      if(p<=0)return 'rgba(255,255,255,.06)';
+      if(p<0.4)return '#ff4d4d';
+      if(p<0.7)return '#ffaa00';
+      if(p<1.0)return '#00ccff';
+      return '#00ff88';
+    }
+    function barGlow(total){
+      const p=total/goalH;
+      if(p<=0)return '';
+      if(p<0.4)return 'box-shadow:0 0 10px rgba(255,77,77,.4)';
+      if(p<0.7)return 'box-shadow:0 0 10px rgba(255,170,0,.4)';
+      if(p<1.0)return 'box-shadow:0 0 10px rgba(0,204,255,.4)';
+      return 'box-shadow:0 0 14px rgba(0,255,136,.5)';
+    }
+    const yTicks=[0,maxH/2,maxH].map(v=>+(v).toFixed(1));
     cont.innerHTML=`
       <div style="font-size:11px;color:var(--text2);display:flex;gap:16px;margin-bottom:10px;flex-wrap:wrap">
-        <span>This week: <b style="color:var(--text)">${totalWeek.toFixed(1)}h</b></span>
-        <span>Daily avg: <b style="color:var(--accent)">${avgDay.toFixed(1)}h</b></span>
+        <span>Week: <b style="color:var(--text)">${totalWeek.toFixed(1)}h</b></span>
+        <span>Avg: <b style="color:var(--accent)">${avgDay.toFixed(1)}h/day</b></span>
         <span>Goal: <b style="color:var(--gold)">${goalH}h/day</b></span>
       </div>
       <div style="display:flex;gap:0;position:relative">
-        <!-- Y axis -->
-        <div style="display:flex;flex-direction:column;justify-content:space-between;padding-bottom:28px;margin-right:4px;flex-shrink:0">
-          ${[...yTicks].reverse().map(v=>`<div style="font-size:9px;color:var(--text3);text-align:right;padding-right:4px;white-space:nowrap">${v.toFixed(1)}h</div>`).join('')}
+        <div style="display:flex;flex-direction:column;justify-content:space-between;padding-bottom:28px;margin-right:6px;flex-shrink:0">
+          ${[...yTicks].reverse().map(v=>`<div style="font-size:9px;color:var(--text3);text-align:right;padding-right:4px;white-space:nowrap;font-family:var(--mono)">${v.toFixed(1)}h</div>`).join('')}
         </div>
         <div style="flex:1;position:relative">
-          <!-- Goal line -->
-          <div style="position:absolute;left:0;right:0;top:${Math.round((1-goalPct/100)*barAreaH)}px;height:1px;background:rgba(244,196,48,.4);z-index:2;pointer-events:none">
-            <span style="position:absolute;right:2px;top:-9px;font-size:8px;color:rgba(244,196,48,.7)">goal</span>
+          <div style="position:absolute;left:0;right:0;top:${Math.round((1-goalPct/100)*barAreaH)}px;height:1px;background:rgba(244,196,48,.5);z-index:2;pointer-events:none;box-shadow:0 0 4px rgba(244,196,48,.4)">
+            <span style="position:absolute;right:2px;top:-9px;font-size:8px;color:rgba(244,196,48,.9);font-family:var(--mono)">GOAL</span>
           </div>
-          <!-- Grid lines -->
           ${[0.25,0.5,0.75].map(f=>`<div style="position:absolute;left:0;right:0;top:${Math.round(f*barAreaH)}px;height:1px;background:rgba(255,255,255,.04);pointer-events:none"></div>`).join('')}
-          <!-- Bars -->
           <div style="display:flex;align-items:flex-end;gap:6px;height:${barAreaH}px;position:relative;z-index:1">
             ${data.map(d=>{
               const totalPct=d.total/maxH;
-              const barH=Math.max(totalPct*barAreaH,d.total>0?3:0);
+              const barH=Math.max(totalPct*barAreaH,d.total>0?4:0);
               const isToday=d.isToday;
+              const col=barColor(d.total);
+              const glow=barGlow(d.total);
               return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;position:relative" title="${d.dayStr}: ${d.total.toFixed(1)}h">
-                ${d.total>0?`<div style="font-size:9px;color:${isToday?'var(--accent)':'var(--text2)'};margin-bottom:3px;font-weight:${isToday?700:400}">${d.total.toFixed(1)}h</div>`:''}
-                <div style="width:100%;height:${barH}px;display:flex;flex-direction:column;justify-content:flex-end;border-radius:5px 5px 0 0;overflow:hidden;${isToday?'box-shadow:0 0 0 1.5px var(--accent)':''}">
-                  ${segs.filter(s=>d[s.key]>0).map(s=>{
-                    const sh=Math.max(1,Math.round(d[s.key]/d.total*barH));
-                    return `<div style="height:${sh}px;background:${s.color};flex-shrink:0" title="${s.label}: ${d[s.key].toFixed(1)}h"></div>`;
-                  }).join('')}
-                  ${d.total===0?`<div style="height:3px;background:rgba(255,255,255,.04);width:100%"></div>`:''}
+                ${d.total>0?`<div style="font-size:9px;color:${isToday?'var(--accent)':'var(--text2)'};margin-bottom:3px;font-weight:${isToday?700:400};font-family:var(--mono)">${d.total.toFixed(1)}h</div>`:''}
+                <div style="width:100%;height:${barH}px;border-radius:6px 6px 0 0;overflow:hidden;${glow};${isToday?'outline:2px solid var(--accent);outline-offset:2px':''}
+                  background:linear-gradient(180deg,${col} 0%,${col}aa 100%);
+                  transition:height .5s cubic-bezier(.4,0,.2,1);
+                  position:relative;" 
+                  onmouseover="this.style.filter='brightness(1.3)'" 
+                  onmouseout="this.style.filter=''">
+                  ${d.total===0?'<div style="height:3px;background:rgba(255,255,255,.04);width:100%"></div>':''}
                 </div>
               </div>`;
             }).join('')}
           </div>
-          <!-- X labels -->
           <div style="display:flex;gap:6px;margin-top:6px">
             ${data.map(d=>`<div style="flex:1;text-align:center;font-size:9px;color:${d.isToday?'var(--accent)':'var(--text3)'};font-weight:${d.isToday?700:400}">${d.dayStr}<br><span style="font-size:8px;color:var(--text3)">${d.dateStr}</span></div>`).join('')}
           </div>
@@ -3283,7 +3337,7 @@ function renderCharts(){
       </div>`;
   })();
 
-  // CUMULATIVE STUDY
+  // ── 3. CUMULATIVE STUDY — neon emerald ──
   if(chCum)chCum.destroy();
   const sortedSess=[...S.sessions].sort((a,b)=>a.date.localeCompare(b.date));
   const cumDates=[],cumHrs=[];let running=0;
@@ -3298,50 +3352,135 @@ function renderCharts(){
       d.setDate(d.getDate()+1);
     }
   }
-  if(chCum)chCum.destroy();
   if(cumDates.length>1){
-    chCum=new Chart(document.getElementById('ch-cumulative').getContext('2d'),{type:'line',data:{
-      labels:cumDates,
-      datasets:[{label:'Total Hours',data:cumHrs,borderColor:'#00d68f',backgroundColor:'rgba(0,214,143,.1)',fill:true,tension:.4,pointRadius:0,borderWidth:2}]
-    },options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:gc.tc,font:{size:9},maxTicksLimit:10},grid:{color:gc.gr}},y:{ticks:{color:gc.tc,font:{size:10}},grid:{color:gc.gr},title:{display:true,text:'Cumulative Hours',color:gc.tc,font:{size:10}}}}}});
-  }else{document.getElementById('ch-cumulative').parentElement.innerHTML='<div class="empty">Log sessions to see your cumulative progress.</div>';}
+    const cCanvas=document.getElementById('ch-cumulative');
+    if(cCanvas){
+      const cCtx=cCanvas.getContext('2d');
+      const cGrad=makeGradient(cCtx,180,'rgba(0,255,150,0.35)','rgba(0,255,150,0.00)');
+      chCum=new Chart(cCtx,{
+        type:'line',
+        data:{labels:cumDates,datasets:[{
+          label:'Total Hours',data:cumHrs,
+          borderColor:'#00ff96',borderWidth:3,
+          backgroundColor:cGrad,fill:true,tension:0.45,
+          pointRadius:0,pointHoverRadius:6,pointHoverBackgroundColor:'#00ff96',
+        }]},
+        options:{
+          responsive:true,maintainAspectRatio:false,
+          animation:{duration:1400,easing:'easeOutQuart'},
+          plugins:{legend:{display:false},tooltip:{...SL_TOOLTIP,callbacks:{label:c=>`${c.raw}h total`}}},
+          scales:{
+            x:{ticks:{...SL_TICK,maxTicksLimit:10},grid:{...SL_GRID},border:{color:'transparent'}},
+            y:{ticks:{...SL_TICK},grid:{...SL_GRID},border:{color:'transparent'},title:{display:true,text:'Cumulative Hours',color:'rgba(200,203,220,.4)',font:{size:9}}}
+          }
+        }
+      });
+    }
+  }else{const ce=document.getElementById('ch-cumulative');if(ce)ce.parentElement.innerHTML='<div class="empty">Log sessions to see cumulative progress.</div>';}
 
-  // SUBJECT SPLIT PIE
+  // ── 4. SUBJECT SPLIT — neon doughnut ──
   const subMins={physics:0,chemistry:0,maths:0,other:0};
   S.sessions.forEach(s=>{if(subMins[s.sub]!==undefined)subMins[s.sub]+=s.min;else subMins.other+=s.min;});
   if(chSplit)chSplit.destroy();
   if(Object.values(subMins).some(v=>v>0)){
-    chSplit=new Chart(document.getElementById('ch-split').getContext('2d'),{type:'doughnut',data:{
-      labels:['Physics','Chemistry','Maths','Other'],
-      datasets:[{data:[subMins.physics/60,subMins.chemistry/60,subMins.maths/60,subMins.other/60].map(v=>+v.toFixed(1)),
-        backgroundColor:['rgba(91,110,245,.85)','rgba(0,214,143,.85)','rgba(244,196,48,.85)','rgba(150,150,200,.6)'],borderWidth:0}]
-    },options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right',labels:{color:gc.tc,font:{size:12}}},tooltip:{callbacks:{label:ctx=>`${ctx.label}: ${ctx.raw}h`}}}}});
-  }else{document.getElementById('ch-split').parentElement.innerHTML='<div class="empty">No sessions logged yet.</div>';}
+    const spCanvas=document.getElementById('ch-split');
+    if(spCanvas){
+      chSplit=new Chart(spCanvas.getContext('2d'),{
+        type:'doughnut',
+        data:{
+          labels:['Physics','Chemistry','Maths','Other'],
+          datasets:[{
+            data:[subMins.physics/60,subMins.chemistry/60,subMins.maths/60,subMins.other/60].map(v=>+v.toFixed(1)),
+            backgroundColor:['rgba(91,110,245,.9)','rgba(0,214,143,.9)','rgba(244,196,48,.9)','rgba(150,150,200,.7)'],
+            borderColor:['#5b6ef5','#00d68f','#f4c430','rgba(150,150,200,.5)'],
+            borderWidth:2,
+            hoverOffset:8,
+            hoverBorderColor:'#fff',
+          }]
+        },
+        options:{
+          responsive:true,maintainAspectRatio:false,
+          animation:{animateRotate:true,duration:1000,easing:'easeOutQuart'},
+          plugins:{
+            legend:{position:'right',labels:{color:'rgba(224,227,244,.8)',font:{family:"'Rajdhani',sans-serif",size:13},padding:14,usePointStyle:true,pointStyleWidth:10}},
+            tooltip:{...SL_TOOLTIP,callbacks:{label:c=>`${c.label}: ${c.raw}h`}}
+          },
+          cutout:'68%',
+        }
+      });
+    }
+  }else{const sp=document.getElementById('ch-split');if(sp)sp.parentElement.innerHTML='<div class="empty">No sessions logged yet.</div>';}
 
-  // TEST TREND
+  // ── 5. TEST SCORE TREND — premium multi-line with area fills ──
   if(chT)chT.destroy();
-  const tests=S.tests.slice(-10);
+  const tests=S.tests.slice(-12);
   if(tests.length>=2){
-    chT=new Chart(document.getElementById('ch-tests').getContext('2d'),{type:'line',data:{
-      labels:tests.map(t=>fmtDate(t.date)),
-      datasets:[
-        {label:'Physics',data:tests.map(t=>t.phy),borderColor:'#5b6ef5',backgroundColor:'transparent',tension:.3,pointRadius:4,pointBackgroundColor:'#5b6ef5'},
-        {label:'Chemistry',data:tests.map(t=>t.che),borderColor:'#00d68f',backgroundColor:'transparent',tension:.3,pointRadius:4,pointBackgroundColor:'#00d68f'},
-        {label:'Maths',data:tests.map(t=>t.mat),borderColor:'#f4c430',backgroundColor:'transparent',tension:.3,pointRadius:4,pointBackgroundColor:'#f4c430'},
-        {label:'Total',data:tests.map(t=>t.total),borderColor:'rgba(255,255,255,.4)',backgroundColor:'transparent',tension:.3,pointRadius:3,borderDash:[4,3]},
-      ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:gc.tc,font:{size:11}}}},scales:{x:{ticks:{color:gc.tc,font:{size:10}},grid:{color:gc.gr}},y:{ticks:{color:gc.tc,font:{size:10}},grid:{color:gc.gr}}}}
-    });
+    const tCanvas=document.getElementById('ch-tests');
+    if(tCanvas){
+      const tCtx=tCanvas.getContext('2d');
+      const phyGrad=makeGradient(tCtx,200,'rgba(91,110,245,0.25)','rgba(91,110,245,0.0)');
+      const cheGrad=makeGradient(tCtx,200,'rgba(0,214,143,0.20)','rgba(0,214,143,0.0)');
+      const matGrad=makeGradient(tCtx,200,'rgba(244,196,48,0.20)','rgba(244,196,48,0.0)');
+      chT=new Chart(tCtx,{
+        type:'line',
+        data:{
+          labels:tests.map(t=>fmtDate(t.date)),
+          datasets:[
+            {label:'Physics',data:tests.map(t=>t.phy),
+              borderColor:'#5b6ef5',borderWidth:2.5,backgroundColor:phyGrad,fill:true,
+              tension:0.45,pointRadius:5,pointBackgroundColor:'#5b6ef5',
+              pointBorderColor:'rgba(91,110,245,.3)',pointBorderWidth:3,pointHoverRadius:8},
+            {label:'Chemistry',data:tests.map(t=>t.che),
+              borderColor:'#00d68f',borderWidth:2.5,backgroundColor:cheGrad,fill:true,
+              tension:0.45,pointRadius:5,pointBackgroundColor:'#00d68f',
+              pointBorderColor:'rgba(0,214,143,.3)',pointBorderWidth:3,pointHoverRadius:8},
+            {label:'Maths',data:tests.map(t=>t.mat),
+              borderColor:'#f4c430',borderWidth:2.5,backgroundColor:matGrad,fill:true,
+              tension:0.45,pointRadius:5,pointBackgroundColor:'#f4c430',
+              pointBorderColor:'rgba(244,196,48,.3)',pointBorderWidth:3,pointHoverRadius:8},
+            {label:'Total',data:tests.map(t=>t.total),
+              borderColor:'rgba(255,255,255,.5)',borderWidth:2,backgroundColor:'transparent',
+              tension:0.35,pointRadius:3,pointBackgroundColor:'rgba(255,255,255,.7)',borderDash:[6,4]},
+          ]
+        },
+        options:{
+          responsive:true,maintainAspectRatio:false,
+          animation:{duration:1200,easing:'easeOutQuart'},
+          interaction:{mode:'index',intersect:false},
+          plugins:{
+            legend:{labels:{color:'rgba(224,227,244,.8)',font:{family:"'Rajdhani',sans-serif",size:12},padding:14,usePointStyle:true,pointStyleWidth:10}},
+            tooltip:{...SL_TOOLTIP,callbacks:{
+              title:c=>c[0].label,
+              label:c=>`${c.dataset.label}: ${c.raw}`,
+              afterBody:items=>{
+                const total=items.find(i=>i.dataset.label==='Total');
+                if(total){
+                  const max=S.tests[S.tests.length-1]?.max||300;
+                  return `Pct: ${Math.round(total.raw/max*100)}%`;
+                }
+              }
+            }}
+          },
+          scales:{
+            x:{ticks:{...SL_TICK},grid:{...SL_GRID},border:{color:'transparent'}},
+            y:{ticks:{...SL_TICK},grid:{...SL_GRID},border:{color:'transparent'},
+              title:{display:true,text:'Score',color:'rgba(200,203,220,.4)',font:{size:9}}}
+          }
+        }
+      });
+    }
   }else{const ce=document.getElementById('ch-tests');if(ce)ce.parentElement.innerHTML='<div class="empty">Log at least 2 tests to see the trend.</div>';}
 
-  // HEATMAP
+  // ── 6. RADAR — RPG stats ──
+  renderRadarChart();
+  // ── 7. HEATMAP ──
   renderHeatmap();
   renderChronicle();
 }
 
 function renderHeatmap(){
   const hm=document.getElementById('ch-heatmap');if(!hm)return;
-  // Build 10 weeks of data (70 days), arranged Mon→Sun columns like GitHub
-  const WEEKS=10;const TOTAL=WEEKS*7;
+  const WEEKS=12;const TOTAL=WEEKS*7;
   const cells=[];
   const todayStr=today();
   for(let i=TOTAL-1;i>=0;i--){
@@ -3352,23 +3491,21 @@ function renderHeatmap(){
     const isToday=ds===todayStr;
     const isFuture=ds>todayStr;
     let lvl=0;
-    if(!isFuture&&hrs>0)lvl=hrs<1?1:hrs<2?2:hrs<4?3:4;
-    const colors=['rgba(255,255,255,.03)','rgba(91,110,245,.22)','rgba(91,110,245,.5)','rgba(91,110,245,.78)','#5b6ef5'];
-    const todayBorder=isToday?'2px solid var(--gold)':'1px solid rgba(91,110,245,.08)';
+    if(!isFuture&&hrs>0)lvl=hrs<1?1:hrs<2?2:hrs<4?3:hrs<6?4:5;
+    // Neon green scale like SL
+    const colors=['rgba(255,255,255,.03)','rgba(0,255,150,.12)','rgba(0,255,150,.28)','rgba(0,255,150,.5)','rgba(0,255,150,.75)','rgba(0,255,150,1)'];
+    const glows=['','','box-shadow:0 0 4px rgba(0,255,150,.3)','box-shadow:0 0 6px rgba(0,255,150,.5)','box-shadow:0 0 8px rgba(0,255,150,.7)','box-shadow:0 0 12px rgba(0,255,150,1)'];
+    const todayBorder=isToday?'2px solid var(--gold)':'1px solid rgba(0,255,150,.08)';
     const weekday=d.toLocaleDateString('en-IN',{weekday:'short'});
     const dateStr=d.toLocaleDateString('en-IN',{day:'numeric',month:'short'});
-    cells.push({ds,hrs,lvl,color:isFuture?'rgba(255,255,255,.015)':colors[lvl],border:todayBorder,label:weekday+' '+dateStr,mins,isToday,isFuture});
+    cells.push({ds,hrs,lvl,color:isFuture?'rgba(255,255,255,.015)':colors[lvl],glow:isFuture?'':glows[lvl],border:todayBorder,label:weekday+' '+dateStr,mins,isToday,isFuture});
   }
-  // Group into columns by week (each column = 1 week Mon-Sun)
-  // We want rows = Mon,Tue,Wed,Thu,Fri,Sat,Sun (7 rows), cols = weeks
   const ROW_LABELS=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
-  // Pad so first cell aligns to Monday
   const firstD=new Date();firstD.setDate(firstD.getDate()-(TOTAL-1));
-  const startDow=(firstD.getDay()+6)%7; // 0=Mon
+  const startDow=(firstD.getDay()+6)%7;
   const paddedCells=[...Array(startDow).fill(null),...cells];
   while(paddedCells.length%7!==0)paddedCells.push(null);
   const totalCols=paddedCells.length/7;
-  // month labels: find first cell of each month
   const monthMap={};
   cells.forEach((c,rawIdx)=>{
     const paddedIdx=rawIdx+startDow;
@@ -3381,37 +3518,37 @@ function renderHeatmap(){
   const totalSess=S.sessions.filter(s=>!s.paused).length;
   const totalHrs=(S.sessions.filter(s=>!s.paused).reduce((a,s)=>a+s.min,0)/60).toFixed(1);
   const activeDays=new Set(cells.filter(c=>c.hrs>0).map(c=>c.ds)).size;
+  const CELL=20; // px — bigger than before
 
   hm.innerHTML=`
-    <div style="display:flex;gap:16px;font-size:11px;color:var(--text2);margin-bottom:10px;flex-wrap:wrap">
+    <div style="display:flex;gap:20px;font-size:11px;color:var(--text2);margin-bottom:12px;flex-wrap:wrap">
       <span>📅 <b style="color:var(--text)">${activeDays}</b> active days</span>
-      <span>📚 <b style="color:var(--accent)">${totalHrs}h</b> total</span>
+      <span>📚 <b style="color:#00ff96">${totalHrs}h</b> total</span>
       <span>⚡ <b style="color:var(--gold)">${totalSess}</b> sessions</span>
     </div>
-    <div style="overflow-x:auto;padding-bottom:4px">
-      <div style="display:inline-grid;grid-template-columns:28px repeat(${totalCols},1fr);gap:3px;min-width:max-content">
-        <!-- Month labels row -->
+    <div style="overflow-x:auto;padding-bottom:8px">
+      <div style="display:inline-grid;grid-template-columns:32px repeat(${totalCols},${CELL}px);gap:4px;min-width:max-content">
         <div></div>
-        ${monthRow.map(m=>`<div style="font-size:9px;color:var(--text3);padding-bottom:3px;font-weight:600;text-align:center">${m}</div>`).join('')}
-        <!-- Day rows -->
+        ${monthRow.map(m=>`<div style="font-size:9px;color:var(--text3);padding-bottom:4px;font-weight:700;text-align:center;font-family:var(--mono)">${m}</div>`).join('')}
         ${ROW_LABELS.map((rowLbl,row)=>{
           const rowCells=[];
           for(let col=0;col<totalCols;col++)rowCells.push(paddedCells[col*7+row]);
-          return `<div style="font-size:9px;color:var(--text3);display:flex;align-items:center;padding-right:4px;white-space:nowrap">${rowLbl}</div>`+
+          return `<div style="font-size:9px;color:var(--text3);display:flex;align-items:center;padding-right:4px;white-space:nowrap;font-family:var(--mono)">${rowLbl}</div>`+
             rowCells.map(c=>{
-              if(!c)return `<div style="width:14px;height:14px;border-radius:3px"></div>`;
-              return `<div title="${c.label}: ${c.hrs.toFixed(1)}h${c.isToday?' (today)':''}" 
-                style="width:14px;height:14px;border-radius:3px;background:${c.color};border:${c.border};cursor:default;position:relative;transition:transform .1s"
-                onmouseover="showHeatTip(event,'${c.label}: ${c.hrs>0?c.hrs.toFixed(1)+'h':c.isFuture?'—':'No study'}')"
-                onmouseout="hideHeatTip()"></div>`;
+              if(!c)return `<div style="width:${CELL}px;height:${CELL}px;border-radius:4px"></div>`;
+              return `<div title="${c.label}: ${c.hrs>0?c.hrs.toFixed(1)+'h':c.isFuture?'Future':'No study'}"
+                style="width:${CELL}px;height:${CELL}px;border-radius:4px;background:${c.color};border:${c.border};${c.glow};
+                cursor:pointer;transition:transform .12s,box-shadow .12s;box-sizing:border-box;"
+                onmouseover="this.style.transform='scale(1.4)';this.style.zIndex='5';this.style.position='relative';showHeatTip(event,'${c.label}: ${c.hrs>0?c.hrs.toFixed(1)+'h':c.isFuture?'—':'No study'}')"
+                onmouseout="this.style.transform='';this.style.zIndex='';hideHeatTip()"></div>`;
             }).join('');
         }).join('')}
       </div>
     </div>
-    <div id="heat-tip" style="position:fixed;background:var(--card2);border:1px solid var(--border2);border-radius:7px;padding:5px 10px;font-size:11px;color:var(--text);pointer-events:none;opacity:0;transition:opacity .15s;z-index:9999;white-space:nowrap"></div>
-    <div style="display:flex;align-items:center;gap:6px;margin-top:8px;font-size:10px;color:var(--text3)">
+    <div id="heat-tip" style="position:fixed;background:rgba(8,8,20,.96);border:1px solid rgba(0,255,150,.3);border-radius:8px;padding:6px 12px;font-size:11px;color:var(--text);pointer-events:none;opacity:0;transition:opacity .15s;z-index:9999;white-space:nowrap;font-family:var(--mono);box-shadow:0 0 16px rgba(0,255,150,.15)"></div>
+    <div style="display:flex;align-items:center;gap:6px;margin-top:10px;font-size:10px;color:var(--text3)">
       Less
-      ${['rgba(255,255,255,.03)','rgba(91,110,245,.22)','rgba(91,110,245,.5)','rgba(91,110,245,.78)','#5b6ef5'].map((c,i)=>`<div title="${['0h','<1h','1-2h','2-4h','4h+'][i]}" style="width:12px;height:12px;border-radius:3px;background:${c};border:1px solid rgba(91,110,245,.12)"></div>`).join('')}
+      ${['rgba(255,255,255,.03)','rgba(0,255,150,.12)','rgba(0,255,150,.28)','rgba(0,255,150,.5)','rgba(0,255,150,.75)','rgba(0,255,150,1)'].map((c,i)=>`<div title="${['0h','<1h','1-2h','2-4h','4-6h','6h+'][i]}" style="width:${CELL}px;height:${CELL}px;border-radius:4px;background:${c};border:1px solid rgba(0,255,150,.1)"></div>`).join('')}
       More
     </div>`;
 }
@@ -3510,8 +3647,29 @@ function saveHunterName(){
   showToast('Name updated to '+hn+' ⚡');
 }
 
+const DAY_NAMES_FULL=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+function getActiveQuests(){
+  const todayDow=new Date().getDay(); // 0=Sun,6=Sat
+  const allQ=(S.customQuests&&S.customQuests.length>0)?S.customQuests:[
+    {id:'q1',name:`Study ${S.goals&&S.goals.questStudyHours||2}+ hours`,desc:`Active sessions today`,xp:50,auto:true,days:[0,1,2,3,4,5,6]},
+    {id:'q2',name:'Complete a Pomodoro',desc:'Finish one 25-min block',xp:25,auto:true,days:[0,1,2,3,4,5,6]},
+    {id:'q3',name:'Log workout',desc:'Train body and mind',xp:30,auto:false,days:[0,1,2,3,4,5,6]},
+    {id:'q4',name:'Update confidence',desc:'Review a topic below 50%',xp:20,auto:false,days:[0,1,2,3,4,5,6]},
+    {id:'q5',name:'No mindless scrolling',desc:'Honor quest',xp:20,auto:false,days:[0,1,2,3,4,5,6]},
+  ];
+  // Filter by today's day — if no days set, show all days
+  return allQ.filter(q=>!q.days||q.days.length===0||q.days.includes(todayDow));
+}
+
 function renderQuestEditor(){
-  const QUESTS=getActiveQuests();
+  const QUESTS=(S.customQuests&&S.customQuests.length>0)?S.customQuests:[
+    {id:'q1',name:`Study ${S.goals&&S.goals.questStudyHours||2}+ hours`,desc:'Active sessions today',xp:50,auto:true,days:[0,1,2,3,4,5,6]},
+    {id:'q2',name:'Complete a Pomodoro',desc:'Finish one 25-min block',xp:25,auto:true,days:[0,1,2,3,4,5,6]},
+    {id:'q3',name:'Log workout',desc:'Train body and mind',xp:30,auto:false,days:[0,1,2,3,4,5,6]},
+    {id:'q4',name:'Update confidence',desc:'Review a topic below 50%',xp:20,auto:false,days:[0,1,2,3,4,5,6]},
+    {id:'q5',name:'No mindless scrolling',desc:'Honor quest',xp:20,auto:false,days:[0,1,2,3,4,5,6]},
+  ];
   const qe=document.getElementById('s-quest-editor');if(!qe)return;
   let h='';
   QUESTS.forEach((q,i)=>{
@@ -3527,6 +3685,45 @@ function renderQuestEditor(){
   });
   if(!h)h='<div class="empty">No quests. Add some below.</div>';
   qe.innerHTML=h;
+
+  // Schedule editor
+  const qs=document.getElementById('s-quest-schedule');
+  if(!qs)return;
+  let sh='';
+  QUESTS.forEach((q,i)=>{
+    const qDays=q.days||[0,1,2,3,4,5,6];
+    sh+=`<div style="padding:10px 0;border-bottom:1px solid var(--border)">
+      <div style="font-size:12px;font-weight:700;margin-bottom:6px;color:var(--text)">${q.name}</div>
+      <div style="display:flex;gap:4px;flex-wrap:wrap">
+        ${DAY_NAMES_FULL.map((d,dow)=>`<button class="day-sel-btn${qDays.includes(dow)?' on':''}" 
+          onclick="toggleQuestDay(${i},${dow},this)">${d}</button>`).join('')}
+      </div>
+    </div>`;
+  });
+  qs.innerHTML=sh||'<div class="empty">Add quests first.</div>';
+}
+
+function toggleQuestDay(questIdx,dow,btn){
+  const QUESTS=(S.customQuests&&S.customQuests.length>0)?S.customQuests:[
+    {id:'q1',name:`Study ${S.goals&&S.goals.questStudyHours||2}+ hours`,desc:'Active sessions today',xp:50,auto:true,days:[0,1,2,3,4,5,6]},
+    {id:'q2',name:'Complete a Pomodoro',desc:'Finish one 25-min block',xp:25,auto:true,days:[0,1,2,3,4,5,6]},
+    {id:'q3',name:'Log workout',desc:'Train body and mind',xp:30,auto:false,days:[0,1,2,3,4,5,6]},
+    {id:'q4',name:'Update confidence',desc:'Review a topic below 50%',xp:20,auto:false,days:[0,1,2,3,4,5,6]},
+    {id:'q5',name:'No mindless scrolling',desc:'Honor quest',xp:20,auto:false,days:[0,1,2,3,4,5,6]},
+  ];
+  if(!S.customQuests||!S.customQuests.length)S.customQuests=[...QUESTS];
+  const q=S.customQuests[questIdx];if(!q)return;
+  if(!q.days)q.days=[0,1,2,3,4,5,6];
+  const idx=q.days.indexOf(dow);
+  if(idx>=0)q.days.splice(idx,1); else q.days.push(dow);
+  btn.classList.toggle('on',q.days.includes(dow));
+}
+
+function saveQuestSchedule(){
+  // Schedule is already stored in S.customQuests via toggleQuestDay
+  save();
+  showToast('Quest schedule saved! ✅ Days updated.');
+  renderDash();
 }
 
 function addCustomQuest(){
@@ -3641,15 +3838,14 @@ function calcStats(){
   const avgStars=ratedSess.length?ratedSess.reduce((a,s)=>a+(s.stars||3),0)/ratedSess.length:3;
   const focus=Math.min(99,Math.max(0,Math.round((avgEff*0.5)+(Math.min(pomoCount/50,1)*25)+(avgStars/5*25))));
 
-  // STRENGTH — workout days completed + workout streak bonus
-  const workoutDays=new Set(workoutLogs.filter(l=>Object.values(l.comp||{}).some(Boolean)).map(l=>l.date)).size;
-  const woStreak=S.workout?.streak||0;
-  const strength=Math.min(99,Math.round((workoutDays/30)*75 + Math.min(woStreak/14,1)*25));
+  // STRENGTH — based on workout consistency last 30 days
+  const workoutDays=new Set(workoutLogs.map(l=>l.date)).size;
+  const strength=Math.min(99,Math.round((workoutDays/30)*100));
 
-  // ENDURANCE — study streak + workout streak + total study days
+  // ENDURANCE — based on streak + total days studied
   const studyDays=new Set(sessions.map(s=>s.date)).size;
   const streak=S.hunter?.streak||0;
-  const endurance=Math.min(99,Math.round((Math.min(streak/30,1)*35)+(Math.min(studyDays/100,1)*40)+(Math.min(woStreak/14,1)*25)));
+  const endurance=Math.min(99,Math.round((Math.min(streak/30,1)*50)+(Math.min(studyDays/100,1)*50)));
 
   // DISCIPLINE — based on quest completion rate last 14 days
   const last14=last30.slice(-14);
@@ -3669,68 +3865,110 @@ function renderStatusWindow(){
   if(!S)return;
   const stats=calcStats();
   const rk=getRank(S.hunter.xp);
-  const name=S.hunter?.name||S.settings?.hunterName||'Gautam';
+  const name=S.hunter?.name||'Gautam';
   const cls=getClass(rk.r);
 
-  // Update identity
+  // Identity
   const sb=document.getElementById('sw-rank');
   if(sb){sb.textContent=rk.r;sb.className='sw-rank-badge rank-'+rk.r;}
   const sn=document.getElementById('sw-name');if(sn)sn.textContent='Hunter '+name;
   const sc=document.getElementById('sw-class');if(sc)sc.textContent=cls;
-  const sx=document.getElementById('sw-xp');if(sx)sx.textContent=S.hunter.xp;
+  const sx=document.getElementById('sw-xp');if(sx)sx.textContent=S.hunter.xp.toLocaleString();
   const ss=document.getElementById('sw-streak');if(ss)ss.textContent=S.hunter.streak||0;
 
-  // ── Rank requirements display ──
-  const reqEl=document.getElementById('sw-rank-req');
-  if(reqEl){
-    const xp2=S.hunter.xp,streak2=S.hunter.streak;
-    const curRank=S.hunter.rank||'E';
-    const req2=RANK_REQS.find(r=>r.from===curRank);
-    if(req2){
-      const xpP=Math.min(100,Math.round(xp2/req2.xp*100));
-      const stP=Math.min(100,Math.round(streak2/req2.streak*100));
-      const perfOK=getDailyQuestPct(today())>=60||!!(S.weeklyBoss&&S.weeklyBoss[getWeekKey(today())]);
-      reqEl.innerHTML=`<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
-        <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:1.2px;margin-bottom:6px;font-weight:700">→ Rank ${curRank} to ${req2.to} Requirements</div>
-        <div style="margin-bottom:4px"><div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text2);margin-bottom:2px"><span>XP</span><span style="color:${xp2>=req2.xp?'var(--green)':'var(--text2)'}">${xp2}/${req2.xp}</span></div><div style="height:3px;background:rgba(255,255,255,.06);border-radius:2px"><div style="height:100%;width:${xpP}%;background:${xp2>=req2.xp?'var(--green)':'var(--gold)'};border-radius:2px"></div></div></div>
-        <div style="margin-bottom:4px"><div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text2);margin-bottom:2px"><span>Streak</span><span style="color:${streak2>=req2.streak?'var(--green)':'var(--text2)'}">${streak2}/${req2.streak}d</span></div><div style="height:3px;background:rgba(255,255,255,.06);border-radius:2px"><div style="height:100%;width:${stP}%;background:${streak2>=req2.streak?'var(--green)':'var(--accent)'};border-radius:2px"></div></div></div>
-        <div style="font-size:10px;color:${perfOK?'var(--green)':'var(--text2)'}">${perfOK?'✓':'○'} Quest performance (≥60% or weekly boss)</div>
-      </div>`;
-    } else {
-      reqEl.innerHTML=curRank==='SSS'?`<div style="margin-top:8px;font-size:11px;color:var(--gold);text-align:center">👑 Maximum Rank Achieved</div>`:'';
-    }
-  }
   // JEE days
-  const jeeDate=new Date(S.examDate||S.settings?.jeeDate||'2027-05-18');
+  const jeeDate=new Date(S.examDate||'2026-05-18');
   const dLeft=Math.max(0,Math.ceil((jeeDate-new Date())/86400000));
   const jd=document.getElementById('sw-jee-days');
   if(jd)jd.textContent=dLeft+' days to exam';
 
-  // Stat definitions
+  // ── PREMIUM STAT BARS ──
   const statDefs=[
-    {key:'intelligence', label:'Intelligence', color:'#5b6ef5', icon:'📘'},
-    {key:'focus',        label:'Focus',        color:'#00b4d8', icon:'🎯'},
-    {key:'strength',     label:'Strength',     color:'#ff3b5c', icon:'💪'},
-    {key:'endurance',    label:'Endurance',    color:'#00d68f', icon:'🏃'},
-    {key:'discipline',   label:'Discipline',   color:'#f4c430', icon:'⚔️'},
-    {key:'perception',   label:'Perception',   color:'#7c5ef5', icon:'🧠'},
+    {key:'intelligence',label:'INT',color:'#5b7ef5',icon:'📘'},
+    {key:'focus',       label:'FOC',color:'#00c9ff',icon:'🎯'},
+    {key:'strength',    label:'STR',color:'#ff3b5c',icon:'💪'},
+    {key:'endurance',   label:'END',color:'#00d68f',icon:'🏃'},
+    {key:'discipline',  label:'DIS',color:'#f4c430',icon:'⚔'},
+    {key:'perception',  label:'PER',color:'#a855f7',icon:'🧠'},
   ];
-
   const container=document.getElementById('sw-stats');
-  if(!container)return;
-  container.innerHTML=statDefs.map(d=>{
-    const v=stats[d.key]||0;
-    const bars=Math.round(v/10); // 0-10 filled blocks
-    return `<div class="sw-stat">
-      <div class="sw-stat-hdr">
-        <span class="sw-stat-name" style="color:${d.color}">${d.icon} ${d.label}</span>
-        <span class="sw-stat-val" style="color:${d.color}">${v}</span>
-      </div>
-      <div class="sw-stat-bar">
-        <div class="sw-stat-fill" style="width:${v}%;background:${d.color}"></div>
-      </div>
-    </div>`;
-  }).join('');
+  if(container){
+    container.innerHTML=statDefs.map(d=>{
+      const v=stats[d.key]||0;
+      const segsTotal=10;
+      const segsOn=Math.round(v/10);
+      // Build segmented bar
+      const segsHtml=Array.from({length:segsTotal},(_,i)=>`<div style="flex:1;height:100%;background:${i<segsOn?d.color:'rgba(255,255,255,.05)'};${i===segsOn-1?'box-shadow:0 0 6px '+d.color+'90':''};border-radius:${i===0?'3px 0 0 3px':i===segsTotal-1?'0 3px 3px 0':'0'}"></div>`).join('');
+      return `<div class="sw-stat">
+        <div class="sw-stat-hdr">
+          <span class="sw-stat-name" style="color:${d.color}">${d.icon} ${d.label}</span>
+          <span class="sw-stat-val" style="color:${d.color}">${v}</span>
+        </div>
+        <div class="sw-stat-bar">
+          <div style="display:flex;gap:1px;height:100%;width:100%">${segsHtml}</div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  // ── RANK PROGRESS BAR (correct calculation) ──
+  const reqEl=document.getElementById('sw-rank-req');
+  const progFill=document.getElementById('sw-rank-prog-fill');
+  const progLbl=document.getElementById('sw-rank-prog-label');
+  const progPct=document.getElementById('sw-rank-prog-pct');
+
+  const xp=S.hunter.xp;
+  const curRank=S.hunter.rank||getRankByXPStatic(xp);
+  const req2=RANK_REQS.find(r=>r.from===curRank);
+  const rankObj=RANKS.find(r=>r.r===curRank)||RANKS[0];
+  const nextRankObj=RANKS.find(r=>r.r===(req2?req2.to:'SSS'));
+
+  if(reqEl&&req2&&rankObj&&nextRankObj&&nextRankObj.max!==Infinity){
+    const xpPct=Math.min(100,Math.round((xp-rankObj.min)/(rankObj.max-rankObj.min)*100));
+    if(progLbl)progLbl.textContent=`Rank ${curRank} → ${req2.to}`;
+    if(progPct)progPct.textContent=`${xp.toLocaleString()} / ${rankObj.max.toLocaleString()} XP  (${xpPct}%)`;
+    setTimeout(()=>{ if(progFill)progFill.style.width=xpPct+'%'; },150);
+  } else if(reqEl&&curRank==='SSS'){
+    if(progLbl)progLbl.textContent='MAX RANK — SHADOW MONARCH';
+    if(progPct){progPct.textContent='👑';progPct.style.color='var(--gold)';}
+    if(progFill)progFill.style.width='100%';
+  } else if(reqEl){
+    // Pure XP-based for SS/SSS
+    const cur=RANKS.find(r=>r.r===curRank)||RANKS[0];
+    const next=RANKS[Math.min(RANKS.length-1,RANKS.indexOf(cur)+1)];
+    const xpPct=cur&&next&&next.max!==Infinity?Math.min(100,Math.round((xp-cur.min)/(cur.max-cur.min)*100)):100;
+    if(progLbl)progLbl.textContent=next?`Rank ${curRank} → ${next.r}`:'MAX RANK';
+    if(progPct)progPct.textContent=`${xp.toLocaleString()} XP  (${xpPct}%)`;
+    setTimeout(()=>{ if(progFill)progFill.style.width=xpPct+'%'; },150);
+  }
+
+  // ── 7-DAY MINI CONSISTENCY GRAPH ──
+  const miniGraph=document.getElementById('sw-mini-graph');
+  if(miniGraph){
+    const days=[];
+    for(let i=6;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);days.push(d.toISOString().split('T')[0]);}
+    const goalMins=(S.goals&&S.goals.studyHours||6)*60;
+    const DOW_NAMES=['Su','Mo','Tu','We','Th','Fr','Sa'];
+    const todayDow=new Date().getDay();
+    miniGraph.innerHTML=days.map((d,i)=>{
+      const mins=S.sessions.filter(s=>s.date===d&&!s.paused).reduce((a,s)=>a+s.min,0);
+      const pct=Math.min(1,mins/goalMins);
+      const h=Math.max(4,Math.round(pct*28));
+      const isToday=d===today();
+      const dow=(todayDow-6+i+7)%7;
+      let bg;
+      if(mins===0)bg='rgba(255,255,255,.05)';
+      else if(pct>=1)bg='var(--green)';
+      else if(pct>=.6)bg='var(--accent)';
+      else if(pct>=.3)bg='rgba(124,94,245,.8)';
+      else bg='rgba(255,59,92,.5)';
+      const glow=pct>=1?`box-shadow:0 0 6px var(--green)`:pct>=.6?`box-shadow:0 0 4px var(--accent)`:'';
+      return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px" title="${d}: ${mins}m">
+        <div style="width:100%;height:${h}px;background:${bg};border-radius:2px 2px 0 0;${glow};${isToday?'outline:1.5px solid rgba(91,110,245,.8);outline-offset:1px':''}"></div>
+        <div style="font-size:8px;color:${isToday?'var(--accent)':'var(--text3)'};font-weight:${isToday?700:400}">${DOW_NAMES[dow]}</div>
+      </div>`;
+    }).join('');
+  }
 }
 const YT_PRESETS={
   lofi:     {id:'jfKfPfyJRdk', title:'Lofi Hip Hop Radio'},
@@ -3844,15 +4082,671 @@ function restoreLastMusic(){
 
 // INIT
 function initApp(){
-  checkStreak();
-  checkWorkoutStreak();   // ← FIX: evaluate workout streak on load
-  snapshotStrength();     // ← FIX: record today's strength baseline
-  setupPWA();
+  checkStreak();setupPWA();
   updateTimerUI();renderDash();renderFocusStatsBar();renderTests();renderWorkout();
   document.getElementById('t-date').value=today();
   restoreLastMusic();
-  setTimeout(updateNotifCard,200);
+  // Prompt for notifications if not yet decided, after a short delay
+  setTimeout(()=>{
+    if('Notification' in window&&Notification.permission==='default'&&S.sessions.length===0){
+      // First time — show after a few seconds
+    } else if('Notification' in window&&Notification.permission==='default'&&S.sessions.length>0){
+      // Has sessions but never allowed — offer once more
+      updateNotifCard();
+    } else {
+      updateNotifCard();
+    }
+  },1000);
+
+  // Premium: initial renders
+  setTimeout(renderMiniConsistencyGraph, 200);
+  setTimeout(renderFeedbackBanner, 300);
+  setTimeout(renderProgressSummary, 400);
+  setTimeout(renderNextRankProgress, 200);
+}
+
+/* ═══════════════════════════════════════════════════════
+   █████╗ ███╗   ██╗██╗███╗   ███╗███████╗
+  ██╔══██╗████╗  ██║██║████╗ ████║██╔════╝
+  ███████║██╔██╗ ██║██║██╔████╔██║███████╗
+  ██╔══██║██║╚██╗██║██║██║╚██╔╝██║╚════██║
+  ██║  ██║██║ ╚████║██║██║ ╚═╝ ██║███████║
+  ╚═╝  ╚═╝╚═╝  ╚═══╝╚═╝╚═╝     ╚═╝╚══════╝
+  PREMIUM VISUAL LAYER
+  ═══════════════════════════════════════════════════════ */
+
+// ══════════════════════════════════════════
+//  SOLO LEVELING SOUND ENGINE
+//  Synthesised SL-vibe sounds via Web Audio
+// ══════════════════════════════════════════
+let soundFXEnabled=true;
+let _audioCtxSL=null;
+
+function getSLAudio(){
+  if(!_audioCtxSL||_audioCtxSL.state==='closed'){
+    _audioCtxSL=new(window.AudioContext||window.webkitAudioContext)();
+  }
+  if(_audioCtxSL.state==='suspended')_audioCtxSL.resume();
+  return _audioCtxSL;
+}
+
+function toggleSoundFX(){
+  soundFXEnabled=!soundFXEnabled;
+  const btn=document.getElementById('sound-toggle');
+  if(btn){btn.textContent=soundFXEnabled?'🔊':'🔇';btn.classList.toggle('on',soundFXEnabled);}
+  if(soundFXEnabled)playSLSound('click');
+}
+
+// Core tone builder
+function _slTone(ctx,type,freq,start,dur,peakVol,fadeIn,fadeOut){
+  const osc=ctx.createOscillator();
+  const env=ctx.createGain();
+  osc.connect(env);env.connect(ctx.destination);
+  osc.type=type;osc.frequency.value=freq;
+  const t=ctx.currentTime+start;
+  env.gain.setValueAtTime(0,t);
+  env.gain.linearRampToValueAtTime(peakVol,t+fadeIn);
+  env.gain.exponentialRampToValueAtTime(0.001,t+dur-fadeOut);
+  osc.start(t);osc.stop(t+dur);
+}
+
+function playSLSound(type){
+  if(!soundFXEnabled)return;
+  try{
+    const ctx=getSLAudio();
+    if(type==='xp'){
+      // Rising ding — SL power gain
+      _slTone(ctx,'sine',660,0,.28,.13,.01,.06);
+      _slTone(ctx,'sine',880,.06,.22,.07,.01,.06);
+      _slTone(ctx,'triangle',1100,.12,.18,.04,.01,.05);
+    }
+    else if(type==='rankup'){
+      // Triumphant 4-note arpeggio — SL awakening
+      [[261.6,0,.5,.28],[329.6,.12,.44,.22],[392,.26,.4,.18],[523.2,.42,.6,.22]].forEach(([f,s,d,v])=>{
+        _slTone(ctx,'triangle',f,s,d,v,.03,.1);
+        _slTone(ctx,'sine',f*2,s,d,v*.4,.03,.1);
+      });
+      // Low impact thud
+      _slTone(ctx,'sawtooth',55,.38,.35,.18,.01,.15);
+    }
+    else if(type==='quest'){
+      // Clean accept sound
+      _slTone(ctx,'sine',523,.0,.15,.12,.02,.05);
+      _slTone(ctx,'sine',659,.08,.12,.09,.01,.05);
+      _slTone(ctx,'sine',784,.14,.14,.06,.01,.08);
+    }
+    else if(type==='fail'){
+      // Heavy low thud + dissonant buzz
+      _slTone(ctx,'sawtooth',80,.0,.4,.2,.005,.15);
+      _slTone(ctx,'square',90,.0,.25,.08,.005,.15);
+      _slTone(ctx,'sine',55,.1,.35,.12,.005,.15);
+    }
+    else if(type==='click'){
+      // Subtle synthetic click
+      _slTone(ctx,'square',1200,.0,.04,.06,.002,.03);
+      _slTone(ctx,'sine',800,.0,.06,.03,.001,.04);
+    }
+    else if(type==='penalty'){
+      // Alert system sound
+      _slTone(ctx,'sawtooth',220,.0,.18,.22,.01,.08);
+      _slTone(ctx,'sawtooth',220,.2,.18,.18,.01,.08);
+    }
+  }catch(e){}
+}
+
+// ── alias for backward compat ──
+function playPremiumSound(type){ playSLSound(type); }
+
+// ── FLOATING XP TEXT ──
+function showXPFloat(xp, sourceEl){
+  const el = document.createElement('div');
+  el.className = 'xp-float';
+  el.textContent = '+' + xp + ' XP';
+  // Position near source element or center screen
+  let x = window.innerWidth / 2 - 30;
+  let y = window.innerHeight / 2;
+  if(sourceEl){
+    const r = sourceEl.getBoundingClientRect();
+    x = r.left + r.width/2 - 30;
+    y = r.top + r.height/2;
+  }
+  el.style.left = x + 'px';
+  el.style.top = y + 'px';
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 1700);
+  playPremiumSound('xp');
+}
+
+// ── RANK UP FLASH ──
+function triggerRankUpFlash(){
+  playPremiumSound('rankup');
+  const flash = document.createElement('div');
+  flash.className = 'rankup-flash';
+  document.body.appendChild(flash);
+  setTimeout(() => flash.remove(), 1000);
+  // Glow rank badges
+  document.querySelectorAll('.sw-rank-badge,.rp-rank-badge,.tb-rank').forEach(b=>{
+    b.classList.add('rankup-text-glow');
+    setTimeout(()=>b.classList.remove('rankup-text-glow'),3000);
+  });
+}
+
+// ── FAILURE PULSE ──
+function triggerFailureAnim(el){
+  playPremiumSound('fail');
+  if(el){ el.classList.add('fail-pulse','fail-shake'); setTimeout(()=>{ el.classList.remove('fail-pulse','fail-shake'); },600); }
+}
+
+// ── QUEST TICK ──
+function triggerQuestTick(checkEl){
+  if(!checkEl) return;
+  checkEl.classList.add('quest-tick-anim');
+  setTimeout(()=>checkEl.classList.remove('quest-tick-anim'),500);
+  playPremiumSound('quest');
+}
+
+// ── DYNAMIC FEEDBACK BANNER ──
+function renderFeedbackBanner(){
+  const banner = document.getElementById('feedback-banner');
+  const msgEl = document.getElementById('feedback-msg');
+  const subEl = document.getElementById('feedback-sub');
+  const ratingEl = document.getElementById('daily-rating');
+  if(!banner||!msgEl||!subEl) return;
+
+  const t = today();
+  const todaySess = S.sessions.filter(s=>s.date===t&&!s.paused);
+  const todayMins = todaySess.reduce((a,s)=>a+s.min,0);
+  const goal = (S.goals&&S.goals.studyHours||6)*60;
+  const pct = todayMins/goal;
+  const streak = S.hunter.streak||0;
+  const questComp = S.questComp[t]||{};
+  const questsDone = Object.values(questComp).filter(Boolean).length;
+  const activeQ = getActiveQuests();
+  const questTotal = activeQ.length;
+
+  // Determine message type
+  let type='neutral', msg='⚡ System online', sub='Begin your session, Hunter.';
+  const hour = new Date().getHours();
+
+  if(todayMins===0){
+    if(hour<10){ msg='🌅 New day. New mission.'; sub='The dungeon awaits. Start your first session.'; type='neutral'; }
+    else if(hour<14){ msg='⚠ Output below potential'; sub='Morning half gone. Lock in now, Hunter.'; type='low'; }
+    else if(hour<18){ msg='⚠ No sessions logged today'; sub='The gap is growing. One session is all it takes.'; type='low'; }
+    else{ msg='🌙 Late but not too late'; sub='Even 1 hour now keeps the streak alive.'; type='streak'; }
+  } else if(pct>=1){
+    msg='⚡ Strong progress today'; sub=`${(todayMins/60).toFixed(1)}h logged — goal crushed! Keep momentum.`; type='good';
+  } else if(pct>=0.6){
+    msg='💪 Solid output today'; sub=`${(todayMins/60).toFixed(1)}h done — ${Math.round((1-pct)*goal/60*10)/10}h left to hit goal.`; type='good';
+  } else if(pct>=0.3){
+    msg='📈 Progress building'; sub=`${(todayMins/60).toFixed(1)}h logged. Push through to the goal.`; type='neutral';
+  } else {
+    msg='⚠ Output below potential'; sub=`Only ${(todayMins/60).toFixed(1)}h so far. The shadow army doesn't rest.`; type='low';
+  }
+
+  if(streak>=7){ msg='🔥 Momentum building'; sub=`${streak}-day streak. The system is working. Don't break it.`; type='streak'; }
+  else if(streak>=3 && pct>=0.8){ msg='🔥 On fire today'; sub=`${streak}-day streak + strong session. Rank up incoming.`; type='streak'; }
+
+  banner.className = 'feedback-banner ' + type;
+  banner.style.display = 'flex';
+  msgEl.textContent = msg;
+  subEl.textContent = sub;
+
+  // Daily Star Rating (based on sessions, focus, completion)
+  const stars = calcDailyRating(todayMins, goal, questsDone, questTotal, todaySess);
+  let starHtml = '';
+  for(let i=1;i<=5;i++) starHtml += `<span class="daily-star${i<=stars?' lit':''}">⭐</span>`;
+  ratingEl.innerHTML = starHtml;
+}
+
+function calcDailyRating(mins, goalMins, questsDone, questTotal, sessions){
+  let score = 0;
+  const pct = mins/goalMins;
+  if(pct>=1) score+=2; else if(pct>=0.7) score+=1.5; else if(pct>=0.4) score+=1;
+  if(questTotal>0){ const qr=questsDone/questTotal; if(qr>=0.8) score+=1.5; else if(qr>=0.5) score+=1; else if(qr>0) score+=0.5; }
+  const avgStars = sessions.filter(s=>s.stars).reduce((a,s)=>a+(s.stars||0),0)/Math.max(1,sessions.filter(s=>s.stars).length);
+  if(avgStars>=4) score+=1.5; else if(avgStars>=3) score+=1; else if(avgStars>0) score+=0.5;
+  return Math.min(5, Math.round(score));
+}
+
+// ── PROGRESS SUMMARY CARD ──
+function renderProgressSummary(){
+  const wrap = document.getElementById('progress-summary-wrap');
+  const grid = document.getElementById('progress-summary');
+  if(!wrap||!grid) return;
+
+  const t = today();
+  const todaySess = S.sessions.filter(s=>s.date===t&&!s.paused);
+  const todayMins = todaySess.reduce((a,s)=>a+s.min,0);
+  const todayXP = todaySess.reduce((a,s)=>a+(s.xp||0),0);
+  const goal = (S.goals&&S.goals.studyHours||6)*60;
+  const questComp = S.questComp[t]||{};
+  const questsDone = Object.values(questComp).filter(Boolean).length;
+  const activeQ = getActiveQuests();
+  const pct = todayMins/goal;
+
+  let statusClass='ongoing', statusText='IN PROGRESS';
+  if(todaySess.length===0){ statusClass='ongoing'; statusText='AWAITING DEPLOYMENT'; }
+  else if(pct>=1 && questsDone>=Math.floor(activeQ.length*0.8)){ statusClass='success'; statusText='✓ MISSION SUCCESS'; }
+  else if(pct<0.3 && new Date().getHours()>=22){ statusClass='failed'; statusText='✗ BELOW THRESHOLD'; }
+  else if(pct<0.5 && new Date().getHours()>=20 && questsDone===0){ statusClass='recovery'; statusText='⚠ RECOVERY NEEDED'; }
+
+  if(todaySess.length===0){ wrap.style.display='none'; return; }
+  wrap.style.display='block';
+
+  grid.innerHTML = `
+    <div class="ps-item">
+      <div class="ps-val" style="color:var(--gold)">+${todayXP}</div>
+      <div class="ps-lbl">XP Gained</div>
+    </div>
+    <div class="ps-item">
+      <div class="ps-val" style="color:var(--accent)">${fmtHM(todayMins)}</div>
+      <div class="ps-lbl">Study Time</div>
+    </div>
+    <div class="ps-item">
+      <div class="ps-val">${todaySess.length}</div>
+      <div class="ps-lbl">Sessions</div>
+    </div>
+    <div class="ps-item">
+      <div class="ps-val" style="color:var(--green)">${questsDone}/${activeQ.length}</div>
+      <div class="ps-lbl">Quests</div>
+    </div>
+    <div class="ps-status ${statusClass}">${statusText}</div>
+  `;
+}
+
+// ── NEXT RANK PROGRESS BAR ──
+function renderNextRankProgress(){
+  const wrap = document.getElementById('sw-rank-progress');
+  const fill = document.getElementById('sw-rank-prog-fill');
+  const lbl = document.getElementById('sw-rank-prog-label');
+  const pctEl = document.getElementById('sw-rank-prog-pct');
+  if(!wrap||!fill) return;
+
+  const RANKS=[
+    {r:'E',min:0,max:500},{r:'D',min:500,max:1500},{r:'C',min:1500,max:3500},
+    {r:'B',min:3500,max:7000},{r:'A',min:7000,max:13000},{r:'S',min:13000,max:22000},
+    {r:'SS',min:22000,max:35000},{r:'SSS',min:35000,max:999999}
+  ];
+  const xp = S.hunter.xp||0;
+  const cur = RANKS.findIndex(rk=>xp>=rk.min&&xp<rk.max);
+  if(cur===-1||cur===RANKS.length-1){ wrap.style.display='none'; return; }
+
+  const rk = RANKS[cur];
+  const next = RANKS[cur+1];
+  const pct = Math.min(100,Math.round((xp-rk.min)/(rk.max-rk.min)*100));
+
+  wrap.style.display='block';
+  lbl.textContent = `Rank ${rk.r} → ${next.r}`;
+  pctEl.textContent = pct + '%  (' + xp + ' / ' + rk.max + ' XP)';
+  setTimeout(()=>{ fill.style.width = pct+'%'; }, 100);
+}
+
+// ── MINI 7-DAY CONSISTENCY GRAPH ──
+function renderMiniConsistencyGraph(){
+  const cont = document.getElementById('mini-consistency-graph');
+  if(!cont) return;
+  const days=[];
+  for(let i=6;i>=0;i--){ const d=new Date(); d.setDate(d.getDate()-i); days.push(d.toISOString().split('T')[0]); }
+  const goal=(S.goals&&S.goals.studyHours||6)*60;
+  const data = days.map(d=>{ const mins=S.sessions.filter(s=>s.date===d&&!s.paused).reduce((a,s)=>a+s.min,0); return{mins,pct:Math.min(1,mins/goal),isToday:d===today()}; });
+  const max = Math.max(...data.map(d=>d.mins),1);
+  const DAY_NAMES=['S','M','T','W','T','F','S'];
+  const todayDow = new Date().getDay();
+
+  cont.innerHTML = data.map((d,i)=>{
+    const h = Math.max(4, Math.round(d.pct*32));
+    const isToday = d.isToday;
+    const dow = (todayDow - 6 + i + 7) % 7;
+    let color;
+    if(d.mins===0) color='rgba(255,255,255,.06)';
+    else if(d.pct>=1) color='var(--green)';
+    else if(d.pct>=0.6) color='var(--accent)';
+    else if(d.pct>=0.3) color='var(--accent2)';
+    else color='rgba(255,59,92,.5)';
+    return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px" title="${d.mins}m studied">
+      <div class="mini-bar${isToday?' today':''}" style="width:100%;height:${h}px;background:${color};${d.pct>=1?'box-shadow:0 0 6px '+color+'80':''}"></div>
+      <div style="font-size:8px;color:${isToday?'var(--accent)':'var(--text3)'};font-weight:${isToday?700:400}">${DAY_NAMES[dow]}</div>
+    </div>`;
+  }).join('');
+}
+
+// ── HOOK INTO EXISTING FUNCTIONS (non-destructive patches) ──
+
+// Patch showToast to detect XP gains and trigger float
+const _origShowToast = showToast;
+showToast = function(msg){
+  _origShowToast(msg);
+  // Extract XP value from common toast patterns
+  const xpMatch = msg.match(/\+(\d+)\s*XP/i);
+  if(xpMatch){
+    const xpVal = parseInt(xpMatch[1]);
+    if(xpVal>0) showXPFloat(xpVal);
+  }
+  // Detect failure/penalty messages
+  if(msg.includes('-') && msg.includes('XP')){
+    const penEl = document.getElementById('penalty-zone');
+    if(penEl) triggerFailureAnim(penEl);
+  }
+  // Quest complete sound
+  if(msg.toLowerCase().includes('quest done')||msg.toLowerCase().includes('quest')){
+    playPremiumSound('quest');
+  }
+};
+
+// Patch checkRankUp to trigger flash
+const _origCheckRankUp = typeof checkRankUp==='function'?checkRankUp:null;
+if(_origCheckRankUp){
+  checkRankUp = function(){
+    const prevRank = getRank(S.hunter.xp).r;
+    _origCheckRankUp();
+    const newRank = getRank(S.hunter.xp).r;
+    if(newRank!==prevRank){ triggerRankUpFlash(); showToast('⚔ RANK UP! You are now Rank '+newRank+' ✨'); }
+  };
+}
+
+// Patch renderDash to also render premium components
+const _origRenderDash = typeof renderDash==='function'?renderDash:null;
+if(_origRenderDash){
+  renderDash = function(){
+    _origRenderDash();
+    renderNextRankProgress();
+    renderMiniConsistencyGraph();
+    renderFeedbackBanner();
+    renderProgressSummary();
+  };
+}
+
+// Intercept quest checkbox clicks to add tick animation
+document.addEventListener('click', function(e){
+  if(e.target && (e.target.classList.contains('qchk')||e.target.classList.contains('rp-qchk'))){
+    if(!e.target.classList.contains('done')){
+      setTimeout(()=>triggerQuestTick(e.target), 10);
+    }
+  }
+  // Click sound on buttons
+  if(e.target && (e.target.classList.contains('btn')||e.target.classList.contains('nav-btn')||e.target.classList.contains('bnav-btn'))){
+    playPremiumSound('click');
+  }
+}, true);
+
+// ── PREMIUM CHART UPGRADES ──
+let chRadar=null;
+
+// Override renderCharts with premium version
+const _origRenderCharts = typeof renderCharts==='function'?renderCharts:null;
+if(_origRenderCharts){
+  renderCharts = function(){
+    _origRenderCharts();
+    // After base charts render, apply premium upgrades
+    setTimeout(upgradeProdChart, 50);
+    setTimeout(upgradeCumChart, 80);
+    setTimeout(renderRadarChart, 120);
+  };
+}
+
+function upgradeProdChart(){
+  // Destroy and recreate productivity chart with neon glow + gradient
+  if(window.chProd){ window.chProd.destroy(); window.chProd=null; }
+  const canvas=document.getElementById('ch-productivity');
+  if(!canvas)return;
+  const ctx=canvas.getContext('2d');
+
+  const QUESTS=getActiveQuests();
+  const last14=[];
+  for(let i=13;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);last14.push(d.toISOString().split('T')[0]);}
+  const prodScores=last14.map(d=>{
+    const dayMins=S.sessions.filter(s=>s.date===d).reduce((a,s)=>a+s.min,0);
+    const studyScore=Math.min(100,Math.round(dayMins/((S.goals&&S.goals.studyHours||6)*60)*60));
+    const comp=S.questComp[d]||{};
+    const questDone=Object.values(comp).filter(Boolean).length;
+    const questScore=QUESTS.length>0?Math.round(questDone/QUESTS.length*40):0;
+    return Math.min(100,studyScore+questScore);
+  });
+
+  // Gradient fill
+  const grad=ctx.createLinearGradient(0,0,0,180);
+  grad.addColorStop(0,'rgba(168,85,247,0.4)');
+  grad.addColorStop(0.5,'rgba(91,110,245,0.15)');
+  grad.addColorStop(1,'rgba(91,110,245,0)');
+
+  // Animated moving dot data: draw full line, then a pulsing dot on the last real value
+  const lastIdx=prodScores.reduce((li,v,i)=>v>0?i:li,-1);
+
+  window.chProd=new Chart(ctx,{
+    type:'line',
+    data:{
+      labels:last14.map(d=>{const dt=new Date(d);return dt.getDate()+'/'+(dt.getMonth()+1);}),
+      datasets:[
+        {
+          label:'Productivity',data:prodScores,
+          borderColor:'rgba(168,85,247,1)',
+          backgroundColor:grad,
+          fill:true,tension:0.45,
+          pointRadius:prodScores.map((_,i)=>i===lastIdx?6:3),
+          pointBackgroundColor:prodScores.map((v,i)=>{
+            if(i===lastIdx)return '#fff';
+            return v>=70?'#00d68f':v>=40?'#f4c430':'#ff3b5c';
+          }),
+          pointBorderColor:prodScores.map((_,i)=>i===lastIdx?'rgba(168,85,247,1)':'transparent'),
+          pointBorderWidth:prodScores.map((_,i)=>i===lastIdx?2:0),
+          pointHoverRadius:7,
+          borderWidth:2.5,
+          shadowColor:'rgba(168,85,247,0.5)',
+          shadowBlur:10,
+          shadowOffsetX:0,shadowOffsetY:4,
+        }
+      ]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      animation:{duration:1200,easing:'easeInOutQuart'},
+      plugins:{
+        legend:{display:false},
+        tooltip:{
+          backgroundColor:'rgba(15,15,30,0.95)',
+          borderColor:'rgba(168,85,247,0.4)',
+          borderWidth:1,
+          padding:10,
+          titleColor:'#e0e3f4',
+          bodyColor:'rgba(168,85,247,1)',
+          callbacks:{
+            title:ctx=>'Day '+ctx[0].label,
+            label:ctx=>'Score: '+ctx.raw+'/100',
+            afterLabel:ctx=>{
+              const v=ctx.raw;
+              if(v>=80)return '⚡ Exceptional';
+              if(v>=60)return '💪 Strong';
+              if(v>=40)return '📈 Progressing';
+              if(v>0)return '⚠ Low output';
+              return '— No data';
+            }
+          }
+        }
+      },
+      scales:{
+        x:{ticks:{color:'rgba(224,227,244,.7)',font:{size:9}},grid:{color:'rgba(255,255,255,.04)'}},
+        y:{min:0,max:100,ticks:{color:'rgba(224,227,244,.7)',font:{size:10},callback:v=>v+'%'},grid:{color:'rgba(255,255,255,.04)'},border:{color:'transparent'}}
+      }
+    }
+  });
+}
+
+function upgradeCumChart(){
+  if(window.chCum){ window.chCum.destroy(); window.chCum=null; }
+  const canvas=document.getElementById('ch-cumulative');
+  if(!canvas)return;
+  const ctx=canvas.getContext('2d');
+
+  const sortedSess=[...S.sessions].sort((a,b)=>a.date.localeCompare(b.date));
+  const cumDates=[],cumHrs=[];let running=0;
+  if(sortedSess.length>0){
+    const first=sortedSess[0].date,lastDate=today();
+    const d=new Date(first);
+    while(d.toISOString().split('T')[0]<=lastDate){
+      const ds=d.toISOString().split('T')[0];
+      running+=S.sessions.filter(s=>s.date===ds).reduce((a,s)=>a+s.min,0)/60;
+      cumDates.push(new Date(d).getDate()+'/'+(new Date(d).getMonth()+1));
+      cumHrs.push(+running.toFixed(1));
+      d.setDate(d.getDate()+1);
+    }
+  }
+  if(cumDates.length<2){
+    const ce=document.getElementById('ch-cumulative');
+    if(ce)ce.parentElement.innerHTML='<div class="empty">Log sessions to see your cumulative progress.</div>';
+    return;
+  }
+
+  const grad=ctx.createLinearGradient(0,0,0,180);
+  grad.addColorStop(0,'rgba(0,214,143,0.35)');
+  grad.addColorStop(0.6,'rgba(0,214,143,0.08)');
+  grad.addColorStop(1,'rgba(0,214,143,0)');
+
+  window.chCum=new Chart(ctx,{
+    type:'line',
+    data:{
+      labels:cumDates,
+      datasets:[{
+        label:'Total Hours',data:cumHrs,
+        borderColor:'rgba(0,214,143,1)',
+        backgroundColor:grad,
+        fill:true,tension:0.45,
+        pointRadius:0,pointHoverRadius:5,
+        pointHoverBackgroundColor:'#00d68f',
+        borderWidth:2.5,
+      }]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      animation:{duration:1400,easing:'easeInOutQuart'},
+      plugins:{
+        legend:{display:false},
+        tooltip:{
+          backgroundColor:'rgba(15,15,30,0.95)',
+          borderColor:'rgba(0,214,143,0.35)',
+          borderWidth:1,padding:10,
+          titleColor:'#e0e3f4',bodyColor:'rgba(0,214,143,1)',
+          callbacks:{label:ctx=>`${ctx.raw}h total`}
+        }
+      },
+      scales:{
+        x:{ticks:{color:'rgba(224,227,244,.7)',font:{size:9},maxTicksLimit:10},grid:{color:'rgba(255,255,255,.04)'}},
+        y:{ticks:{color:'rgba(224,227,244,.7)',font:{size:10}},grid:{color:'rgba(255,255,255,.04)'},title:{display:true,text:'Cumulative Hours',color:'rgba(224,227,244,.5)',font:{size:10}},border:{color:'transparent'}}
+      }
+    }
+  });
+}
+
+function renderRadarChart(){
+  if(chRadar){ chRadar.destroy(); chRadar=null; }
+  const canvas=document.getElementById('ch-radar');
+  if(!canvas)return;
+
+  // Calculate RPG stats from real data
+  const last7=[];for(let i=6;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);last7.push(d.toISOString().split('T')[0]);}
+  const totalMins=S.sessions.reduce((a,s)=>a+s.min,0);
+  const last7mins=last7.map(d=>S.sessions.filter(s=>s.date===d).reduce((a,s)=>a+s.min,0));
+  const goalMins=(S.goals&&S.goals.studyHours||6)*60;
+
+  // ENDURANCE: avg daily hours vs goal (0-100)
+  const avgDaily=last7mins.reduce((a,v)=>a+v,0)/7;
+  const endurance=Math.min(100,Math.round(avgDaily/goalMins*100));
+
+  // CONSISTENCY: days with any study in last 7
+  const activeDays=last7mins.filter(v=>v>0).length;
+  const consistency=Math.round(activeDays/7*100);
+
+  // FOCUS: average session rating (stars 1-5 mapped to 0-100)
+  const ratedSess=S.sessions.filter(s=>s.stars);
+  const avgRating=ratedSess.length?ratedSess.reduce((a,s)=>a+(s.stars||0),0)/ratedSess.length:3;
+  const focus=Math.round((avgRating/5)*100);
+
+  // KNOWLEDGE: overall topic confidence
+  const allT=[...(S.topics.physics11||[]),...(S.topics.physics12||[]),...(S.topics.chemistry11||[]),...(S.topics.chemistry12||[]),...(S.topics.maths11||[]),...(S.topics.maths12||[])];
+  const knowledge=allT.length?Math.round(allT.reduce((a,t)=>a+t.conf,0)/allT.length):0;
+
+  // QUEST RATE: last 7 days
+  const QUESTS=getActiveQuests();
+  let qD=0,qT=0;
+  last7.forEach(d=>{const c=S.questComp[d]||{};qT+=QUESTS.length;qD+=Object.values(c).filter(Boolean).length;});
+  const questRate=qT>0?Math.round(qD/qT*100):0;
+
+  // STREAK POWER: streak mapped 0-100 (max 30 days = 100)
+  const streakPower=Math.min(100,Math.round((S.hunter.streak||0)/30*100));
+
+  const data=[endurance,consistency,focus,knowledge,questRate,streakPower];
+  const ctx=canvas.getContext('2d');
+
+  // Neon glow background fill gradient
+  const grad=ctx.createRadialGradient(canvas.width/2,canvas.height/2,0,canvas.width/2,canvas.height/2,120);
+  grad.addColorStop(0,'rgba(91,110,245,0.18)');
+  grad.addColorStop(0.6,'rgba(124,94,245,0.08)');
+  grad.addColorStop(1,'rgba(91,110,245,0)');
+
+  chRadar=new Chart(ctx,{
+    type:'radar',
+    data:{
+      labels:['Endurance','Consistency','Focus','Knowledge','Quest Rate','Streak Power'],
+      datasets:[{
+        label:'Hunter Stats',
+        data:data,
+        backgroundColor:grad,
+        borderColor:'rgba(91,110,245,0.9)',
+        borderWidth:2,
+        pointBackgroundColor:'rgba(91,110,245,1)',
+        pointBorderColor:'rgba(0,0,0,0)',
+        pointRadius:4,
+        pointHoverRadius:6,
+        pointHoverBackgroundColor:'#fff',
+      }]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      animation:{duration:1200,easing:'easeInOutQuart'},
+      plugins:{
+        legend:{display:false},
+        tooltip:{
+          backgroundColor:'rgba(15,15,30,0.95)',
+          borderColor:'rgba(91,110,245,0.4)',
+          borderWidth:1,padding:10,
+          titleColor:'rgba(91,110,245,1)',
+          bodyColor:'#e0e3f4',
+          callbacks:{label:ctx=>`${ctx.label}: ${ctx.raw}/100`}
+        }
+      },
+      scales:{
+        r:{
+          min:0,max:100,
+          ticks:{
+            display:false,
+            stepSize:25,
+          },
+          grid:{color:'rgba(91,110,245,0.14)',circular:false},
+          angleLines:{color:'rgba(91,110,245,0.18)'},
+          pointLabels:{
+            color:'rgba(224,227,244,0.8)',
+            font:{size:11,family:"'Rajdhani',sans-serif",weight:'600'},
+            padding:8,
+          }
+        }
+      }
+    }
+  });
 }
 </script>
+<!-- SL PENALTY OVERLAY — top priority messages -->
+<div class="sl-penalty-overlay" id="sl-penalty-overlay" style="display:none">
+  <div class="sl-penalty-msg" id="sl-penalty-msg">
+    <div class="sl-pen-icon" id="sl-pen-icon">☠</div>
+    <div class="sl-pen-body">
+      <div class="sl-pen-title" id="sl-pen-title">System Alert</div>
+      <div class="sl-pen-sub" id="sl-pen-sub"></div>
+    </div>
+    <button class="sl-pen-close" onclick="closeSLPenalty()">✕</button>
+  </div>
+</div>
+
+<!-- SOUND TOGGLE -->
+<button class="sound-toggle on" id="sound-toggle" onclick="toggleSoundFX()" title="Toggle sound effects">🔊</button>
+
 </body>
 </html>
