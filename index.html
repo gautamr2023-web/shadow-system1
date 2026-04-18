@@ -131,7 +131,8 @@ section.active{display:block}
 .dstat{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px 10px;text-align:center}
 .dstat-val{font-family:var(--mono);font-size:20px;color:var(--text)}
 .dstat-lbl{font-size:10px;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-top:2px}
-.mob-dash-top{display:flex;gap:10px;margin-bottom:14px}
+.mob-day-n{font-size:26px;font-weight:700}
+.mob-day-l{font-size:10px;color:var(--text2)}
 .mob-jee-days{flex:1;background:rgba(244,196,48,.05);border:1px solid rgba(244,196,48,.14);border-radius:var(--radius-sm);padding:14px;text-align:center}
 .mob-jee-n{font-family:var(--mono);font-size:26px;color:var(--gold)}
 .mob-jee-l{font-size:10px;color:var(--text2);text-transform:uppercase;letter-spacing:.5px}
@@ -987,14 +988,11 @@ input.fi:focus,select.fi:focus{
     </div>
   </div>
 
-  <div class="mob-dash-top">
-    <div class="mob-day"><div class="mob-day-n" id="mob-day-n">1</div><div class="mob-day-l">Day</div></div>
-    <div class="mob-jee-days"><div class="mob-jee-n" id="mob-jee-n">—</div><div class="mob-jee-l exam-label-display">Days to JEE Adv.</div></div>
-  </div>
+  <!-- XP Today summary row (clean, minimal) -->
   <div class="dash-stats">
-    <div class="dstat"><div class="dstat-val" id="ds-hrs">0h0m</div><div class="dstat-lbl">Today</div></div>
-    <div class="dstat"><div class="dstat-val" id="ds-xp">+0</div><div class="dstat-lbl">XP Today</div></div>
-    <div class="dstat"><div class="dstat-val" id="ds-sess">0</div><div class="dstat-lbl">Sessions</div></div>
+    <div class="dstat"><div class="dstat-val" id="ds-hrs">0h0m</div><div class="dstat-lbl">📚 Study Today</div></div>
+    <div class="dstat"><div class="dstat-val" id="ds-xp">+0</div><div class="dstat-lbl">⚡ XP Today</div></div>
+    <div class="dstat"><div class="dstat-val" id="ds-sess">0</div><div class="dstat-lbl">🎯 Sessions</div></div>
   </div>
   <div id="todays-mission"></div>
   <div class="card">
@@ -1020,6 +1018,19 @@ input.fi:focus,select.fi:focus{
     <button class="tmode-btn active" onclick="setMode('pomodoro',this)">Pomodoro</button>
     <button class="tmode-btn" onclick="setMode('stopwatch',this)">Stopwatch</button>
     <button class="tmode-btn" onclick="setMode('countdown',this)">Countdown</button>
+  </div>
+  <!-- Custom Pomodoro durations -->
+  <div id="pomo-custom-row" class="cd-row" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px">
+    <span style="font-size:11px;color:var(--text2);font-weight:700;text-transform:uppercase;letter-spacing:.5px">Custom:</span>
+    <div style="display:flex;align-items:center;gap:4px">
+      <input id="pomo-study-m" type="number" class="num-input" value="25" min="1" max="120" style="width:48px">
+      <span style="font-size:11px;color:var(--text2)">study</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:4px">
+      <input id="pomo-break-m" type="number" class="num-input" value="5" min="1" max="60" style="width:42px">
+      <span style="font-size:11px;color:var(--text2)">break</span>
+    </div>
+    <button class="btn btn-ghost btn-sm" onclick="applyPomoCustom()">Set ⚡</button>
   </div>
   <div id="cd-set-row" class="cd-row" style="display:none">
     <span style="font-size:12px;color:var(--text2)">Duration:</span>
@@ -1105,12 +1116,21 @@ input.fi:focus,select.fi:focus{
 
   <!-- NOTIFICATION + ALERTS CARD -->
   <div class="card" id="notif-setup-card" style="margin-bottom:14px">
-    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px">
       <div style="flex:1">
         <div style="font-size:13px;font-weight:700">🔔 Timer Alerts</div>
         <div style="font-size:11px;color:var(--text2);margin-top:2px">Get notified on lock screen when timer ends</div>
       </div>
       <button class="btn btn-primary btn-sm" onclick="requestNotifPermission()" style="flex-shrink:0">Enable</button>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:space-between;padding-top:10px;border-top:1px solid var(--border)">
+      <div>
+        <div style="font-size:12px;font-weight:700">📱 Keep Screen Active</div>
+        <div style="font-size:10px;color:var(--text2);margin-top:1px">Prevents phone from sleeping during sessions</div>
+      </div>
+      <div onclick="toggleWakeLock()" id="wakelock-toggle" style="width:36px;height:20px;border-radius:10px;background:rgba(255,255,255,.1);cursor:pointer;position:relative;transition:background .2s;flex-shrink:0">
+        <div id="wakelock-knob" style="width:16px;height:16px;border-radius:50%;background:#fff;position:absolute;top:2px;left:2px;transition:all .2s"></div>
+      </div>
     </div>
     <div style="font-size:10px;color:var(--text3);margin-top:8px">📳 Android: vibration + lock screen · 💻 Laptop: OS notification + chime</div>
   </div>
@@ -1776,6 +1796,8 @@ function ensureKeys(){
   if(!S.starterXPDates)S.starterXPDates={};
   if(!S.dailyXPCap)S.dailyXPCap={};
   if(!S.hunter.rank)S.hunter.rank=getRankByXPStatic(S.hunter.xp||0);
+  if(S.hunter.focusStat===undefined)S.hunter.focusStat=50;
+  if(S.hunter.disciplineStat===undefined)S.hunter.disciplineStat=50;
 }
 function loadLocal(){
   try{S=JSON.parse(localStorage.getItem('ss_v3'))||defState();}catch(e){S=defState();}
@@ -2043,14 +2065,30 @@ function goTo(name,btn){
   if(name==='settings')renderSettings();
 }
 
+// ── UNIFIED TOTAL XP TODAY (all sources) ──
+function getTotalXpToday(){
+  const t=today();
+  // 1. Session XP
+  const sessXP=S.sessions.filter(s=>s.date===t).reduce((a,s)=>a+(s.xp||0),0);
+  // 2. Quest XP (sum xp of completed quests for today)
+  const comp=S.questComp[t]||{};
+  const questXP=getActiveQuests().filter(q=>comp[q.id]).reduce((a,q)=>a+q.xp,0);
+  // 3. Workout XP (from today's logs)
+  const woXP=S.workout.logs.filter(l=>l.date===t).reduce((a,l)=>a+(l.xp||0),0);
+  // 4. Test XP (from today's tests)
+  const testXP=S.tests.filter(t2=>t2.date===t).reduce((a,t2)=>a+Math.round((t2.total/(t2.max||300))*40),0);
+  return sessXP+questXP+woXP+testXP;
+}
+
 // DASHBOARD
 function renderDash(){
   updateHeader();
-  const tSess=S.sessions.filter(s=>s.date===today());
+  const t=today();
+  const tSess=S.sessions.filter(s=>s.date===t);
   const tMins=tSess.reduce((a,s)=>a+s.min,0);
-  const tXP=tSess.reduce((a,s)=>a+(s.xp||0),0);
+  const totalXpToday=getTotalXpToday();
   el('ds-hrs',Math.floor(tMins/60)+'h'+(tMins%60)+'m');
-  el('ds-xp','+'+tXP);el('ds-sess',tSess.length);
+  el('ds-xp','+'+totalXpToday);el('ds-sess',tSess.length);
   renderStatusWindow();
   renderQuests();renderGates();renderPenalty();renderTodaysMission();
 }
@@ -2488,11 +2526,35 @@ function submitRating(save_it){
       last.stars=ratingStars||null;
       last.mood=ratingMood||null;
       last.note=(document.getElementById('rating-note')||{}).value||null;
-      if(ratingStars>=4&&!last.ratingBonus){last.ratingBonus=true;S.hunter.xp+=5;showToast('Focused session! +5 bonus XP ⭐');updateHeader();}
-      else if(ratingStars>0&&ratingStars<=2&&!last.ratingPenalty&&!isPaused()){
-        last.ratingPenalty=true;const pen=ratingStars===1?8:4;
-        S.hunter.xp=Math.max(0,S.hunter.xp-pen);
-        showToast('Low focus session. -'+pen+' XP 😵');updateHeader();
+
+      // ── TIERED XP MODIFIER based on star rating ──
+      if(ratingStars>0&&!last.ratingApplied){
+        last.ratingApplied=true;
+        const baseXP=last.xp||0;
+        let xpDelta=0;
+        let msg='';
+        if(ratingStars===5){xpDelta=Math.round(baseXP*0.20);msg='🔥 5⭐ Locked in! +20% XP bonus';}
+        else if(ratingStars===4){xpDelta=Math.round(baseXP*0.10);msg='💪 4⭐ Focused! +10% XP bonus';}
+        else if(ratingStars===3){xpDelta=0;msg='👍 3⭐ Session saved.';}
+        else if(ratingStars===2){xpDelta=-Math.round(baseXP*0.10);msg='😕 2⭐ Low focus. -10% XP';}
+        else if(ratingStars===1){xpDelta=-Math.round(baseXP*0.20);msg='😴 1⭐ Barely there. -20% XP';}
+        if(xpDelta!==0){
+          S.hunter.xp=Math.max(0,S.hunter.xp+xpDelta);
+          last.xp=Math.max(0,(last.xp||0)+xpDelta);
+          last.ratingXPDelta=xpDelta;
+        }
+        // ── Update Focus & Discipline stats ──
+        if(!S.hunter.focusStat)S.hunter.focusStat=50;
+        if(!S.hunter.disciplineStat)S.hunter.disciplineStat=50;
+        // Focus moves toward star rating (1-5 mapped to 0-100)
+        const targetFocus=(ratingStars/5)*100;
+        S.hunter.focusStat=Math.round(S.hunter.focusStat*0.9+targetFocus*0.1);
+        S.hunter.focusStat=Math.min(100,Math.max(0,S.hunter.focusStat));
+        // Discipline increases on 4+, decreases on 1-2
+        if(ratingStars>=4)S.hunter.disciplineStat=Math.min(100,S.hunter.disciplineStat+2);
+        else if(ratingStars<=2)S.hunter.disciplineStat=Math.max(0,S.hunter.disciplineStat-3);
+        if(msg)setTimeout(()=>showToast(msg),200);
+        updateHeader();
       }
       save();
     }
@@ -2500,6 +2562,7 @@ function submitRating(save_it){
   document.getElementById('rating-modal').classList.remove('show');
   pendingRating=null;
   if(focusTab==='log')renderSessionLog();
+  if(typeof renderDash==='function')renderDash();
 }
 
 // ── TAB TITLE TIMER ──
@@ -2521,15 +2584,41 @@ function fireAlert(title,body,isBreak,sessInfo){
 }
 
 // ── TIMER CORE ──
+// Use Date.now()-based timing — works even when tab is backgrounded
+let _timerStartWall=null;   // wall-clock ms when the current run started
+let _timerStartSecs=null;   // tSecs value when the current run started
+let _pomoStudyMins=25;      // custom pomodoro study duration (minutes)
+let _pomoBreakMins=5;       // custom pomodoro break duration (minutes)
+
 function setMode(m,btn){
   if(tRunning)resetTimer();
   tMode=m;
   document.querySelectorAll('.tmode-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');
   document.getElementById('cd-set-row').style.display=m==='countdown'?'flex':'none';
-  if(m==='pomodoro'){tSecs=25*60;tTotal=25*60;pomoPhase='focus';pomoCount=0;}
+  document.getElementById('pomo-custom-row').style.display=m==='pomodoro'?'flex':'none';
+  if(m==='pomodoro'){tSecs=_pomoStudyMins*60;tTotal=_pomoStudyMins*60;pomoPhase='focus';pomoCount=0;}
   else if(m==='stopwatch'){tSecs=0;tTotal=0;}
   else{tSecs=25*60;tTotal=25*60;}
   updateTimerUI();
+}
+function applyPomoCustom(){
+  const s=parseInt(document.getElementById('pomo-study-m').value)||25;
+  const b=parseInt(document.getElementById('pomo-break-m').value)||5;
+  _pomoStudyMins=Math.max(1,Math.min(120,s));
+  _pomoBreakMins=Math.max(1,Math.min(60,b));
+  // Persist preference
+  try{localStorage.setItem('ss_pomoStudy',_pomoStudyMins);localStorage.setItem('ss_pomoBreak',_pomoBreakMins);}catch(e){}
+  if(!tRunning){tSecs=_pomoStudyMins*60;tTotal=_pomoStudyMins*60;pomoPhase='focus';pomoCount=0;updateTimerUI();}
+  showToast('Pomodoro set: '+_pomoStudyMins+'m study / '+_pomoBreakMins+'m break ⚡');
+}
+function loadPomoPrefs(){
+  try{
+    const s=localStorage.getItem('ss_pomoStudy');const b=localStorage.getItem('ss_pomoBreak');
+    if(s)_pomoStudyMins=parseInt(s)||25;
+    if(b)_pomoBreakMins=parseInt(b)||5;
+    const si=document.getElementById('pomo-study-m');const bi=document.getElementById('pomo-break-m');
+    if(si)si.value=_pomoStudyMins;if(bi)bi.value=_pomoBreakMins;
+  }catch(e){}
 }
 function setSub(s,btn){
   studySub=s;
@@ -2545,52 +2634,74 @@ function applyCd(){
 }
 function toggleTimer(){
   if(tRunning){
-    clearInterval(tInterval);tRunning=false;pauseCount++;
+    // Pause: capture how many seconds remain before clearing
+    if(_timerStartWall!==null&&tMode!=='stopwatch'){
+      const elapsed_ms=Date.now()-_timerStartWall;
+      tSecs=Math.max(0,_timerStartSecs-Math.floor(elapsed_ms/1000));
+    } else if(tMode==='stopwatch'&&_timerStartWall!==null){
+      const elapsed_ms=Date.now()-_timerStartWall;
+      tSecs=_timerStartSecs+Math.floor(elapsed_ms/1000);
+    }
+    clearInterval(tInterval);tInterval=null;tRunning=false;_timerStartWall=null;
+    pauseCount++;
     el('t-toggle','Resume');
-    pauseMusic();           // pause music when timer pauses
+    pauseMusic();
     document.title=ORIG_TITLE;
   } else {
-    // Unlock AudioContext on first user gesture
     if(audioCtx&&audioCtx.state==='suspended')audioCtx.resume();
     tRunning=true;el('t-toggle','Pause');
-    tInterval=setInterval(tick,1000);
-    resumeMusic();          // resume music when timer resumes
+    _timerStartWall=Date.now();
+    _timerStartSecs=tSecs;
+    tInterval=setInterval(tick,250); // tick every 250ms — fine-grained enough, still cheap
+    resumeMusic();
   }
 }
 function tick(){
-  if(tMode==='stopwatch'){tSecs++;elapsed++;}
-  else{if(tSecs<=0){handleEnd();return;}tSecs--;elapsed++;}
+  if(!_timerStartWall)return;
+  const elapsed_ms=Date.now()-_timerStartWall;
+  const elapsed_secs=Math.floor(elapsed_ms/1000);
+  if(tMode==='stopwatch'){
+    tSecs=_timerStartSecs+elapsed_secs;
+    elapsed=tSecs;
+  } else {
+    tSecs=Math.max(0,_timerStartSecs-elapsed_secs);
+    elapsed=elapsed_secs;
+    if(tSecs<=0){handleEnd();return;}
+  }
   updateTimerUI();
   updateTabTitle();
 }
 function handleEnd(){
-  clearInterval(tInterval);tRunning=false;el('t-toggle','Start');
+  clearInterval(tInterval);tInterval=null;tRunning=false;_timerStartWall=null;
+  el('t-toggle','Start');
   document.title=ORIG_TITLE;
 
   if(tMode==='pomodoro'){
     if(pomoPhase==='focus'){
       const sid=Date.now();
-      autoLog(25,studySub,'pomodoro',sid);pomoCount++;
+      autoLog(_pomoStudyMins,studySub,'pomodoro',sid);pomoCount++;
       if(pomoCount%4===0){
         pomoPhase='longbreak';tSecs=15*60;tTotal=15*60;
-        fireAlert('🍃 Long Break! 15 min','Focus session complete. Great work!',true,{id:sid,min:25,sub:studySub,mode:'pomodoro'});
+        fireAlert('🍃 Long Break! 15 min','Focus session complete. Great work!',true,{id:sid,min:_pomoStudyMins,sub:studySub,mode:'pomodoro'});
       } else {
-        pomoPhase='break';tSecs=5*60;tTotal=5*60;
-        fireAlert('☕ Break Time! 5 min','Pomodoro done. Rest your eyes.',true,{id:sid,min:25,sub:studySub,mode:'pomodoro'});
+        pomoPhase='break';tSecs=_pomoBreakMins*60;tTotal=_pomoBreakMins*60;
+        fireAlert('☕ Break Time! '+_pomoBreakMins+'m','Pomodoro done. Rest your eyes.',true,{id:sid,min:_pomoStudyMins,sub:studySub,mode:'pomodoro'});
       }
-      stopMusic();           // stop music at end of focus session
+      stopMusic();
     } else {
-      pomoPhase='focus';tSecs=25*60;tTotal=25*60;
+      pomoPhase='focus';tSecs=_pomoStudyMins*60;tTotal=_pomoStudyMins*60;
       fireAlert('⚔ Focus Time!','Break over. Lock in.',false,null);
-      resumeMusic();         // restart music for next focus block
+      resumeMusic();
     }
-    elapsed=0;tRunning=true;el('t-toggle','Pause');tInterval=setInterval(tick,1000);
+    elapsed=0;tRunning=true;el('t-toggle','Pause');
+    _timerStartWall=Date.now();_timerStartSecs=tSecs;
+    tInterval=setInterval(tick,250);
   } else {
-    const mins=Math.round(tTotal/60)||1;
+    const mins=tMode==='stopwatch'?Math.max(1,Math.round(tSecs/60)):Math.max(1,Math.round(tTotal/60));
     const sid=Date.now();
     autoLog(mins,studySub,tMode,sid);
     fireAlert('✅ Session Done!',mins+'m of '+studySub+' complete!',false,{id:sid,min:mins,sub:studySub,mode:tMode});
-    stopMusic();             // stop music at end of countdown/stopwatch
+    stopMusic();
     tSecs=tTotal;elapsed=0;
   }
   updateTimerUI();
@@ -2611,10 +2722,10 @@ function updateTimerUI(){
   const ms=document.getElementById('mana-study');if(ms)ms.textContent=S.hunter.mana;
 }
 function resetTimer(){
-  clearInterval(tInterval);tRunning=false;elapsed=0;pauseCount=0;
+  clearInterval(tInterval);tInterval=null;tRunning=false;elapsed=0;pauseCount=0;_timerStartWall=null;
   el('t-toggle','Start');document.title=ORIG_TITLE;
-  stopMusic();              // stop music on reset
-  if(tMode==='pomodoro'){tSecs=25*60;tTotal=25*60;pomoPhase='focus';}
+  stopMusic();
+  if(tMode==='pomodoro'){tSecs=_pomoStudyMins*60;tTotal=_pomoStudyMins*60;pomoPhase='focus';}
   else if(tMode==='stopwatch'){tSecs=0;tTotal=0;}
   else applyCd();
   updateTimerUI();
@@ -2681,6 +2792,33 @@ function autoLog(mins,sub,mode,sid){
   }
 }
 function restoreMana(){S.hunter.mana=Math.min(100,S.hunter.mana+30);save();updateHeader();showToast('Mana +30 🌙 — take a real break!');}
+
+// ── WAKE LOCK API ──
+let wakeLock=null,wakeLockOn=false;
+async function toggleWakeLock(){
+  if(!('wakeLock' in navigator)){showToast('Wake Lock not supported on this browser');return;}
+  if(wakeLockOn){
+    try{if(wakeLock)await wakeLock.release();}catch(e){}
+    wakeLock=null;wakeLockOn=false;
+    document.getElementById('wakelock-toggle').style.background='rgba(255,255,255,.1)';
+    document.getElementById('wakelock-knob').style.left='2px';
+    showToast('Screen lock re-enabled');
+  } else {
+    try{
+      wakeLock=await navigator.wakeLock.request('screen');
+      wakeLockOn=true;
+      document.getElementById('wakelock-toggle').style.background='var(--green)';
+      document.getElementById('wakelock-knob').style.left='18px';
+      showToast('📱 Screen will stay on during sessions');
+      // Re-acquire if released by system (page visibility change)
+      wakeLock.addEventListener('release',async()=>{
+        if(wakeLockOn&&document.visibilityState==='visible'){
+          try{wakeLock=await navigator.wakeLock.request('screen');}catch(e){}
+        }
+      });
+    }catch(e){showToast('Could not acquire wake lock: '+e.message);}
+  }
+}
 // FOCUS STATS SYSTEM
 let focusTab='timer', logPeriod='today', statsPeriod='today';
 
@@ -2859,10 +2997,11 @@ function renderFocusStats(){
   const avgEff=Math.round(sess.reduce((a,s)=>a+(s.eff||100),0)/sess.length);
   const longestSess=Math.max(...sess.map(s=>s.min));
 
-  // Subject breakdown
+  // Subject breakdown totals
   const sub={physics:0,chemistry:0,maths:0,other:0};
   sess.forEach(s=>{sub[s.sub]=(sub[s.sub]||0)+s.min;});
-  const subOrder=[['Physics','physics','var(--accent)'],['Chemistry','chemistry','var(--green)'],['Maths','maths','var(--gold)'],['Other','other','rgba(150,150,200,.8)']];
+  const subOrder=[['Physics','physics','rgba(91,110,245,.9)'],['Chemistry','chemistry','rgba(0,214,143,.9)'],['Maths','maths','rgba(244,196,48,.9)'],['Other','other','rgba(150,150,200,.8)']];
+  const mostStudied=subOrder.reduce((best,cur)=>sub[cur[1]]>sub[best[1]]?cur:best,subOrder[0]);
 
   // Best/avg day
   const byDate={};
@@ -2870,90 +3009,133 @@ function renderFocusStats(){
   const dayMins=Object.values(byDate);
   const bestDay=dayMins.length?Math.max(...dayMins):0;
   const avgDay=dayMins.length?Math.round(dayMins.reduce((a,v)=>a+v,0)/dayMins.length):0;
-  const activeDays=dayMins.filter(v=>v>0).length;
+
+  // Average star rating
+  const ratedSess=sess.filter(s=>s.stars>0);
+  const avgStars=ratedSess.length?Math.round(ratedSess.reduce((a,s)=>a+s.stars,0)/ratedSess.length*10)/10:0;
 
   // Mode breakdown
   const modes={pomodoro:0,stopwatch:0,countdown:0};
   sess.forEach(s=>{modes[s.mode]=(modes[s.mode]||0)+s.min;});
 
-  // Daily chart for week/month
-  let chartRows='';
+  // ── STACKED BAR CHART (subject-wise) ──
+  let stackedChart='';
   if(statsPeriod==='week'||statsPeriod==='month'){
     const days=statsPeriod==='week'?7:30;
     const dayArr=[];
     for(let i=days-1;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);dayArr.push(d.toISOString().split('T')[0]);}
-    const maxM=Math.max(...dayArr.map(d=>byDate[d]||0),60);
-    chartRows=`<div class="card" style="margin-bottom:12px">
-      <div class="card-hdr"><span class="hl">Daily Focus — ${statsPeriod==='week'?'Last 7 Days':'Last 30 Days'}</span></div>
-      <div style="display:flex;align-items:flex-end;gap:${statsPeriod==='week'?'6':'3'}px;height:100px;padding:4px 0">
+    // per day per subject
+    const byDaySub={};
+    sess.forEach(s=>{
+      if(!byDaySub[s.date])byDaySub[s.date]={physics:0,chemistry:0,maths:0,other:0};
+      byDaySub[s.date][s.sub]=(byDaySub[s.date][s.sub]||0)+s.min;
+    });
+    const maxM=Math.max(...dayArr.map(d=>(byDate[d]||0)),60);
+    const subColors={physics:'rgba(91,110,245,.85)',chemistry:'rgba(0,214,143,.85)',maths:'rgba(244,196,48,.85)',other:'rgba(150,150,200,.7)'};
+    const subKeys=['physics','chemistry','maths','other'];
+    const BAR_H=110;
+    stackedChart=`<div class="card" style="margin-bottom:12px">
+      <div class="card-hdr" style="display:flex;justify-content:space-between;align-items:center">
+        <span class="hl">📊 Subject Breakdown — ${statsPeriod==='week'?'Last 7 Days':'Last 30 Days'}</span>
+        <div style="display:flex;gap:8px;font-size:9px;color:var(--text2)">
+          <span><span style="display:inline-block;width:7px;height:7px;border-radius:1px;background:rgba(91,110,245,.85);margin-right:2px;vertical-align:middle"></span>PHY</span>
+          <span><span style="display:inline-block;width:7px;height:7px;border-radius:1px;background:rgba(0,214,143,.85);margin-right:2px;vertical-align:middle"></span>CHE</span>
+          <span><span style="display:inline-block;width:7px;height:7px;border-radius:1px;background:rgba(244,196,48,.85);margin-right:2px;vertical-align:middle"></span>MAT</span>
+        </div>
+      </div>
+      <div style="display:flex;align-items:flex-end;gap:${days>7?'2':'6'}px;height:${BAR_H+24}px;padding-top:4px;position:relative">
         ${dayArr.map(d=>{
-          const m=byDate[d]||0;
-          const h=Math.round(m/maxM*96);
-          const dt=new Date(d);
-          const lbl=statsPeriod==='week'?dt.toLocaleDateString('en-IN',{weekday:'short'}):dt.getDate();
+          const dayData=byDaySub[d]||{physics:0,chemistry:0,maths:0,other:0};
+          const total=(byDate[d]||0);
           const isToday=d===today();
-          return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px">
-            <div style="width:100%;background:${isToday?'var(--accent)':m>0?'rgba(91,110,245,.55)':'rgba(255,255,255,.04)'};height:${h||2}px;border-radius:3px 3px 0 0;min-height:2px;transition:height .3s" title="${fmtHM(m)}"></div>
-            <div style="font-size:${statsPeriod==='week'?'9':'8'}px;color:${isToday?'var(--accent)':'var(--text3)'}">${lbl}</div>
+          const dt=new Date(d);
+          const lbl=days<=7?dt.toLocaleDateString('en-IN',{weekday:'short'}):dt.getDate();
+          // Build stacked segments bottom-up
+          let segs='';let usedPct=0;
+          subKeys.forEach(k=>{
+            if(dayData[k]>0){
+              const h=Math.round((dayData[k]/maxM)*BAR_H);
+              segs=`<div style="width:100%;height:${h}px;background:${subColors[k]};display:block;transition:height .4s"></div>`+segs;
+              usedPct+=dayData[k];
+            }
+          });
+          const totalH=Math.max(total>0?3:0,Math.round((total/maxM)*BAR_H));
+          return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;position:relative">
+            ${total>0&&days<=7?`<div style="font-size:8px;color:var(--text2);margin-bottom:2px;font-family:var(--mono)">${(total/60).toFixed(1)}h</div>`:''}
+            <div style="width:100%;height:${totalH}px;border-radius:3px 3px 0 0;overflow:hidden;display:flex;flex-direction:column-reverse;${isToday?'outline:2px solid var(--accent);outline-offset:1px':''}" title="${fmtHM(total)}">
+              ${total>0?segs:`<div style="height:3px;background:rgba(255,255,255,.04);width:100%"></div>`}
+            </div>
+            <div style="font-size:${days>7?'7':'9'}px;color:${isToday?'var(--accent)':'var(--text3)'};margin-top:3px;font-weight:${isToday?700:400}">${lbl}</div>
           </div>`;
         }).join('')}
       </div>
     </div>`;
+  } else {
+    // Today view: subject bars
+    stackedChart=`<div class="card" style="margin-bottom:12px">
+      <div class="card-hdr"><span class="hl">📊 Today's Subject Split</span></div>
+      ${subOrder.filter(([,k])=>sub[k]>0).map(([name,key,color])=>{
+        const pct=Math.round(sub[key]/Math.max(totalMins,1)*100);
+        return `<div style="margin-bottom:8px">
+          <div style="display:flex;justify-content:space-between;margin-bottom:3px">
+            <span style="font-size:12px;font-weight:600">${name}</span>
+            <span style="font-size:11px;font-family:var(--mono);color:var(--text2)">${fmtHM(sub[key])} · ${pct}%</span>
+          </div>
+          <div style="height:6px;background:rgba(255,255,255,.05);border-radius:3px;overflow:hidden">
+            <div style="height:100%;width:${pct}%;background:${color};border-radius:3px;transition:width .4s"></div>
+          </div>
+        </div>`;
+      }).join('')}
+      ${subOrder.every(([,k])=>!sub[k])?'<div class="empty">No data</div>':''}
+    </div>`;
   }
 
   el.innerHTML=`
-  <!-- Big stats -->
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
+  <!-- Summary cards -->
+  <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:12px">
     <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px">
-      <div style="font-family:var(--mono);font-size:24px;color:var(--text)">${fmtHM(totalMins)}</div>
+      <div style="font-family:var(--mono);font-size:22px;color:var(--text)">${fmtHM(totalMins)}</div>
       <div style="font-size:10px;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-top:2px">Total Focus</div>
     </div>
     <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px">
-      <div style="font-family:var(--mono);font-size:24px;color:var(--gold)">+${totalXP}</div>
+      <div style="font-family:var(--mono);font-size:22px;color:var(--gold)">+${totalXP}</div>
       <div style="font-size:10px;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-top:2px">XP Earned</div>
     </div>
     <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px">
-      <div style="font-family:var(--mono);font-size:24px;color:var(--green)">${fmtHM(bestDay)}</div>
+      <div style="font-family:var(--mono);font-size:22px;color:var(--green)">${fmtHM(bestDay)}</div>
       <div style="font-size:10px;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-top:2px">Best Day</div>
     </div>
     <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px">
-      <div style="font-family:var(--mono);font-size:24px;color:var(--mana)">${fmtHM(avgDay)}</div>
+      <div style="font-family:var(--mono);font-size:22px;color:var(--mana)">${fmtHM(avgDay)}</div>
       <div style="font-size:10px;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-top:2px">Daily Avg</div>
     </div>
-    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px">
-      <div style="font-family:var(--mono);font-size:24px;color:var(--accent)">${sess.length}</div>
-      <div style="font-size:10px;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-top:2px">Sessions</div>
+  </div>
+
+  <!-- Summary strip -->
+  <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;margin-bottom:12px;display:flex;gap:16px;flex-wrap:wrap">
+    <div><span style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px">Most Studied</span><br>
+      <span style="font-size:13px;font-weight:700;color:${mostStudied[2]}">${mostStudied[0]}</span>
+      <span style="font-size:11px;color:var(--text2);margin-left:4px">${fmtHM(sub[mostStudied[1]])}</span>
     </div>
-    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px">
-      <div style="font-family:var(--mono);font-size:24px;color:${avgEff>=80?'var(--green)':avgEff>=60?'var(--gold)':'var(--red)'}">${avgEff}%</div>
-      <div style="font-size:10px;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-top:2px">Avg Efficiency</div>
+    <div><span style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px">Avg Rating</span><br>
+      <span style="font-size:13px;font-weight:700;color:var(--gold)">${avgStars>0?'⭐ '+avgStars:'—'}</span>
+    </div>
+    <div><span style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px">Sessions</span><br>
+      <span style="font-size:13px;font-weight:700;color:var(--accent)">${sess.length}</span>
+    </div>
+    <div><span style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px">Efficiency</span><br>
+      <span style="font-size:13px;font-weight:700;color:${avgEff>=80?'var(--green)':avgEff>=60?'var(--gold)':'var(--red)'}">${avgEff}%</span>
     </div>
   </div>
 
-  ${chartRows}
+  ${stackedChart}
 
-  <!-- Subject breakdown -->
-  <div class="card" style="margin-bottom:12px">
-    <div class="card-hdr"><span class="hl">Subject Breakdown</span></div>
-    ${subOrder.filter(([,k])=>sub[k]>0).map(([name,key,color])=>{
-      const pct=Math.round(sub[key]/totalMins*100);
-      return `<div style="margin-bottom:10px">
-        <div style="display:flex;justify-content:space-between;margin-bottom:4px">
-          <span style="font-size:13px;font-weight:600">${name}</span>
-          <span style="font-family:var(--mono);font-size:12px;color:var(--text2)">${fmtHM(sub[key])} · ${pct}%</span>
-        </div>
-        <div class="pb-wrap" style="height:7px"><div class="pb-fill" style="width:${pct}%;background:${color}"></div></div>
-      </div>`;
-    }).join('')}
-    ${subOrder.every(([,k])=>!sub[k])?'<div class="empty">No data</div>':''}
-  </div>
-
-  <!-- Session mode breakdown -->
+  <!-- Focus Mode -->
   <div class="card">
-    <div class="card-hdr"><span class="hl">Focus Mode</span></div>
+    <div class="card-hdr"><span class="hl">Focus Mode Split</span></div>
     <div style="display:flex;gap:8px">
       ${[['🍅 Pomodoro','pomodoro','var(--accent)'],['⏱ Free Flow','stopwatch','var(--green)'],['⏲ Countdown','countdown','var(--gold)']].map(([label,key,color])=>modes[key]?`<div style="flex:1;text-align:center;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 4px">
-        <div style="font-family:var(--mono);font-size:15px;color:${color}">${fmtHM(modes[key])}</div>
+        <div style="font-family:var(--mono);font-size:14px;color:${color}">${fmtHM(modes[key])}</div>
         <div style="font-size:9px;color:var(--text3);margin-top:3px">${label}</div>
       </div>`:'').join('')}
     </div>
@@ -3034,8 +3216,8 @@ function renderTopics(){
 
   // Overview strip
   const allT=[...(S.topics.physics11||[]),...(S.topics.physics12||[]),...(S.topics.chemistry11||[]),...(S.topics.chemistry12||[]),...(S.topics.maths11||[]),...(S.topics.maths12||[])];
-  const danger=allT.filter(t=>t.conf<40).length;
-  const learning=allT.filter(t=>t.conf>=40&&t.conf<70).length;
+  const danger=allT.filter(t=>t.conf>0&&t.conf<50).length;
+  const learning=allT.filter(t=>t.conf>=50&&t.conf<70).length;
   const strong=allT.filter(t=>t.conf>=70&&t.conf<90).length;
   const mastered=allT.filter(t=>t.conf>=90).length;
   const notStarted=allT.filter(t=>t.conf===0).length;
@@ -3140,14 +3322,15 @@ function renderTopics(){
 function toggleAcc(id){document.getElementById(id).classList.toggle('open');}
 function upConf(s,i,v,sl){
   if(!S.topics[s])return;
-  S.topics[s][i].conf=parseInt(v);
-  const c=v>=80?'var(--green)':v>=50?'var(--gold)':'var(--red)';
-  sl.style.background=`linear-gradient(to right,${c} ${v}%,rgba(255,255,255,.07) ${v}%)`;
-  const e=document.getElementById('tp-'+s+'-'+i);if(e){e.textContent=v+'%';e.style.color=c;}
-  // update badge
-  const badge=v>=80?'✓':v>=50?'~':'!';
+  const val=parseInt(v);
+  S.topics[s][i].conf=val;
+  const c=val>=90?'#c35ff5':val>=70?'var(--green)':val>=50?'var(--gold)':'var(--red)';
+  sl.style.background=`linear-gradient(to right,${c} ${val}%,rgba(255,255,255,.07) ${val}%)`;
+  const e=document.getElementById('tp-'+s+'-'+i);if(e){e.textContent=val+'%';e.style.color=c;}
+  // Badge: Mastered ≥90, Strong ≥70, OK ≥50, Danger <50
+  const badge=val>=90?'★':val>=70?'✓':val>=50?'~':'!';
   const bEl=sl.previousElementSibling?.querySelector('span:first-child');
-  if(bEl&&bEl.style){bEl.textContent=badge;bEl.style.color=c;bEl.style.background=c+'18';}
+  if(bEl&&bEl.style){bEl.textContent=badge;bEl.style.color=c;bEl.style.background=c+'22';}
 }
 function renderJeeMks(){
   document.getElementById('jee-tgt').value=S.jeeTarget;
@@ -4196,28 +4379,29 @@ function calcStats(){
   const avgTest=tests.length?tests.reduce((a,t)=>a+(t.total/(t.max||300)*100),0)/tests.length:0;
   const intelligence=Math.min(99,Math.round(Math.min(totalHrs/200,1)*60 + (avgTest/100)*40));
 
-  // FOCUS — efficiency + pomodoro + star ratings
+  // FOCUS — blend of session efficiency, pomodoro usage, AND stored focusStat from star ratings
   const effSessions=sessions.filter(s=>s.eff!==undefined);
   const avgEff=effSessions.length?effSessions.reduce((a,s)=>a+s.eff,0)/effSessions.length:50;
   const pomoCount=sessions.filter(s=>s.mode==='pomodoro').length;
-  const ratedSess=sessions.filter(s=>s.stars&&s.stars>0);
-  const avgStars=ratedSess.length?ratedSess.reduce((a,s)=>a+(s.stars||3),0)/ratedSess.length:3;
-  const focus=Math.min(99,Math.max(0,Math.round((avgEff*0.5)+(Math.min(pomoCount/50,1)*25)+(avgStars/5*25))));
+  const storedFocus=S.hunter.focusStat!==undefined?S.hunter.focusStat:50;
+  const focus=Math.min(99,Math.max(0,Math.round((avgEff*0.35)+(Math.min(pomoCount/50,1)*20)+(storedFocus*0.45))));
 
-  // STRENGTH — based on workout consistency last 30 days
-  const workoutDays=new Set(workoutLogs.map(l=>l.date)).size;
-  const strength=Math.min(99,Math.round((workoutDays/30)*100));
+  // STRENGTH — from workout strengthStat (updated on each full workout completion)
+  const strength=Math.min(99,S.workout?.strengthStat||Math.round((new Set(workoutLogs.map(l=>l.date)).size/30)*100));
 
-  // ENDURANCE — based on streak + total days studied
+  // ENDURANCE — based on workout streak + study streak
   const studyDays=new Set(sessions.map(s=>s.date)).size;
-  const streak=S.hunter?.streak||0;
-  const endurance=Math.min(99,Math.round((Math.min(streak/30,1)*50)+(Math.min(studyDays/100,1)*50)));
+  const studyStreak=S.hunter?.streak||0;
+  const woStreak=S.workout?.woStreak||0;
+  const endurance=Math.min(99,Math.round((Math.min(studyStreak/30,1)*35)+(Math.min(woStreak/30,1)*35)+(Math.min(studyDays/100,1)*30)));
 
-  // DISCIPLINE — based on quest completion rate last 14 days
+  // DISCIPLINE — blend of quest completion rate AND stored disciplineStat from ratings
   const last14=last30.slice(-14);
   let qTotal=0,qDone=0;
   last14.forEach(d=>{const c=questComp[d]||{};qTotal+=5;qDone+=Object.values(c).filter(Boolean).length;});
-  const discipline=Math.min(99,qTotal>0?Math.round((qDone/qTotal)*100):0);
+  const questDiscipline=qTotal>0?Math.round((qDone/qTotal)*100):0;
+  const storedDiscipline=S.hunter.disciplineStat!==undefined?S.hunter.disciplineStat:50;
+  const discipline=Math.min(99,Math.round(questDiscipline*0.5+storedDiscipline*0.5));
 
   // PERCEPTION — based on topic confidence average
   const allTopics=Object.values(S.topics||{}).flat();
@@ -4449,6 +4633,8 @@ function restoreLastMusic(){
 // INIT
 function initApp(){
   checkStreak();setupPWA();
+  loadPomoPrefs(); // restore custom pomodoro durations
+  setupInlineSW(); // prepare SW for lock-screen notifications
   updateTimerUI();renderDash();renderFocusStatsBar();renderTests();renderWorkout();
   document.getElementById('t-date').value=today();
   restoreLastMusic();
