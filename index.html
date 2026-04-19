@@ -34,9 +34,11 @@ html,body{background:var(--bg);color:var(--text);font-family:var(--font);min-hei
   .app-shell{grid-template-columns:1fr;grid-template-rows:auto 1fr auto}
   .top-bar{grid-row:1;position:sticky;top:0;z-index:100;background:var(--bg);border-bottom:1px solid var(--border)}
   .left-nav{display:none}
-  .main-content{grid-row:2;padding:16px 14px 90px}
+  .main-content{grid-row:2;padding:16px 14px 90px;max-width:100%;overflow-x:hidden;box-sizing:border-box}
   .right-panel{display:none}
   .bottom-nav{grid-row:3;position:fixed;bottom:0;left:0;right:0;z-index:100;background:var(--bg2);border-top:1px solid var(--border);padding-bottom:env(safe-area-inset-bottom,0)}
+  /* Prevent any child from breaking out of the viewport */
+  section{max-width:100%;overflow-x:hidden}
 }
 @media(min-width:900px){
   .app-shell{grid-template-columns:var(--nav-w) 1fr var(--right-w);grid-template-rows:100vh}
@@ -223,8 +225,8 @@ section.active{display:block}
 .conf-slider::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:var(--accent);cursor:pointer}
 
 /* ── WORKOUT ── */
-.days-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;margin-bottom:14px}
-.day-chip{padding:8px 2px;border-radius:7px;text-align:center;font-size:10px;font-weight:700;text-transform:uppercase;cursor:pointer;border:1px solid var(--border);color:var(--text2);background:var(--bg2);transition:all .2s}
+.days-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:14px;width:100%}
+.day-chip{padding:7px 2px;border-radius:7px;text-align:center;font-size:9px;font-weight:700;text-transform:uppercase;cursor:pointer;border:1px solid var(--border);color:var(--text2);background:var(--bg2);transition:all .2s;min-width:0;overflow:hidden;white-space:nowrap}
 .day-chip.sel{background:rgba(91,110,245,.14);border-color:var(--accent);color:var(--accent)}
 .day-chip.done{background:rgba(0,214,143,.08);border-color:var(--green);color:var(--green)}
 .day-chip.rest{opacity:.4}
@@ -734,17 +736,18 @@ section.active{display:block}
 
 /* ── SOUND TOGGLE ── */
 .sound-toggle{
-  position:fixed;bottom:80px;right:16px;z-index:500;
-  width:38px;height:38px;border-radius:50%;
+  position:fixed;bottom:72px;right:14px;z-index:500;
+  width:36px;height:36px;border-radius:50%;
   background:var(--card2);border:1px solid var(--border2);
-  color:var(--text2);font-size:16px;cursor:pointer;
+  color:var(--text2);font-size:15px;cursor:pointer;
   display:flex;align-items:center;justify-content:center;
-  box-shadow:0 4px 16px rgba(0,0,0,.3);
+  box-shadow:0 2px 12px rgba(0,0,0,.4);
   transition:all .2s;
+  opacity:0.7;
 }
-.sound-toggle:hover{border-color:var(--accent);color:var(--accent);box-shadow:0 0 16px rgba(91,110,245,.2)}
-.sound-toggle.on{border-color:var(--accent);color:var(--accent);background:rgba(91,110,245,.08)}
-@media(min-width:900px){.sound-toggle{bottom:24px;right:320px}}
+.sound-toggle:hover{border-color:var(--accent);color:var(--accent);box-shadow:0 0 16px rgba(91,110,245,.2);opacity:1}
+.sound-toggle.on{border-color:var(--accent);color:var(--accent);background:rgba(91,110,245,.08);opacity:1}
+@media(min-width:900px){.sound-toggle{bottom:24px;right:320px;opacity:1}}
 
 /* ── SMOOTH GLOBAL TRANSITIONS ── */
 .rp-bar-fill,.bar-fill,.pb-fill{transition:width .6s cubic-bezier(.4,0,.2,1)!important}
@@ -792,8 +795,35 @@ input.fi:focus,select.fi:focus{
 .wo-stat-row{
   display:grid;
   grid-template-columns:repeat(3,1fr);
-  gap:10px;
+  gap:8px;
   margin-bottom:14px;
+  width:100%;
+  min-width:0;
+}
+/* ── SMALL PHONE RESPONSIVE (<400px) ── */
+@media(max-width:400px){
+  /* Train summary cards: 3 columns is too tight, stack to show all */
+  .wo-stat-row{grid-template-columns:repeat(3,1fr);gap:5px}
+  .wo-stat{padding:10px 6px}
+  .wo-stat-val{font-size:17px}
+  .wo-stat-lbl{font-size:9px;letter-spacing:.3px}
+  /* Dashboard stat cards */
+  .dash-stats{gap:6px}
+  .dstat{padding:10px 6px}
+  .dstat-val{font-size:17px}
+  .dstat-lbl{font-size:9px;letter-spacing:.2px}
+  /* Analytics top stat cards */
+  .stat-card{padding:11px 10px}
+  .stat-val{font-size:18px}
+  /* Day chips for 7-day grid */
+  .days-grid{gap:3px}
+  .day-chip{font-size:8px;padding:6px 1px;border-radius:6px}
+  /* Section title smaller */
+  .sec-title{font-size:18px}
+  /* Card padding tighter */
+  .card{padding:14px 12px}
+  /* Timer circle slightly smaller */
+  .timer-center svg{width:210px;height:210px;viewBox:0 0 240 240}
 }
 .wo-stat{
   background:var(--bg2);
@@ -3055,18 +3085,18 @@ function renderSessionLog(){
   // Summary bar
   const sumEl=document.getElementById('log-period-summary');
   if(sumEl&&sess.length>0){
-    sumEl.innerHTML=`<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
-      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;text-align:center">
-        <div style="font-family:var(--mono);font-size:18px;color:var(--text)">${fmtHM(totalMins)}</div>
-        <div style="font-size:10px;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-top:2px">Total</div>
+    sumEl.innerHTML=`<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;width:100%">
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 8px;text-align:center;min-width:0">
+        <div style="font-family:var(--mono);font-size:16px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${fmtHM(totalMins)}</div>
+        <div style="font-size:9px;color:var(--text2);text-transform:uppercase;letter-spacing:.4px;margin-top:2px">Total</div>
       </div>
-      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;text-align:center">
-        <div style="font-family:var(--mono);font-size:18px;color:var(--gold)">+${totalXP}</div>
-        <div style="font-size:10px;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-top:2px">XP</div>
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 8px;text-align:center;min-width:0">
+        <div style="font-family:var(--mono);font-size:16px;color:var(--gold);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">+${totalXP}</div>
+        <div style="font-size:9px;color:var(--text2);text-transform:uppercase;letter-spacing:.4px;margin-top:2px">XP</div>
       </div>
-      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;text-align:center">
-        <div style="font-family:var(--mono);font-size:18px;color:var(--accent)">${sess.length}</div>
-        <div style="font-size:10px;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-top:2px">Sessions</div>
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 8px;text-align:center;min-width:0">
+        <div style="font-family:var(--mono);font-size:16px;color:var(--accent)">${sess.length}</div>
+        <div style="font-size:9px;color:var(--text2);text-transform:uppercase;letter-spacing:.4px;margin-top:2px">Sessions</div>
       </div>
     </div>`;
   }else if(sumEl){sumEl.innerHTML='';}
@@ -3355,29 +3385,31 @@ function renderTopics(){
   if(ovEl){ovEl.innerHTML=`
     <div class="card" style="margin-bottom:12px">
       <div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--text3);margin-bottom:10px;font-weight:700">Overall Confidence — ${allT.length} Topics</div>
-      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:12px">
-        <div style="text-align:center;background:rgba(150,150,150,.06);border:1px solid rgba(150,150,150,.15);border-radius:8px;padding:8px 4px">
-          <div style="font-family:var(--mono);font-size:18px;color:#888">${notStarted}</div>
-          <div style="font-size:9px;color:var(--text3);margin-top:2px">Not started</div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin-bottom:6px">
+        <div style="text-align:center;background:rgba(150,150,150,.06);border:1px solid rgba(150,150,150,.15);border-radius:8px;padding:8px 4px;min-width:0">
+          <div style="font-family:var(--mono);font-size:16px;color:#888">${notStarted}</div>
+          <div style="font-size:8px;color:var(--text3);margin-top:2px;white-space:nowrap">Not started</div>
         </div>
-        <div style="text-align:center;background:rgba(255,59,92,.06);border:1px solid rgba(255,59,92,.2);border-radius:8px;padding:8px 4px">
-          <div style="font-family:var(--mono);font-size:18px;color:var(--red)">${danger}</div>
-          <div style="font-size:9px;color:var(--text3);margin-top:2px">Danger</div>
+        <div style="text-align:center;background:rgba(255,59,92,.06);border:1px solid rgba(255,59,92,.2);border-radius:8px;padding:8px 4px;min-width:0">
+          <div style="font-family:var(--mono);font-size:16px;color:var(--red)">${danger}</div>
+          <div style="font-size:8px;color:var(--text3);margin-top:2px">Danger</div>
         </div>
-        <div style="text-align:center;background:rgba(244,196,48,.06);border:1px solid rgba(244,196,48,.2);border-radius:8px;padding:8px 4px">
-          <div style="font-family:var(--mono);font-size:18px;color:var(--gold)">${learning}</div>
-          <div style="font-size:9px;color:var(--text3);margin-top:2px">Learning</div>
-        </div>
-        <div style="text-align:center;background:rgba(0,214,143,.06);border:1px solid rgba(0,214,143,.2);border-radius:8px;padding:8px 4px">
-          <div style="font-family:var(--mono);font-size:18px;color:var(--green)">${strong}</div>
-          <div style="font-size:9px;color:var(--text3);margin-top:2px">Strong</div>
-        </div>
-        <div style="text-align:center;background:rgba(91,110,245,.08);border:1px solid rgba(91,110,245,.25);border-radius:8px;padding:8px 4px">
-          <div style="font-family:var(--mono);font-size:18px;color:var(--accent)">${mastered}</div>
-          <div style="font-size:9px;color:var(--text3);margin-top:2px">Mastered</div>
+        <div style="text-align:center;background:rgba(244,196,48,.06);border:1px solid rgba(244,196,48,.2);border-radius:8px;padding:8px 4px;min-width:0">
+          <div style="font-family:var(--mono);font-size:16px;color:var(--gold)">${learning}</div>
+          <div style="font-size:8px;color:var(--text3);margin-top:2px">Learning</div>
         </div>
       </div>
-      <div style="font-size:11px;color:var(--text2)">💡 Slide each topic to rate your confidence. Be honest — over-rating is the #1 mistake. Tap a subject below to expand.</div>
+      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:5px;margin-bottom:12px">
+        <div style="text-align:center;background:rgba(0,214,143,.06);border:1px solid rgba(0,214,143,.2);border-radius:8px;padding:8px 4px;min-width:0">
+          <div style="font-family:var(--mono);font-size:16px;color:var(--green)">${strong}</div>
+          <div style="font-size:8px;color:var(--text3);margin-top:2px">Strong</div>
+        </div>
+        <div style="text-align:center;background:rgba(200,50,255,.1);border:1px solid rgba(200,50,255,.3);border-radius:8px;padding:8px 4px;min-width:0">
+          <div style="font-family:var(--mono);font-size:16px;color:#c35ff5">${mastered}</div>
+          <div style="font-size:8px;color:var(--text3);margin-top:2px">★ Mastered</div>
+        </div>
+      </div>
+      <div style="font-size:11px;color:var(--text2)">💡 Slide to rate your confidence. Be honest.</div>
     </div>`;}
 
   const subjectGroups=[
