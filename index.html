@@ -2159,12 +2159,14 @@ function renderQuests(){
   const tSess=S.sessions.filter(s=>s.date===t);
   const tMins=tSess.reduce((a,s)=>a+s.min,0);
   const hasP=tSess.some(s=>s.mode==='pomodoro'&&s.min>=25);
-  // Check if today's workout is fully done
+  // Check if today's workout is fully done — only counts on active workout days
   const todayDow=new Date().getDay();
   const todayDayName=DAYS_ORDER[todayDow===0?6:todayDow-1];
   const todayPlan=S.workout?.plan?.[todayDayName];
-  const woLog=S.workout?.logs?.find(l=>l.date===t&&l.day===todayDayName);
-  const woDone=!!(todayPlan&&todayPlan.exercises?.length>0&&woLog&&
+  // Must be an active workout day (active:true, has exercises) — rest days always yield false
+  const isWorkoutDay=!!(todayPlan&&todayPlan.active&&todayPlan.exercises&&todayPlan.exercises.length>0);
+  const woLog=isWorkoutDay?S.workout?.logs?.find(l=>l.date===t&&l.day===todayDayName):null;
+  const woDone=!!(isWorkoutDay&&woLog&&
     Object.values(woLog.comp||{}).filter(Boolean).length===todayPlan.exercises.length);
 
   let changed=false;
@@ -2357,11 +2359,18 @@ function renderTodaysMission(){
   const qTotal=getActiveQuests().length;
   const hour=new Date().getHours();
 
+  // Workout day detection — mirrors getActiveQuests() logic exactly
+  const _tmDow=new Date().getDay();
+  const _tmDayName=DAYS_ORDER[_tmDow===0?6:_tmDow-1];
+  const _tmPlan=S.workout?.plan?.[_tmDayName];
+  const isWorkoutDay=!!(_tmPlan&&_tmPlan.active&&_tmPlan.exercises&&_tmPlan.exercises.length>0);
+
   const tasks=[
     {label:'Sessions',icon:'⏱',target:DAILY_MIN.sessions,cur:tCount,disp:tCount+'/'+DAILY_MIN.sessions,col:'var(--accent)',done:tCount>=DAILY_MIN.sessions},
     {label:'Study Time',icon:'📚',target:DAILY_MIN.hours*60,cur:tMins,disp:fmtHM(tMins)+' / '+DAILY_MIN.hours+'h',col:'var(--mana)',done:tMins>=DAILY_MIN.hours*60},
     {label:'Quests',icon:'⚡',target:Math.ceil(qTotal*0.6),cur:qDone,disp:qDone+'/'+qTotal+' (need '+Math.ceil(qTotal*0.6)+')',col:'var(--gold)',done:qDone>=Math.ceil(qTotal*0.6)},
-    {label:'Workout',icon:'💪',target:1,cur:comp.q3?1:0,disp:comp.q3?'Done':'Pending',col:'var(--green)',done:!!comp.q3},
+    // Workout row: ONLY shown on active workout days — hidden completely on rest days
+    ...(isWorkoutDay?[{label:'Workout',icon:'💪',target:1,cur:comp.q3?1:0,disp:comp.q3?'Done':'Pending',col:'var(--green)',done:!!comp.q3}]:[]),
   ];
   const allDone=tasks.every(m=>m.done);
   const rank=S.hunter.rank||'E';
