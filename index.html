@@ -2950,12 +2950,17 @@ function toggleTimer(){
     pauseMusic();
     document.title=ORIG_TITLE;
   } else {
-    // Check if first session of the day — show mana modal
+    // Check session count for the day to pick correct start modal
     const t=today();
     const todaySess=S.sessions.filter(s=>s.date===t&&!s.paused);
     if(todaySess.length===0&&!S.dailyMana[t]){
+      // First session of the day — show energy + study type (mana modal)
       showManaModal();
-      return; // don't start yet — modal confirms start
+      return;
+    } else if(todaySess.length>0){
+      // Subsequent session — ask break recap + study type
+      showNextSessModal();
+      return;
     }
     if(audioCtx&&audioCtx.state==='suspended')audioCtx.resume();
     tRunning=true;el('t-toggle','Pause');
@@ -3081,6 +3086,7 @@ function autoLog(mins,sub,mode,sid){
     sub,      subject:sub,     // subject is canonical alias for sub
     mode, eff,
     xp:xp+starterBonus,
+    taskType:_sessionTaskType||'practice',  // study type for this session
     time:new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'}),
     paused:paused||undefined,
     rating:null,               // populated by submitRating (alias for stars)
@@ -3140,9 +3146,11 @@ function updateManaNote(){
   const e=_manaEnergy,t=_manaTask;
   if(e==='fresh'&&t==='hard'){el2.style.color='var(--green)';el2.textContent='⚡ Peak mode — High XP bonus active!';}
   else if(e==='fresh'&&(t==='practice'||t==='revision')){el2.style.color='var(--text2)';el2.textContent='Good energy, light task — slight XP reduction. Save hard work for these states.';}
+  else if(e==='fresh'&&t==='theory'){el2.style.color='var(--text2)';el2.textContent='Fresh + Theory — great for deep understanding. Standard XP, slight reduction.';}
   else if(e==='tired'&&t==='hard'){el2.style.color='var(--red)';el2.textContent='⚠ Warning: Tired + Hard Problems = low retention. Consider revision instead.';}
   else if(e==='normal'&&t==='hard'){el2.style.color='var(--gold)';el2.textContent='Solid session — standard XP. Push through!';}
   else if(e==='tired'&&t==='revision'){el2.style.color='var(--gold)';el2.textContent='Smart choice — revision on low energy works. Standard XP.';}
+  else if(e==='tired'&&t==='theory'){el2.style.color='var(--gold)';el2.textContent='Theory on low energy — passive reading is ok. Standard XP.';}
   else{el2.style.color='var(--text2)';el2.textContent='Standard session — XP as normal.';}
 }
 function confirmManaModal(){
@@ -3154,6 +3162,9 @@ function confirmManaModal(){
   else if(e==='tired'&&task==='hard') _manaXPMod=0.8;
   else if(e==='tired'&&task==='revision') _manaXPMod=1.0;
   else _manaXPMod=1.0;
+
+  // Set per-session task type
+  _sessionTaskType=task;
 
   S.dailyMana[t]={energy:e,task,mod:_manaXPMod};
   save();
@@ -3203,13 +3214,16 @@ const MICRO_LEARN=[
 ];
 
 let _secSessInfo=null,_breakLen='none',_breakType='';
+// ── PER-SESSION TASK TYPE (set at modal confirm, used by autoLog + feedback) ──
+let _sessionTaskType='practice';
+// ── NEXT-SESSION MODAL STATE ──
+let _nextSessBreakLen='none',_nextSessBreakType='',_nextSessTask='practice';
 
 function showSecModal(sessInfo){
-  _secSessInfo=sessInfo;_breakLen='none';_breakType='';
+  _secSessInfo=sessInfo;
   const mins=sessInfo.min,sub=sessInfo.sub,mode=sessInfo.mode;
 
   // Performance label
-  const stars=sessInfo.rating||null;
   const todayMins=S.sessions.filter(s=>s.date===today()&&!s.paused).reduce((a,s)=>a+s.min,0);
   let perfLabel,perfClass,perfMsg;
   if(todayMins>=360){perfLabel='🔥 Excellent session';perfClass='excellent';perfMsg='You are locked in today. Chase the boss fight.';}
@@ -3218,19 +3232,19 @@ function showSecModal(sessInfo){
   else if(mins>=20){perfLabel='📚 Session done';perfClass='warn';perfMsg='Short but done. Push for a longer next session.';}
   else{perfLabel='⚠ Low focus session';perfClass='low';perfMsg='Very short session. Regroup and push harder next time.';}
 
-  // Advice based on session type & energy
-  const dm=S.dailyMana[today()]||{};
-  const taskType=dm.task||_manaTask||'practice';
+  // Advice based on current session task type
+  const taskType=_sessionTaskType||'practice';
   let advice='';
-  if(_breakLen==='none')advice='Jump right into the next session. Momentum is everything.';
-  else if(taskType==='hard')advice='Hard problems done. Drink water, stretch 5 min, then continue.';
+  if(taskType==='hard')advice='Hard problems done. Drink water, stretch 5 min, then continue.';
   else if(taskType==='revision')advice='Revise once more before break. Then eat something light.';
+  else if(taskType==='theory')advice='Theory absorbed. Test yourself with problems before next session.';
   else advice='Good work. Take a proper break — rest your eyes and brain.';
 
   // Study suggestion
   let suggest='';
   if(taskType==='hard')suggest='⚡ Next: attempt 5 PYQ problems on this topic, or start a timed mock.';
   else if(taskType==='practice')suggest='📝 Next: attempt PYQ modules or chapter problems.';
+  else if(taskType==='theory')suggest='🔬 Next: solve 10 problems based on the theory you just studied.';
   else suggest='📖 Next: review weak topic notes or update your confidence sliders.';
 
   // Micro-learning
@@ -3238,9 +3252,9 @@ function showSecModal(sessInfo){
 
   // Set info
   const infoEl=document.getElementById('sec-info');
-  if(infoEl)infoEl.textContent=`${mins}m · ${sub.charAt(0).toUpperCase()+sub.slice(1)} · ${mode}`;
+  if(infoEl)infoEl.textContent=`${mins}m · ${sub.charAt(0).toUpperCase()+sub.slice(1)} · ${mode} · ${taskType.charAt(0).toUpperCase()+taskType.slice(1)}`;
 
-  // Render
+  // Render performance
   const perfEl=document.getElementById('sec-performance');
   if(perfEl)perfEl.innerHTML=`<div class="sec-badge ${perfClass}">${perfLabel}</div><div style="font-size:12px;color:var(--text2);margin-top:4px">${perfMsg}</div>`;
 
@@ -3250,10 +3264,6 @@ function showSecModal(sessInfo){
   if(sugEl)sugEl.textContent=suggest;
   const micEl=document.getElementById('sec-micro');
   if(micEl)micEl.innerHTML=`<div class="sec-micro-word">${micro.word}</div><div class="sec-micro-def">${micro.def}</div>`;
-
-  // Reset break UI
-  document.querySelectorAll('#break-length-row .break-chip').forEach((b,i)=>{b.classList.remove('sel','sel-waste');if(i===0)b.classList.add('sel');});
-  const btr=document.getElementById('break-type-row');if(btr)btr.style.display='none';
 
   document.getElementById('sec-modal').classList.add('show');
 }
@@ -3285,25 +3295,101 @@ function updateSecAdvice(){
   else{advEl.textContent=taskType==='hard'?'Hard session done. Hydrate and stretch.':'Good work. Rest your eyes before next session.';}
 }
 function submitSecModal(){
-  if(!_secSessInfo)return;
-  // Apply break effects
-  if(_breakType==='productive'){
-    const bonus=_breakLen==='long'?15:8;
-    S.hunter.xp+=bonus;save();updateHeader();
-    showToast(`✅ Productive break! +${bonus} XP`);
-  } else if(_breakType==='waste'){
-    S.hunter.xp=Math.max(0,S.hunter.xp-15);save();updateHeader();
-    showToast('📵 Waste break penalty: −15 XP. Avoid it next time.');
-  }
   document.getElementById('sec-modal').classList.remove('show');
-  // Open rating modal
-  setTimeout(()=>showRatingModal(_secSessInfo),200);
+  if(_secSessInfo){setTimeout(()=>showRatingModal(_secSessInfo),200);}
   _secSessInfo=null;
 }
 function closeSecModal(){
   document.getElementById('sec-modal').classList.remove('show');
   if(_secSessInfo){setTimeout(()=>showRatingModal(_secSessInfo),200);}
   _secSessInfo=null;
+}
+
+// ══════════════════════════════════════════════
+//  NEXT SESSION MODAL — Break + Study Type (2nd+ sessions)
+// ══════════════════════════════════════════════
+function showNextSessModal(){
+  _nextSessBreakLen='none';_nextSessBreakType='';_nextSessTask='practice';
+  document.querySelectorAll('#next-break-len-pick .pick-btn').forEach(b=>b.classList.remove('sel','sel-waste'));
+  document.querySelectorAll('#next-break-type-pick .pick-btn').forEach(b=>b.classList.remove('sel','sel-waste'));
+  document.querySelectorAll('#next-task-pick .pick-btn').forEach(b=>b.classList.remove('sel'));
+  const bts=document.getElementById('next-break-type-section');if(bts)bts.style.display='none';
+  const note=document.getElementById('next-sess-effect-note');if(note){note.textContent='';note.style.color='var(--text2)';}
+  document.getElementById('next-sess-modal').classList.add('show');
+}
+function pickNextBreakLen(len,btn){
+  _nextSessBreakLen=len;_nextSessBreakType='';
+  document.querySelectorAll('#next-break-len-pick .pick-btn').forEach(b=>b.classList.remove('sel','sel-waste'));
+  btn.classList.add('sel');
+  const bts=document.getElementById('next-break-type-section');
+  if(bts)bts.style.display=(len!=='none')?'block':'none';
+  if(len!=='none'){document.querySelectorAll('#next-break-type-pick .pick-btn').forEach(b=>b.classList.remove('sel','sel-waste'));}
+  updateNextSessNote();
+}
+function pickNextBreakType(type,btn){
+  _nextSessBreakType=type;
+  document.querySelectorAll('#next-break-type-pick .pick-btn').forEach(b=>b.classList.remove('sel','sel-waste'));
+  btn.classList.add(type==='waste'?'sel-waste':'sel');
+  updateNextSessNote();
+}
+function pickNextTask(task,btn){
+  _nextSessTask=task;
+  document.querySelectorAll('#next-task-pick .pick-btn').forEach(b=>b.classList.remove('sel'));
+  btn.classList.add('sel');
+  updateNextSessNote();
+}
+function updateNextSessNote(){
+  const note=document.getElementById('next-sess-effect-note');if(!note)return;
+  if(_nextSessBreakLen!=='none'&&!_nextSessBreakType){
+    note.style.color='var(--text2)';note.textContent='↑ Select break type above.';return;
+  }
+  if(_nextSessBreakType==='waste'){
+    note.style.color='var(--red)';note.textContent='⚠ Waste break: −15 XP penalty will apply.';return;
+  }
+  if(_nextSessBreakType==='productive'&&_nextSessBreakLen==='long'){
+    note.style.color='var(--green)';note.textContent='✅ Long productive break: +15 XP bonus!';return;
+  }
+  if(_nextSessBreakType==='productive'){
+    note.style.color='var(--green)';note.textContent='✅ Short productive break: +8 XP bonus!';return;
+  }
+  note.style.color='var(--text2)';note.textContent='';
+}
+function confirmNextSessModal(){
+  // Validate: if break taken, type must be selected
+  if(_nextSessBreakLen!=='none'&&!_nextSessBreakType){
+    showToast('Select break type to continue ↑');return;
+  }
+  // Apply break XP effects
+  if(_nextSessBreakType==='productive'){
+    const bonus=_nextSessBreakLen==='long'?15:8;
+    S.hunter.xp+=bonus;save();updateHeader();
+    showToast(`✅ Productive break! +${bonus} XP`);
+  } else if(_nextSessBreakType==='waste'){
+    S.hunter.xp=Math.max(0,S.hunter.xp-15);save();updateHeader();
+    showToast('📵 Waste break: −15 XP. Scrolling is a trap.');
+  }
+  // Store task type for this session
+  _sessionTaskType=_nextSessTask;
+  // Update daily mana with new task + recalculate mod using existing energy
+  const t=today();
+  const dm=S.dailyMana[t]||{};
+  const energy=dm.energy||'normal';
+  let mod=1.0;
+  if(energy==='fresh'&&_nextSessTask==='hard')mod=1.25;
+  else if(energy==='fresh'&&_nextSessTask!=='hard')mod=0.9;
+  else if(energy==='tired'&&_nextSessTask==='hard')mod=0.8;
+  else mod=1.0;
+  S.dailyMana[t]={...dm,task:_nextSessTask,mod};
+  save();
+  document.getElementById('next-sess-modal').classList.remove('show');
+  // Start timer
+  if(audioCtx&&audioCtx.state==='suspended')audioCtx.resume();
+  tRunning=true;el('t-toggle','Pause');
+  _timerStartWall=Date.now();_timerStartSecs=tSecs;
+  tInterval=setInterval(tick,250);
+  resumeMusic();
+  if(_nextSessBreakType==='waste')showToast('⚠ Waste break logged. Push twice as hard this session.');
+  else if(mod>1)showToast('🔥 Fresh energy + hard task — bonus XP active!');
 }
 
 // ══════════════════════════════════════════════
@@ -6004,29 +6090,60 @@ function renderRadarChart(){
   </div>
 </div>
 
-<!-- MANA MODAL — Session Start Energy Check -->
+<!-- MANA MODAL — First Session of the Day: Energy + Study Type -->
 <div class="mana-modal" id="mana-modal">
   <div class="mana-modal-box">
-    <div class="mana-modal-title">⚡ Session Check-In</div>
-    <div class="mana-modal-sub">Quick 2-question check. Affects your XP modifier.</div>
+    <div class="mana-modal-title">⚡ Day Start Check-In</div>
+    <div class="mana-modal-sub">First session of the day — 2 quick picks. Affects XP modifier.</div>
     <div class="pick-label">1. Energy Level</div>
     <div class="pick-row" id="energy-pick">
       <button class="pick-btn" onclick="pickEnergy('fresh',this)">🔥 Fresh</button>
       <button class="pick-btn" onclick="pickEnergy('normal',this)">😐 Normal</button>
       <button class="pick-btn" onclick="pickEnergy('tired',this)">😴 Tired</button>
     </div>
-    <div class="pick-label">2. Task Type</div>
+    <div class="pick-label">2. What are you studying?</div>
     <div class="pick-row" id="task-pick">
-      <button class="pick-btn" onclick="pickTask('hard',this)">🧠 Hard Problems</button>
+      <button class="pick-btn" onclick="pickTask('hard',this)">🧠 Hard</button>
       <button class="pick-btn" onclick="pickTask('practice',this)">📝 Practice</button>
       <button class="pick-btn" onclick="pickTask('revision',this)">🔄 Revision</button>
+      <button class="pick-btn" onclick="pickTask('theory',this)">📖 Theory</button>
     </div>
     <div id="mana-effect-note" style="font-size:11px;color:var(--text2);min-height:18px;margin-bottom:14px;line-height:1.5"></div>
     <button class="btn btn-primary" style="width:100%" onclick="confirmManaModal()">Start Session ⚡</button>
   </div>
 </div>
 
-<!-- SESSION END CARD — Performance + Break + Micro-Learning -->
+<!-- NEXT SESSION MODAL — Break recap + Study Type for 2nd+ sessions -->
+<div class="mana-modal" id="next-sess-modal">
+  <div class="mana-modal-box">
+    <div class="mana-modal-title">⚔ Next Session</div>
+    <div class="mana-modal-sub">Quick check before locking in. Affects XP.</div>
+    <div class="pick-label">1. Break Length?</div>
+    <div class="pick-row" id="next-break-len-pick">
+      <button class="pick-btn" onclick="pickNextBreakLen('none',this)">⚡ No Break</button>
+      <button class="pick-btn" onclick="pickNextBreakLen('short',this)">☕ Short (10–20m)</button>
+      <button class="pick-btn" onclick="pickNextBreakLen('long',this)">🛌 Long (30m+)</button>
+    </div>
+    <div id="next-break-type-section" style="display:none">
+      <div class="pick-label">2. Break Type?</div>
+      <div class="pick-row" id="next-break-type-pick">
+        <button class="pick-btn" onclick="pickNextBreakType('productive',this)">✅ Productive</button>
+        <button class="pick-btn" onclick="pickNextBreakType('waste',this)">📵 Waste</button>
+      </div>
+    </div>
+    <div class="pick-label" id="next-study-lbl">What are you studying?</div>
+    <div class="pick-row" id="next-task-pick">
+      <button class="pick-btn" onclick="pickNextTask('hard',this)">🧠 Hard</button>
+      <button class="pick-btn" onclick="pickNextTask('practice',this)">📝 Practice</button>
+      <button class="pick-btn" onclick="pickNextTask('revision',this)">🔄 Revision</button>
+      <button class="pick-btn" onclick="pickNextTask('theory',this)">📖 Theory</button>
+    </div>
+    <div id="next-sess-effect-note" style="font-size:11px;min-height:18px;margin-bottom:14px;line-height:1.5"></div>
+    <button class="btn btn-primary" style="width:100%" onclick="confirmNextSessModal()">Start Session ⚡</button>
+  </div>
+</div>
+
+<!-- SESSION END CARD — Performance + Advice + Micro-Learning (NO break questions here) -->
 <div class="sec-modal" id="sec-modal">
   <div class="sec-card">
     <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px">
@@ -6036,18 +6153,6 @@ function renderRadarChart(){
     <div id="sec-info" style="font-size:11px;color:var(--text2);margin-bottom:10px"></div>
     <!-- Performance badge -->
     <div id="sec-performance"></div>
-    <!-- Break selection -->
-    <div class="sec-section-label">Break?</div>
-    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px" id="break-length-row">
-      <button class="break-chip sel" onclick="selBreakLen('none',this)">No Break</button>
-      <button class="break-chip" onclick="selBreakLen('short',this)">Short (10–20m)</button>
-      <button class="break-chip" onclick="selBreakLen('long',this)">Long (30m+)</button>
-    </div>
-    <div id="break-type-row" style="display:none;flex-wrap:wrap;gap:6px;margin-bottom:8px">
-      <div class="sec-section-label" style="width:100%;margin:0 0 5px">Break type?</div>
-      <button class="break-chip" onclick="selBreakType('productive',this)">✅ Productive</button>
-      <button class="break-chip" onclick="selBreakType('waste',this)">📵 Scrolling/Waste</button>
-    </div>
     <!-- Advice -->
     <div class="sec-section-label">Advice</div>
     <div class="sec-advice-box" id="sec-advice"></div>
@@ -6058,7 +6163,7 @@ function renderRadarChart(){
     <div class="sec-section-label">Learn This</div>
     <div class="sec-micro" id="sec-micro"></div>
     <div style="display:flex;gap:8px;margin-top:16px">
-      <button class="btn btn-primary" style="flex:1" onclick="submitSecModal()">Log & Rate ⭐</button>
+      <button class="btn btn-primary" style="flex:1" onclick="submitSecModal()">Rate Session ⭐</button>
       <button class="btn btn-ghost btn-sm" onclick="closeSecModal()">Skip</button>
     </div>
   </div>
