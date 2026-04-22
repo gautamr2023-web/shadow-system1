@@ -490,9 +490,20 @@ section.active{display:block}
 .modal-overlay.show{opacity:1;pointer-events:all}
 .modal-box{background:var(--card2);border:1px solid var(--border2);border-radius:var(--radius);padding:24px;max-width:360px;width:100%;transform:translateY(28px);transition:transform .28s cubic-bezier(.34,1.2,.64,1)}
 .modal-overlay.show .modal-box{transform:translateY(0)}
-.star-row{display:flex;justify-content:center;gap:8px;margin:14px 0 4px}
-.star-btn{font-size:36px;background:none;border:none;cursor:pointer;opacity:.22;transition:all .15s;padding:2px;line-height:1}
+.star-row{display:flex;justify-content:center;gap:4px;margin:10px 0 4px}
+.star-btn{
+  font-size:36px;background:none;border:none;cursor:pointer;
+  opacity:.22;transition:opacity .12s,transform .12s,filter .15s;
+  padding:0;line-height:1;
+  min-width:48px;min-height:48px;
+  display:inline-flex;align-items:center;justify-content:center;
+  touch-action:manipulation;
+  -webkit-tap-highlight-color:transparent;
+  user-select:none;-webkit-user-select:none;
+  position:relative;z-index:1;
+}
 .star-btn.lit{opacity:1;filter:drop-shadow(0 0 8px #f4c430)}
+.star-btn:active{transform:scale(1.25)}
 .mood-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:12px 0}
 .mood-btn{padding:10px 4px;border-radius:var(--radius-sm);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;cursor:pointer;border:1px solid var(--border2);background:transparent;color:var(--text2);transition:all .15s;text-align:center;line-height:1.4}
 .mood-btn.sel{border-color:var(--accent);background:rgba(91,110,245,.15);color:var(--accent)}
@@ -2790,46 +2801,112 @@ function hideDoneBanner(){
 // ── SESSION RATING MODAL ──
 function showRatingModal(sessInfo){
   pendingRating=sessInfo;ratingStars=0;ratingMood='';
-  document.querySelectorAll('.star-btn').forEach(b=>b.classList.remove('lit'));
-  document.querySelectorAll('.mood-btn').forEach(b=>b.classList.remove('sel'));
+
+  // Reset star UI
+  document.querySelectorAll('#star-row .star-btn').forEach(b=>b.classList.remove('lit'));
+  // Reset mood UI
+  document.querySelectorAll('.mood-grid .mood-btn').forEach(b=>b.classList.remove('sel'));
+
   const ni=document.getElementById('rating-note');if(ni)ni.value='';
-  const sl=document.getElementById('star-label');if(sl)sl.textContent='Tap a star';
+  const sl=document.getElementById('star-label');if(sl){sl.textContent='Tap a star';sl.style.color='var(--text3)';}
+
+  // Session info line
   const si=document.getElementById('rating-sess-info');
-  if(si)si.textContent=sessInfo.min+'m · '+sessInfo.sub.charAt(0).toUpperCase()+sessInfo.sub.slice(1)+' · '+sessInfo.mode;
+  if(si){
+    const taskLabel=(_sessionTaskType||'').charAt(0).toUpperCase()+(_sessionTaskType||'').slice(1);
+    si.textContent=sessInfo.min+'m · '+sessInfo.sub.charAt(0).toUpperCase()+sessInfo.sub.slice(1)
+      +' · '+sessInfo.mode+(taskLabel?' · '+taskLabel:'');
+  }
+
+  // Reattach star listeners (replace nodes to wipe any stale handlers)
+  const starRow=document.getElementById('star-row');
+  if(starRow){
+    const fresh=starRow.cloneNode(true);
+    fresh.querySelectorAll('.star-btn').forEach((btn,i)=>{
+      btn.addEventListener('click',()=>rateStar(i+1));
+      btn.addEventListener('touchend',e=>{e.preventDefault();rateStar(i+1);},{passive:false});
+    });
+    starRow.parentNode.replaceChild(fresh,starRow);
+  }
+
+  // Reattach mood listeners
+  document.querySelectorAll('.mood-grid .mood-btn').forEach(btn=>{
+    const m=btn.getAttribute('data-mood')||btn.getAttribute('onclick')||'';
+    // Extract mood value from onclick attr if data-mood not set
+    const moodMatch=m.match(/rateMood\('([^']+)'/);
+    const moodVal=moodMatch?moodMatch[1]:null;
+    if(moodVal){
+      const fresh=btn.cloneNode(true);
+      fresh.setAttribute('data-mood',moodVal);
+      fresh.addEventListener('click',()=>rateMood(moodVal,fresh));
+      btn.parentNode.replaceChild(fresh,btn);
+    }
+  });
+
+  hideDoneBanner();
   document.getElementById('rating-modal').classList.add('show');
 }
-function closeRatingModal(openInstead){
+function closeRatingModal(){
+  document.getElementById('rating-modal').classList.remove('show');
   hideDoneBanner();
-  if(openInstead){
-    document.getElementById('rating-modal').classList.add('show');
-  }
+  pendingRating=null;ratingStars=0;ratingMood='';
 }
 function rateStar(v){
   ratingStars=v;
   const lbls=['','😴 Barely there','😕 Mostly distracted','🙂 It was okay','💪 Pretty focused','🔥 Fully locked in!'];
-  const sl=document.getElementById('star-label');if(sl)sl.textContent=lbls[v]||'';
-  document.querySelectorAll('.star-btn').forEach((b,i)=>b.classList.toggle('lit',i<v));
+  const sl=document.getElementById('star-label');
+  if(sl){
+    sl.textContent=lbls[v]||'';
+    sl.style.color=v>=4?'var(--green)':v===3?'var(--gold)':'var(--red)';
+  }
+  // Scope to star-row only — avoids touching any other .star-btn elsewhere
+  const stars=document.querySelectorAll('#star-row .star-btn');
+  stars.forEach((b,i)=>{
+    const shouldLit=i<v;
+    b.classList.toggle('lit',shouldLit);
+    if(shouldLit){
+      // Cascade pop: each lit star gets a tiny staggered scale bounce
+      b.style.transform='scale(1.3)';
+      setTimeout(()=>{b.style.transform='';},120+i*30);
+    }
+  });
 }
 function rateMood(m,btn){
   ratingMood=m;
-  document.querySelectorAll('.mood-btn').forEach(b=>b.classList.remove('sel'));
+  // Scope deselect to the rating modal's mood grid only
+  document.querySelectorAll('#rating-modal .mood-btn').forEach(b=>b.classList.remove('sel'));
   if(btn)btn.classList.add('sel');
 }
 function submitRating(save_it){
+  // Guard: must select a star before saving
+  if(save_it && ratingStars===0){
+    showToast('⚠ Please select a star rating');
+    // Shake the star row to draw attention
+    const sr=document.getElementById('star-row');
+    if(sr){
+      sr.style.animation='none';
+      sr.style.transform='translateX(-6px)';
+      setTimeout(()=>{sr.style.transform='translateX(6px)';},80);
+      setTimeout(()=>{sr.style.transform='translateX(-4px)';},160);
+      setTimeout(()=>{sr.style.transform='';},240);
+    }
+    return;
+  }
+
   if(save_it&&pendingRating){
-    const last=S.sessions[S.sessions.length-1];
-    if(last&&last.id===pendingRating.id){
-      last.stars=ratingStars||null;
-      last.rating=ratingStars||null;  // canonical alias
-      last.mood=ratingMood||null;
-      last.note=(document.getElementById('rating-note')||{}).value||null;
+    // Use find() by id — robust, not dependent on session being last in array
+    const sess=S.sessions.find(s=>s.id===pendingRating.id);
+    if(sess){
+      sess.stars=ratingStars||null;
+      sess.rating=ratingStars||null;   // canonical alias
+      sess.mood=ratingMood||null;
+      sess.note=(document.getElementById('rating-note')||{}).value||null;
 
       // ── TIERED XP MODIFIER based on star rating ──
-      if(ratingStars>0&&!last.ratingApplied){
-        last.ratingApplied=true;
-        const baseXP=last.xp||0;
-        let xpDelta=0;
-        let msg='';
+      if(ratingStars>0&&!sess.ratingApplied){
+        sess.ratingApplied=true;
+        const baseXP=sess.xp||0;
+        let xpDelta=0,msg='';
         if(ratingStars===5){xpDelta=Math.round(baseXP*0.20);msg='🔥 5⭐ Locked in! +20% XP bonus';}
         else if(ratingStars===4){xpDelta=Math.round(baseXP*0.10);msg='💪 4⭐ Focused! +10% XP bonus';}
         else if(ratingStars===3){xpDelta=0;msg='👍 3⭐ Session saved.';}
@@ -2837,17 +2914,15 @@ function submitRating(save_it){
         else if(ratingStars===1){xpDelta=-Math.round(baseXP*0.20);msg='😴 1⭐ Barely there. -20% XP';}
         if(xpDelta!==0){
           S.hunter.xp=Math.max(0,S.hunter.xp+xpDelta);
-          last.xp=Math.max(0,(last.xp||0)+xpDelta);
-          last.ratingXPDelta=xpDelta;
+          sess.xp=Math.max(0,(sess.xp||0)+xpDelta);
+          sess.ratingXPDelta=xpDelta;
         }
         // ── Update Focus & Discipline stats ──
         if(!S.hunter.focusStat)S.hunter.focusStat=50;
         if(!S.hunter.disciplineStat)S.hunter.disciplineStat=50;
-        // Focus moves toward star rating (1-5 mapped to 0-100)
         const targetFocus=(ratingStars/5)*100;
         S.hunter.focusStat=Math.round(S.hunter.focusStat*0.9+targetFocus*0.1);
         S.hunter.focusStat=Math.min(100,Math.max(0,S.hunter.focusStat));
-        // Discipline increases on 4+, decreases on 1-2
         if(ratingStars>=4)S.hunter.disciplineStat=Math.min(100,S.hunter.disciplineStat+2);
         else if(ratingStars<=2)S.hunter.disciplineStat=Math.max(0,S.hunter.disciplineStat-3);
         if(msg)setTimeout(()=>showToast(msg),200);
@@ -2857,7 +2932,8 @@ function submitRating(save_it){
     }
   }
   document.getElementById('rating-modal').classList.remove('show');
-  pendingRating=null;
+  hideDoneBanner();
+  pendingRating=null;ratingStars=0;ratingMood='';
   if(focusTab==='log')renderSessionLog();
   if(typeof renderDash==='function')renderDash();
 }
