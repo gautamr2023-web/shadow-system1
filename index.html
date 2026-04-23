@@ -3372,13 +3372,15 @@ function updateSecAdvice(){
 }
 function submitSecModal(){
   document.getElementById('sec-modal').classList.remove('show');
-  if(_secSessInfo){setTimeout(()=>showRatingModal(_secSessInfo),200);}
+  const _info=_secSessInfo; // capture BEFORE nulling — fixes closure bug
   _secSessInfo=null;
+  if(_info){setTimeout(()=>showRatingModal(_info),200);}
 }
 function closeSecModal(){
   document.getElementById('sec-modal').classList.remove('show');
-  if(_secSessInfo){setTimeout(()=>showRatingModal(_secSessInfo),200);}
+  const _info=_secSessInfo; // capture BEFORE nulling — fixes closure bug
   _secSessInfo=null;
+  if(_info){setTimeout(()=>showRatingModal(_info),200);}
 }
 
 // ══════════════════════════════════════════════
