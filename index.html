@@ -3176,13 +3176,20 @@ function autoLog(mins,sub,mode,sid){
     setTimeout(()=>checkRankUp(),400);
   }
 
-  // ── MANA DRAIN — task-type based, clamped 0–100, one-time per session ──
+  // ── MANA DRAIN — time-scaled, clamped, one-time per session ──
+  // Step 1: Base drain by study type
+  // Step 2: Scale by session duration (timeFactor = mins/60)
+  // Step 3: Clamp to [5, 40]
+  // Examples: 30m Hard→~12, 60m Hard→25, 120m Hard→40 (capped)
   if(!paused&&!sessObj.manaApplied){
     const drainMap={hard:25,practice:15,revision:10,theory:10};
-    const drain=drainMap[_sessionTaskType]||15;
+    const baseDrain=drainMap[_sessionTaskType]||15;
+    const timeFactor=mins/60;
+    const rawDrain=baseDrain*timeFactor;
+    const drain=Math.round(Math.min(40,Math.max(5,rawDrain)));
     S.hunter.mana=Math.max(0,Math.min(100,(S.hunter.mana||100)-drain));
     sessObj.manaDrain=drain;
-    sessObj.manaApplied=true; // prevents double-drain if autoLog is ever called again for same sess
+    sessObj.manaApplied=true; // one-time per session — prevents double drain
   }
   save();updateHeader();renderSessLog();
   if(typeof renderSessionLog==='function'&&focusTab==='log')renderSessionLog();
@@ -3338,20 +3345,35 @@ const LEARN_FACT=[
   {type:'fact',fact:'Looking at a problem from multiple angles (different approaches) strengthens neural pathways for that concept.',tag:'🧩 Thinking'},
 ];
 
-// Track last shown learn-item index per category to reduce repetition
+// Track last shown learn-item index per category — persisted to localStorage to survive reloads
 let _learnLastIdx={vocab:-1,jee:-1,fact:-1};
 function getLearnItem(){
-  // Cycle category: vocab → jee → fact → vocab …
+  // Load persisted last-shown indices from localStorage
+  let lastIdx;
+  try{lastIdx=JSON.parse(localStorage.getItem('_learnLastIdx')||'{}');}
+  catch(e){lastIdx={};}
+  if(lastIdx.vocab==null)lastIdx.vocab=-1;
+  if(lastIdx.jee==null)lastIdx.jee=-1;
+  if(lastIdx.fact==null)lastIdx.fact=-1;
+
   const cats=['vocab','jee','fact'];
   const pools={vocab:LEARN_VOCAB,jee:LEARN_JEE,fact:LEARN_FACT};
-  // Pick category by session count mod 3
-  const sessCount=S.sessions.filter(s=>s.date===today()).length;
-  const cat=cats[sessCount%3];
+  // Cycle category by TOTAL non-paused session count → deterministic rotation across reloads
+  const totalCount=(S.sessions||[]).filter(s=>!s.paused).length;
+  const cat=cats[totalCount%3];
   const pool=pools[cat];
-  // Pick random index ≠ last used
+
+  // Pick a random index that differs from the last shown in this category
+  const last=lastIdx[cat];
   let idx=Math.floor(Math.random()*pool.length);
-  if(pool.length>1&&idx===_learnLastIdx[cat])idx=(idx+1)%pool.length;
-  _learnLastIdx[cat]=idx;
+  let attempts=0;
+  while(pool.length>1&&idx===last&&attempts<12){
+    idx=Math.floor(Math.random()*pool.length);attempts++;
+  }
+  lastIdx[cat]=idx;
+  // Persist back to localStorage
+  try{localStorage.setItem('_learnLastIdx',JSON.stringify(lastIdx));}catch(e){}
+  _learnLastIdx=lastIdx; // keep in-memory copy in sync
   return pool[idx];
 }
 
@@ -3378,20 +3400,30 @@ function showSecModal(sessInfo){
   const taskType=_sessionTaskType||'practice';
   const taskLabel=taskType.charAt(0).toUpperCase()+taskType.slice(1);
 
-  // ── Mana info ──
+  // ── Mana info — recalculate using same time-scaled formula as autoLog ──
   const drainMap={hard:25,practice:15,revision:10,theory:10};
-  const drain=drainMap[taskType]||15;
+  const baseDrainDisplay=drainMap[taskType]||15;
+  const drain=Math.round(Math.min(40,Math.max(5,baseDrainDisplay*(mins/60))));
   const manaAfter=S.hunter.mana; // already drained in autoLog
 
-  // ── Advice — performance-based ──
+  // ── Advice — context-aware: checks mana level, session length, task type, performance ──
   let advice='';
-  if(isHighPerf){
+  if(manaAfter<=20){
+    // Low mana takes priority — recovery is critical
+    advice='⚠ Mana critical ('+manaAfter+'). Your focus is burning out. Take a long productive break — eat, sleep, or walk before the next session.';
+  } else if(mins>=90&&taskType==='hard'){
+    // Long + hard → explicitly suggest short break
+    advice='🔥 Long hard session ('+mins+'m) complete. Your brain needs a short break now — 10–15 min, water and stretch. Come back stronger.';
+  } else if(mins<20&&!isHighPerf){
+    // Short + low output → focus improvement advice
+    advice='😐 Very short session ('+mins+'m). Identify the distraction — phone, noise, unclear goal? Fix the root cause. Next session: no distractions for 25 min minimum.';
+  } else if(isHighPerf){
     advice=taskType==='hard'
       ? '🔥 Strong session. Take a short break — water, stretch, then continue.'
       : '✅ High performance. Short break is enough — you\'re in the zone.';
   } else {
     advice=taskType==='hard'
-      ? '⚠ Low focus on hard problems. Take proper rest before the next session.'
+      ? '⚠ Low focus on hard problems. Take proper rest before next session.'
       : '😐 Short session. Rest properly — a full break resets your mana faster.';
   }
 
@@ -3672,15 +3704,24 @@ function renderBoardChart(){
   if(!S.boardTests||S.boardTests.length<1){
     canvas.parentElement.innerHTML='<div class="empty">Log board tests to see performance graph.</div>';return;
   }
-  // Get all unique dates
-  const allDates=[...new Set(S.boardTests.map(t=>t.date))].sort();
-  const labels=allDates.map(d=>fmtDate(d));
+  // FIX: Use ALL sorted entries as x-axis points — not unique dates — so every test is shown.
+  // Old code used .find() which only showed the FIRST test per date+subject.
+  const allTests=[...S.boardTests].sort((a,b)=>a.date.localeCompare(b.date)||(a.id-b.id));
+  // Build x-axis labels: if multiple entries share a date, suffix with #1 #2 etc.
+  const dateCounts={};
+  const dateRunning={};
+  allTests.forEach(t=>{dateCounts[t.date]=(dateCounts[t.date]||0)+1;});
+  const labels=allTests.map(t=>{
+    if(dateCounts[t.date]>1){
+      dateRunning[t.date]=(dateRunning[t.date]||0)+1;
+      return fmtDate(t.date)+' #'+dateRunning[t.date];
+    }
+    return fmtDate(t.date);
+  });
 
   const datasets=BOARD_SUBJECTS.map(subj=>{
-    const data=allDates.map(date=>{
-      const t=S.boardTests.find(bt=>bt.subj===subj&&bt.date===date);
-      return t?t.pct:null;
-    });
+    // Map every entry: score if this entry belongs to subject, else null — no .find()
+    const data=allTests.map(t=>t.subj===subj?t.pct:null);
     const hasData=data.some(v=>v!==null);
     if(!hasData)return null;
     return{
