@@ -860,6 +860,8 @@ input.fi:focus,select.fi:focus{
 }
 .sec-micro-word{font-size:15px;font-weight:700;color:var(--mana)}
 .sec-micro-def{font-size:12px;color:var(--text2);margin-top:2px;line-height:1.5}
+.sec-micro-ex{font-size:11px;color:var(--text3);margin-top:4px;font-style:italic;line-height:1.4}
+.sec-learn-tag{font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--mana);opacity:.7;margin-bottom:4px}
 .sec-suggest{
   background:rgba(244,196,48,.05);border:1px solid rgba(244,196,48,.18);
   border-radius:var(--radius-sm);padding:9px 12px;font-size:12px;font-weight:600;color:var(--gold);
@@ -2046,7 +2048,8 @@ function ensureKeys(){
   if(S.workout.enduranceStat===undefined)S.workout.enduranceStat=0;
   if(!S.jeeTarget)S.jeeTarget=250;
   if(!S.hunter.startDate)S.hunter.startDate=new Date().toISOString().split('T')[0];
-  if(S.hunter.mana===undefined)S.hunter.mana=100;
+  if(S.hunter.mana===undefined||S.hunter.mana===null||isNaN(S.hunter.mana))S.hunter.mana=100;
+  S.hunter.mana=Math.min(100,Math.max(0,S.hunter.mana)); // clamp on every load
   if(!S.questComp)S.questComp={};
   if(!S.sessions)S.sessions=[];
   if(!S.tests)S.tests=[];
@@ -2207,8 +2210,8 @@ function checkStreak(){
       // Rank down: 2+ consecutive failures
       if(S.consecutiveFailures>=2)checkRankDown();
     }
-    // Mana restore (always, even during pause)
-    S.hunter.mana=Math.min(100,S.hunter.mana+40);
+    // Mana partial restore on new day — +30, always clamped 0–100
+    S.hunter.mana=Math.max(0,Math.min(100,(S.hunter.mana||0)+30));
   } else {
     // First ever day
     S.hunter.streak=1;
@@ -3172,7 +3175,15 @@ function autoLog(mins,sub,mode,sid){
     S.hunter.xp+=xp+starterBonus;
     setTimeout(()=>checkRankUp(),400);
   }
-  S.hunter.mana=Math.max(0,S.hunter.mana-Math.min(15,Math.round(mins/7)));
+
+  // ── MANA DRAIN — task-type based, clamped 0–100, one-time per session ──
+  if(!paused&&!sessObj.manaApplied){
+    const drainMap={hard:25,practice:15,revision:10,theory:10};
+    const drain=drainMap[_sessionTaskType]||15;
+    S.hunter.mana=Math.max(0,Math.min(100,(S.hunter.mana||100)-drain));
+    sessObj.manaDrain=drain;
+    sessObj.manaApplied=true; // prevents double-drain if autoLog is ever called again for same sess
+  }
   save();updateHeader();renderSessLog();
   if(typeof renderSessionLog==='function'&&focusTab==='log')renderSessionLog();
   if(typeof renderFocusStats==='function'&&focusTab==='stats')renderFocusStats();
@@ -3190,7 +3201,14 @@ function autoLog(mins,sub,mode,sid){
     if(tM>=240&&!comp.q6){comp.q6=true;S.hunter.xp+=30;S.questComp[t]=comp;save();showToast('🏆 4h Marathon complete! +30 XP');updateHeader();}
   }
 }
-function restoreMana(){S.hunter.mana=Math.min(100,S.hunter.mana+30);save();updateHeader();showToast('Mana +30 🌙 — take a real break!');}
+function restoreMana(){
+  const before=Math.max(0,Math.min(100,S.hunter.mana||0));
+  const gain=Math.min(30,100-before); // can't exceed 100
+  S.hunter.mana=before+gain;
+  save();updateHeader();
+  if(gain>0)showToast(`Mana +${gain} 🌙 — take a real break to restore more!`);
+  else showToast('Mana is already full! 🔥 Start your next session.');
+}
 
 // ══════════════════════════════════════════════
 //  V8 FEATURE 3 — MANA / ENERGY MODAL
@@ -3266,28 +3284,76 @@ function getManaXPMod(){
 // ══════════════════════════════════════════════
 //  V8 FEATURE 4+5+6 — SESSION END CARD
 // ══════════════════════════════════════════════
-const MICRO_LEARN=[
-  {word:'Ephemeral',def:'Lasting for a very short time. Your excuses are ephemeral — your goals are not.'},
-  {word:'Velocity',def:'(Physics) Rate of change of displacement. v = ds/dt. Direction matters.'},
-  {word:'Stoic',def:'One who endures pain without complaint. Study hard, complain never.'},
-  {word:'Entropy',def:'(Thermo) Measure of disorder in a system. Study reduces mental entropy.'},
-  {word:'Soliloquy',def:'Act of speaking thoughts aloud when alone. Stop the negative self-talk.'},
-  {word:'Catalyst',def:'(Chem) Speeds up reaction without being consumed. You are your own catalyst.'},
-  {word:'Parallax',def:'(Physics) Apparent shift of object due to observer position change.'},
-  {word:'Osmosis',def:'(Bio/Chem) Movement of solvent through semi-permeable membrane to equalise concentration.'},
-  {word:'Tenacious',def:'Holding fast; persistent. Be tenacious — results follow consistency.'},
-  {word:'Inertia',def:"(Physics) Body's tendency to resist change in motion. Newton's 1st law applies to habits too."},
-  {word:'Confluence',def:'Junction of two rivers or ideas. Where hard work meets smart work.'},
-  {word:'Resonance',def:'(Physics) Amplification at natural frequency. Find your study rhythm.'},
-  {word:'Pragmatic',def:'Dealing with things sensibly and realistically. Be pragmatic with your prep.'},
-  {word:'Gibbs Energy',def:'(Chem) ΔG = ΔH − TΔS. Determines spontaneity of a reaction.'},
-  {word:'Luminous',def:'Emitting light. Be the student who glows under pressure.'},
-  {word:'Bernoulli',def:'(Physics) Increase in fluid speed = decrease in pressure. P + ½ρv² + ρgh = const.'},
-  {word:'Assiduous',def:'Showing great care and perseverance. Assiduous revision builds mastery.'},
-  {word:'Faraday',def:"(Chem) 1 Faraday = 96500 C/mol. Key constant for electrochemistry."},
-  {word:'Zenith',def:'Highest point of achievement. Your zenith is earned session by session.'},
-  {word:'Doppler',def:'(Physics) Change in wave frequency due to relative motion between source and observer.'},
+// LEARN-THIS POOL — 3 categories, rotated per session
+// ══════════════════════════════════════════════
+const LEARN_VOCAB=[
+  {type:'vocab',word:'Ephemeral',meaning:'Lasting a very short time.',example:'"Her motivation was ephemeral — gone by noon."'},
+  {type:'vocab',word:'Tenacious',meaning:'Holding firm; refusing to give up.',example:'"A tenacious hunter finishes every session."'},
+  {type:'vocab',word:'Assiduous',meaning:'Showing great dedication and care.',example:'"Assiduous revision is the only path to mastery."'},
+  {type:'vocab',word:'Pragmatic',meaning:'Dealing with things sensibly and realistically.',example:'"Be pragmatic — fix weak topics before strong ones."'},
+  {type:'vocab',word:'Stoic',meaning:'Enduring difficulty without complaint.',example:'"The stoic grinder works even on bad days."'},
+  {type:'vocab',word:'Lucid',meaning:'Clearly expressed; easy to understand.',example:'"His notes were lucid and precise."'},
+  {type:'vocab',word:'Diligent',meaning:'Having or showing care and consistent effort.',example:'"Diligent study beats talent without discipline."'},
+  {type:'vocab',word:'Juxtapose',meaning:'Place two things side by side to show contrast.',example:'"Juxtapose your weak and strong topics to plan revision."'},
+  {type:'vocab',word:'Resilient',meaning:'Recovering quickly from setbacks.',example:'"Resilient hunters turn bad sessions into fuel."'},
+  {type:'vocab',word:'Cogent',meaning:'Clear, logical, and convincing.',example:'"A cogent argument scores full marks in theory."'},
+  {type:'vocab',word:'Enumerate',meaning:'Mention one by one.',example:'"Enumerate all the steps in the derivation."'},
+  {type:'vocab',word:'Convoluted',meaning:'Extremely complex and difficult to follow.',example:'"Avoid convoluted explanations — simplicity wins."'},
+  {type:'vocab',word:'Innate',meaning:'Inborn; existing from birth.',example:'"Hard work beats innate talent every time."'},
+  {type:'vocab',word:'Verbose',meaning:'Using more words than needed.',example:'"Keep answers crisp — never be verbose in exams."'},
+  {type:'vocab',word:'Meticulous',meaning:'Showing great attention to detail.',example:'"Meticulous error checking wins marks in maths."'},
 ];
+const LEARN_JEE=[
+  {type:'jee',concept:'Work-Energy Theorem',fact:'Net work done on a body = change in kinetic energy. W = ΔKE. Works even with variable forces.'},
+  {type:'jee',concept:'Le Chatelier\'s Principle',fact:'A system at equilibrium will shift to counteract any imposed change — pressure, temperature, or concentration.'},
+  {type:'jee',concept:'Snell\'s Law',fact:'n₁ sin θ₁ = n₂ sin θ₂. Light bends toward normal when entering a denser medium.'},
+  {type:'jee',concept:'Gibbs Free Energy',fact:'ΔG = ΔH − TΔS. Reaction is spontaneous when ΔG < 0. At equilibrium, ΔG = 0.'},
+  {type:'jee',concept:'Faraday\'s Law',fact:'EMF = −dΦ/dt. The faster the flux changes, the greater the induced EMF.'},
+  {type:'jee',concept:'Mole Concept',fact:'1 mole = 6.022×10²³ particles. n = mass/molar mass = volume(STP)/22.4 L.'},
+  {type:'jee',concept:'SHM Condition',fact:'Acceleration ∝ −displacement from mean. a = −ω²x. Period T = 2π/ω.'},
+  {type:'jee',concept:'Doppler Effect',fact:'Apparent frequency changes with relative motion. f′ = f(v±v₀)/(v∓vₛ). Critical in optics and wave chapters.'},
+  {type:'jee',concept:'Bernoulli\'s Equation',fact:'P + ½ρv² + ρgh = constant along a streamline. Energy conservation for ideal fluid flow.'},
+  {type:'jee',concept:'Hybridisation Trick',fact:'sp → linear · sp² → trigonal planar · sp³ → tetrahedral · sp³d² → octahedral.'},
+  {type:'jee',concept:'Integration by Parts',fact:'∫u dv = uv − ∫v du. Use LIATE to pick u: Logs, Inverse trig, Algebraic, Trig, Exponential.'},
+  {type:'jee',concept:'Photoelectric Effect',fact:'KE_max = hf − φ. No electrons emitted below threshold frequency regardless of intensity.'},
+  {type:'jee',concept:'Buffer pH',fact:'pH = pKₐ + log([A⁻]/[HA]). Henderson-Hasselbalch. pH ≈ pKₐ when [salt]=[acid].'},
+  {type:'jee',concept:'Newton\'s 3rd Law',fact:'Every action has equal and opposite reaction. Forces always occur in pairs — never on the same body.'},
+  {type:'jee',concept:'Binomial Theorem',fact:'(a+b)ⁿ = Σ ⁿCᵣ aⁿ⁻ʳ bʳ. For |x|<1: (1+x)ⁿ ≈ 1+nx for small x (approximation trick).'},
+];
+const LEARN_FACT=[
+  {type:'fact',fact:'The human brain uses ~20% of your body\'s energy. Studying is literally burning calories.',tag:'🧠 Brain'},
+  {type:'fact',fact:'Spaced repetition is 60% more effective than cramming. Review after 1 day, 3 days, 7 days.',tag:'📚 Memory'},
+  {type:'fact',fact:'Sleep consolidates memory. A 20-min nap after studying improves retention by up to 40%.',tag:'😴 Sleep'},
+  {type:'fact',fact:'The Pomodoro Technique was invented in the late 1980s by Francesco Cirillo using a tomato-shaped timer.',tag:'⏱ Focus'},
+  {type:'fact',fact:'Writing notes by hand encodes memory better than typing — forces your brain to summarise.',tag:'✍ Writing'},
+  {type:'fact',fact:'IIT Bombay has the highest JEE Advanced cutoff. Top 0.1% of 1.2 million students make it.',tag:'🏛 JEE'},
+  {type:'fact',fact:'The average IIT topper studies 10–12 hours/day in the final 3 months — but quality beats quantity.',tag:'📊 Study'},
+  {type:'fact',fact:'Interleaving (switching topics) is harder but produces better long-term retention than blocked practice.',tag:'🔀 Strategy'},
+  {type:'fact',fact:'The "Testing Effect": attempting recall is twice as effective as re-reading the same material.',tag:'✅ Recall'},
+  {type:'fact',fact:'Drinking 500ml of water before studying can improve cognitive performance by 14%.',tag:'💧 Hydration'},
+  {type:'fact',fact:'Exercise increases BDNF (brain-derived neurotrophic factor) — literally grows new brain connections.',tag:'💪 Exercise'},
+  {type:'fact',fact:'Albert Einstein failed his university entrance exam the first time. Failure is a data point, not an endpoint.',tag:'⚡ Mindset'},
+  {type:'fact',fact:'The optimal study session length for deep focus is 90 minutes, matching natural ultradian rhythms.',tag:'🔄 Rhythm'},
+  {type:'fact',fact:'JEE Advanced 2024 had ~180,000 eligible candidates. Only ~17,000 qualify for admission.',tag:'🎯 Stats'},
+  {type:'fact',fact:'Looking at a problem from multiple angles (different approaches) strengthens neural pathways for that concept.',tag:'🧩 Thinking'},
+];
+
+// Track last shown learn-item index per category to reduce repetition
+let _learnLastIdx={vocab:-1,jee:-1,fact:-1};
+function getLearnItem(){
+  // Cycle category: vocab → jee → fact → vocab …
+  const cats=['vocab','jee','fact'];
+  const pools={vocab:LEARN_VOCAB,jee:LEARN_JEE,fact:LEARN_FACT};
+  // Pick category by session count mod 3
+  const sessCount=S.sessions.filter(s=>s.date===today()).length;
+  const cat=cats[sessCount%3];
+  const pool=pools[cat];
+  // Pick random index ≠ last used
+  let idx=Math.floor(Math.random()*pool.length);
+  if(pool.length>1&&idx===_learnLastIdx[cat])idx=(idx+1)%pool.length;
+  _learnLastIdx[cat]=idx;
+  return pool[idx];
+}
 
 let _secSessInfo=null,_breakLen='none',_breakType='';
 // ── PER-SESSION TASK TYPE (set at modal confirm, used by autoLog + feedback) ──
@@ -3299,47 +3365,91 @@ function showSecModal(sessInfo){
   _secSessInfo=sessInfo;
   const mins=sessInfo.min,sub=sessInfo.sub,mode=sessInfo.mode;
 
-  // Performance label
+  // ── Performance tier ──
   const todayMins=S.sessions.filter(s=>s.date===today()&&!s.paused).reduce((a,s)=>a+s.min,0);
-  let perfLabel,perfClass,perfMsg;
-  if(todayMins>=360){perfLabel='🔥 Excellent session';perfClass='excellent';perfMsg='You are locked in today. Chase the boss fight.';}
-  else if(mins>=90){perfLabel='💪 Strong effort';perfClass='good';perfMsg='Long session completed. Consistency builds S-rank.';}
-  else if(mins>=45){perfLabel='👍 Good effort';perfClass='good';perfMsg='Solid work. Keep building the streak.';}
+  let perfLabel,perfClass,perfMsg,isHighPerf=false;
+  if(todayMins>=360){perfLabel='🔥 Excellent';perfClass='excellent';perfMsg='You are locked in today. Chase the boss fight.';isHighPerf=true;}
+  else if(mins>=90){perfLabel='💪 Strong effort';perfClass='good';perfMsg='Long session completed. Consistency builds S-rank.';isHighPerf=true;}
+  else if(mins>=45){perfLabel='👍 Good effort';perfClass='good';perfMsg='Solid work. Keep building the streak.';isHighPerf=true;}
   else if(mins>=20){perfLabel='📚 Session done';perfClass='warn';perfMsg='Short but done. Push for a longer next session.';}
-  else{perfLabel='⚠ Low focus session';perfClass='low';perfMsg='Very short session. Regroup and push harder next time.';}
+  else{perfLabel='⚠ Low focus';perfClass='low';perfMsg='Very short session. Regroup and push harder next time.';}
 
-  // Advice based on current session task type
+  // ── Study type ──
   const taskType=_sessionTaskType||'practice';
+  const taskLabel=taskType.charAt(0).toUpperCase()+taskType.slice(1);
+
+  // ── Mana info ──
+  const drainMap={hard:25,practice:15,revision:10,theory:10};
+  const drain=drainMap[taskType]||15;
+  const manaAfter=S.hunter.mana; // already drained in autoLog
+
+  // ── Advice — performance-based ──
   let advice='';
-  if(taskType==='hard')advice='Hard problems done. Drink water, stretch 5 min, then continue.';
-  else if(taskType==='revision')advice='Revise once more before break. Then eat something light.';
-  else if(taskType==='theory')advice='Theory absorbed. Test yourself with problems before next session.';
-  else advice='Good work. Take a proper break — rest your eyes and brain.';
+  if(isHighPerf){
+    advice=taskType==='hard'
+      ? '🔥 Strong session. Take a short break — water, stretch, then continue.'
+      : '✅ High performance. Short break is enough — you\'re in the zone.';
+  } else {
+    advice=taskType==='hard'
+      ? '⚠ Low focus on hard problems. Take proper rest before the next session.'
+      : '😐 Short session. Rest properly — a full break resets your mana faster.';
+  }
 
-  // Study suggestion
+  // ── Next session suggestion ──
   let suggest='';
-  if(taskType==='hard')suggest='⚡ Next: attempt 5 PYQ problems on this topic, or start a timed mock.';
-  else if(taskType==='practice')suggest='📝 Next: attempt PYQ modules or chapter problems.';
-  else if(taskType==='theory')suggest='🔬 Next: solve 10 problems based on the theory you just studied.';
-  else suggest='📖 Next: review weak topic notes or update your confidence sliders.';
+  if(taskType==='hard')suggest='⚡ Next: 5 PYQs on this topic, or start a timed mock.';
+  else if(taskType==='practice')suggest='📝 Next: PYQ module or chapter problems.';
+  else if(taskType==='theory')suggest='🔬 Next: Solve 10 problems based on what you just studied.';
+  else suggest='📖 Next: Review weak topic notes or update confidence sliders.';
 
-  // Micro-learning
-  const micro=MICRO_LEARN[Math.floor(Math.random()*MICRO_LEARN.length)];
-
-  // Set info
+  // ── Info line ──
   const infoEl=document.getElementById('sec-info');
-  if(infoEl)infoEl.textContent=`${mins}m · ${sub.charAt(0).toUpperCase()+sub.slice(1)} · ${mode} · ${taskType.charAt(0).toUpperCase()+taskType.slice(1)}`;
+  if(infoEl)infoEl.textContent=`${mins}m · ${sub.charAt(0).toUpperCase()+sub.slice(1)} · ${mode} · ${taskLabel} · Mana −${drain} → ${manaAfter}`;
 
-  // Render performance
+  // ── Performance badge + mana bar ──
+  const manaColor=manaAfter>=60?'var(--green)':manaAfter>=30?'var(--gold)':'var(--red)';
   const perfEl=document.getElementById('sec-performance');
-  if(perfEl)perfEl.innerHTML=`<div class="sec-badge ${perfClass}">${perfLabel}</div><div style="font-size:12px;color:var(--text2);margin-top:4px">${perfMsg}</div>`;
+  if(perfEl)perfEl.innerHTML=
+    `<div class="sec-badge ${perfClass}">${perfLabel}</div>`+
+    `<div style="font-size:12px;color:var(--text2);margin-top:4px;margin-bottom:10px">${perfMsg}</div>`+
+    `<div style="display:flex;align-items:center;gap:8px;margin-bottom:2px">`+
+      `<span style="font-size:10px;color:var(--text3);min-width:34px">MANA</span>`+
+      `<div style="flex:1;height:5px;background:rgba(255,255,255,.07);border-radius:3px;overflow:hidden">`+
+        `<div style="height:100%;width:${manaAfter}%;background:${manaColor};border-radius:3px;transition:width .6s ease"></div>`+
+      `</div>`+
+      `<span style="font-size:10px;font-family:var(--mono);color:${manaColor}">${manaAfter}</span>`+
+      `<span style="font-size:10px;color:var(--red)">−${drain}</span>`+
+    `</div>`;
 
+  // ── Advice ──
   const advEl=document.getElementById('sec-advice');
   if(advEl)advEl.textContent=advice;
+
+  // ── Suggestion ──
   const sugEl=document.getElementById('sec-suggest');
   if(sugEl)sugEl.textContent=suggest;
+
+  // ── Learn This — rich 3-category item ──
+  const item=getLearnItem();
   const micEl=document.getElementById('sec-micro');
-  if(micEl)micEl.innerHTML=`<div class="sec-micro-word">${micro.word}</div><div class="sec-micro-def">${micro.def}</div>`;
+  if(micEl){
+    if(item.type==='vocab'){
+      micEl.innerHTML=
+        `<div class="sec-learn-tag">📘 Vocabulary</div>`+
+        `<div class="sec-micro-word">${item.word}</div>`+
+        `<div class="sec-micro-def">${item.meaning}</div>`+
+        `<div class="sec-micro-ex">"${item.example}"</div>`;
+    } else if(item.type==='jee'){
+      micEl.innerHTML=
+        `<div class="sec-learn-tag">⚗ JEE Concept</div>`+
+        `<div class="sec-micro-word">${item.concept}</div>`+
+        `<div class="sec-micro-def">${item.fact}</div>`;
+    } else {
+      micEl.innerHTML=
+        `<div class="sec-learn-tag">${item.tag}</div>`+
+        `<div class="sec-micro-def" style="margin-top:4px">${item.fact}</div>`;
+    }
+  }
 
   document.getElementById('sec-modal').classList.add('show');
 }
@@ -3421,14 +3531,20 @@ function updateNextSessNote(){
   if(_nextSessBreakLen!=='none'&&!_nextSessBreakType){
     note.style.color='var(--text2)';note.textContent='↑ Select break type above.';return;
   }
+  const baseMana={none:0,short:10,long:20}[_nextSessBreakLen]||0;
+  const mana=_nextSessBreakType==='waste'?Math.round(baseMana*0.5):baseMana;
   if(_nextSessBreakType==='waste'){
-    note.style.color='var(--red)';note.textContent='⚠ Waste break: −15 XP penalty will apply.';return;
+    note.style.color='var(--red)';
+    note.textContent=`⚠ Waste break → −15 XP · Mana +${mana} (halved from ${baseMana})`;return;
   }
   if(_nextSessBreakType==='productive'&&_nextSessBreakLen==='long'){
-    note.style.color='var(--green)';note.textContent='✅ Long productive break: +15 XP bonus!';return;
+    note.style.color='var(--green)';note.textContent=`✅ Long productive break → +15 XP · Mana +${mana}`;return;
   }
   if(_nextSessBreakType==='productive'){
-    note.style.color='var(--green)';note.textContent='✅ Short productive break: +8 XP bonus!';return;
+    note.style.color='var(--green)';note.textContent=`✅ Short productive break → +8 XP · Mana +${mana}`;return;
+  }
+  if(_nextSessBreakLen==='none'){
+    note.style.color='var(--text2)';note.textContent='⚡ No break — mana unchanged. Jump straight in.';return;
   }
   note.style.color='var(--text2)';note.textContent='';
 }
@@ -3437,18 +3553,35 @@ function confirmNextSessModal(){
   if(_nextSessBreakLen!=='none'&&!_nextSessBreakType){
     showToast('Select break type to continue ↑');return;
   }
-  // Apply break XP effects
-  if(_nextSessBreakType==='productive'){
-    const bonus=_nextSessBreakLen==='long'?15:8;
-    S.hunter.xp+=bonus;save();updateHeader();
-    showToast(`✅ Productive break! +${bonus} XP`);
-  } else if(_nextSessBreakType==='waste'){
-    S.hunter.xp=Math.max(0,S.hunter.xp-15);save();updateHeader();
-    showToast('📵 Waste break: −15 XP. Scrolling is a trap.');
+
+  // ── MANA RECOVERY — applied before next session starts ──
+  // Base recovery by break length
+  const baseManaRecovery={none:0,short:10,long:20}[_nextSessBreakLen]||0;
+  // Waste break = 50% recovery; productive = full
+  const manaRecovery=_nextSessBreakType==='waste'
+    ? Math.round(baseManaRecovery*0.5)
+    : baseManaRecovery;
+  if(manaRecovery>0){
+    S.hunter.mana=Math.min(100,S.hunter.mana+manaRecovery);
   }
-  // Store task type for this session
+
+  // ── XP EFFECTS for break quality ──
+  let xpToast='';
+  if(_nextSessBreakType==='productive'){
+    const xpBonus=_nextSessBreakLen==='long'?15:8;
+    S.hunter.xp+=xpBonus;
+    xpToast=`✅ Productive break! Mana +${manaRecovery} · XP +${xpBonus}`;
+  } else if(_nextSessBreakType==='waste'){
+    S.hunter.xp=Math.max(0,S.hunter.xp-15);
+    xpToast=`📵 Waste break: −15 XP · Mana +${manaRecovery} (halved)`;
+  } else if(_nextSessBreakLen==='none'){
+    xpToast='⚡ No break — straight back in. Mana unchanged.';
+  }
+
+  save();updateHeader();
+
+  // ── TASK TYPE + XP MOD ──
   _sessionTaskType=_nextSessTask;
-  // Update daily mana with new task + recalculate mod using existing energy
   const t=today();
   const dm=S.dailyMana[t]||{};
   const energy=dm.energy||'normal';
@@ -3456,18 +3589,21 @@ function confirmNextSessModal(){
   if(energy==='fresh'&&_nextSessTask==='hard')mod=1.25;
   else if(energy==='fresh'&&_nextSessTask!=='hard')mod=0.9;
   else if(energy==='tired'&&_nextSessTask==='hard')mod=0.8;
-  else mod=1.0;
   S.dailyMana[t]={...dm,task:_nextSessTask,mod};
   save();
+
   document.getElementById('next-sess-modal').classList.remove('show');
+
   // Start timer
   if(audioCtx&&audioCtx.state==='suspended')audioCtx.resume();
   tRunning=true;el('t-toggle','Pause');
   _timerStartWall=Date.now();_timerStartSecs=tSecs;
   tInterval=setInterval(tick,250);
   resumeMusic();
-  if(_nextSessBreakType==='waste')showToast('⚠ Waste break logged. Push twice as hard this session.');
-  else if(mod>1)showToast('🔥 Fresh energy + hard task — bonus XP active!');
+
+  // Show single consolidated toast
+  if(xpToast)setTimeout(()=>showToast(xpToast),250);
+  else if(mod>1)setTimeout(()=>showToast('🔥 Fresh energy + hard task — bonus XP active!'),250);
 }
 
 // ══════════════════════════════════════════════
