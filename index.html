@@ -1394,6 +1394,12 @@ input.fi:focus,select.fi:focus{
             <option value="chapter">Chapter Test</option>
           </select>
         </div>
+        <div class="fg full"><label class="fl">Chapters Covered <span style="color:var(--text3);font-weight:400;text-transform:none;letter-spacing:0">(optional — e.g. Kinematics, Limits)</span></label>
+          <input type="text" class="fi" id="t-chapters" placeholder="e.g. Kinematics, Thermodynamics, Integration…">
+        </div>
+        <div class="fg full"><label class="fl">Notes <span style="color:var(--text3);font-weight:400;text-transform:none;letter-spacing:0">(optional)</span></label>
+          <input type="text" class="fi" id="t-notes" placeholder="e.g. ran out of time in maths, silly mistakes…">
+        </div>
       </div>
       <button class="btn btn-primary" onclick="addTest()" style="width:100%">Add Result</button>
     </div>
@@ -1452,6 +1458,12 @@ input.fi:focus,select.fi:focus{
         <div class="fg full">
           <label class="fl">Date</label>
           <input type="date" class="fi" id="b-date">
+        </div>
+        <div class="fg full"><label class="fl">Chapters Covered <span style="color:var(--text3);font-weight:400;text-transform:none;letter-spacing:0">(optional)</span></label>
+          <input type="text" class="fi" id="b-chapters" placeholder="e.g. Electrochemistry, Organic Reactions, Ch. 3–5…">
+        </div>
+        <div class="fg full"><label class="fl">Notes <span style="color:var(--text3);font-weight:400;text-transform:none;letter-spacing:0">(optional)</span></label>
+          <input type="text" class="fi" id="b-notes" placeholder="e.g. lost marks in organic, MCQs were tough…">
         </div>
       </div>
       <button class="btn btn-primary" onclick="addBoardTest()" style="width:100%">Add Board Result</button>
@@ -3659,13 +3671,16 @@ function addBoardTest(){
   const marks=parseFloat(document.getElementById('b-marks').value);
   const total=parseFloat(document.getElementById('b-total').value)||100;
   const date=document.getElementById('b-date').value||today();
+  const chapters=(document.getElementById('b-chapters').value||'').trim();
+  const notes=(document.getElementById('b-notes').value||'').trim();
   if(isNaN(marks)||marks<0){showToast('Enter valid marks');return;}
   if(marks>total){showToast('Marks cannot exceed total');return;}
   if(!S.boardTests)S.boardTests=[];
-  S.boardTests.push({id:Date.now(),subj,type,marks,total,date,pct:Math.round(marks/total*100)});
+  S.boardTests.push({id:Date.now(),subj,type,marks,total,date,pct:Math.round(marks/total*100),chapters,notes});
   S.boardTests.sort((a,b)=>a.date.localeCompare(b.date));
   save();
-  document.getElementById('b-marks').value='';
+  // Clear inputs
+  ['b-marks','b-chapters','b-notes'].forEach(id=>{const el2=document.getElementById(id);if(el2)el2.value='';});
   renderBoardPerformance();
   showToast(`Board test logged: ${BOARD_SUBJ_LABEL[subj]} — ${Math.round(marks/total*100)}%`);
 }
@@ -3782,6 +3797,12 @@ function renderBoardHist(){
       <td style="font-family:var(--mono);font-size:12px">${t.marks}/${t.total}</td>
       <td style="font-family:var(--mono);font-size:13px;font-weight:700;color:${c}">${t.pct}%</td>
     </tr>`;
+    if(t.chapters||t.notes){
+      h+=`<tr><td colspan="5" style="padding:2px 6px 10px;border-bottom:1px solid var(--border)">`;
+      if(t.chapters)h+=`<div style="font-size:11px;color:var(--text2);margin-bottom:2px"><span style="color:var(--accent);font-weight:700">📚 Chapters:</span> ${t.chapters}</div>`;
+      if(t.notes)h+=`<div style="font-size:11px;color:var(--text3);font-style:italic">💬 ${t.notes}</div>`;
+      h+=`</td></tr>`;
+    }
   });
   h+='</tbody></table>';
   el2.innerHTML=h;
@@ -4258,8 +4279,10 @@ function addTest(){
   const che=parseInt(document.getElementById('t-che').value)||0;
   const mat=parseInt(document.getElementById('t-mat').value)||0;
   const type=document.getElementById('t-type').value;
+  const chapters=(document.getElementById('t-chapters').value||'').trim();
+  const notes=(document.getElementById('t-notes').value||'').trim();
   const total=phy+che+mat;
-  S.tests.push({id:Date.now(),date,phy,che,mat,total,max,type});
+  S.tests.push({id:Date.now(),date,phy,che,mat,total,max,type,chapters,notes});
   S.tests.sort((a,b)=>new Date(a.date)-new Date(b.date));
   const xp=Math.round((total/max)*40);S.hunter.xp+=xp;
   // ── WEEKLY BOSS: mock/chapter test = +200 XP (once per week) ──
@@ -4272,6 +4295,8 @@ function addTest(){
       setTimeout(()=>showToast('⚔ Weekly Boss Defeated! +200 XP 🏆🔥'),700);
     } else if(S.weeklyBoss[wk]){showToast('Boss already defeated this week. +'+xp+' XP');}
   }
+  // Clear inputs
+  ['t-phy','t-che','t-mat','t-chapters','t-notes'].forEach(id=>{const el2=document.getElementById(id);if(el2)el2.value='';});
   save();updateHeader();
   if(!bossXP)showToast('Test logged! +'+xp+' XP');
   setTimeout(()=>checkRankUp(),500);
@@ -4286,6 +4311,12 @@ function renderTests(){
     const pct=Math.round(t.total/t.max*100);
     const cls=pct>=70?'sh':pct>=50?'sm':'sl';
     h+=`<tr><td style="font-size:12px">${fmtDate(t.date)}</td><td style="font-size:11px;color:var(--text2)">${{school:'School',mock:'Mock',chapter:'Chapter'}[t.type]||t.type}</td><td class="sc">${t.phy}</td><td class="sc">${t.che}</td><td class="sc">${t.mat}</td><td class="sc ${cls}">${t.total}/${t.max}</td></tr>`;
+    if(t.chapters||t.notes){
+      h+=`<tr><td colspan="6" style="padding:2px 6px 10px;border-bottom:1px solid var(--border)">`;
+      if(t.chapters)h+=`<div style="font-size:11px;color:var(--text2);margin-bottom:2px"><span style="color:var(--accent);font-weight:700">📚 Chapters:</span> ${t.chapters}</div>`;
+      if(t.notes)h+=`<div style="font-size:11px;color:var(--text3);font-style:italic">💬 ${t.notes}</div>`;
+      h+=`</td></tr>`;
+    }
   });
   h+='</tbody></table></div>';document.getElementById('test-hist').innerHTML=h;
 }
