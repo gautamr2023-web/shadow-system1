@@ -957,6 +957,53 @@ input.fi:focus,select.fi:focus{
   width:100%;
   min-width:0;
 }
+/* ══════════════════════════════════════
+   ORACLE AI — STYLES
+══════════════════════════════════════ */
+.oracle-header{display:flex;align-items:center;gap:12px;margin-bottom:18px;padding-bottom:14px;border-bottom:1px solid rgba(91,110,245,.15)}
+.oracle-icon{width:42px;height:42px;border-radius:10px;background:linear-gradient(135deg,rgba(124,94,245,.25),rgba(91,110,245,.15));border:1px solid rgba(91,110,245,.4);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;box-shadow:0 0 16px rgba(91,110,245,.2)}
+.oracle-status-dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);animation:oStatusPulse 2s ease-in-out infinite;flex-shrink:0;margin-left:auto}
+@keyframes oStatusPulse{0%,100%{opacity:.6;box-shadow:0 0 6px var(--green)}50%{opacity:1;box-shadow:0 0 14px var(--green)}}
+.oracle-out{background:linear-gradient(145deg,var(--card),var(--card2));border:1px solid var(--border);border-radius:var(--radius);padding:18px;font-size:13px;color:var(--text2);line-height:1.8;box-shadow:0 4px 24px rgba(0,0,0,.3);transition:border-color .25s}
+.oracle-out:hover{border-color:rgba(91,110,245,.28)}
+.oracle-out .o-heading{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--accent);margin:14px 0 6px;padding-bottom:5px;border-bottom:1px solid rgba(91,110,245,.15)}
+.oracle-out .o-bullet{display:flex;gap:9px;margin:5px 0;align-items:flex-start}
+.oracle-out .o-bullet-dot{color:var(--accent);flex-shrink:0;margin-top:1px}
+.oracle-out .o-check{display:flex;gap:9px;margin:6px 0;align-items:center}
+.oracle-out .o-check-box{width:15px;height:15px;border:1.5px solid var(--border2);border-radius:3px;flex-shrink:0}
+.oracle-chat-box{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:14px;min-height:260px;max-height:420px;overflow-y:auto;display:flex;flex-direction:column;gap:10px;scroll-behavior:smooth}
+.oracle-bubble{padding:11px 14px;border-radius:12px;max-width:92%;line-height:1.65;font-size:13px;animation:oBubbleIn .22s cubic-bezier(.34,1.2,.64,1)}
+@keyframes oBubbleIn{from{opacity:0;transform:translateY(8px) scale(.97)}to{opacity:1;transform:none}}
+.oracle-bubble.user{background:rgba(91,110,245,.12);border:1px solid rgba(91,110,245,.25);align-self:flex-end;color:var(--text);border-radius:12px 12px 3px 12px}
+.oracle-bubble.assistant{background:linear-gradient(135deg,var(--card2),var(--card));border:1px solid var(--border);align-self:flex-start;color:var(--text2);border-radius:12px 12px 12px 3px}
+.oracle-typing{display:inline-flex;gap:5px;align-items:center;padding:10px 14px;background:var(--card2);border:1px solid var(--border);border-radius:12px 12px 12px 3px;align-self:flex-start}
+.oracle-typing span{width:7px;height:7px;border-radius:50%;background:var(--accent);animation:oTypingDot 1.2s ease-in-out infinite}
+.oracle-typing span:nth-child(2){animation-delay:.2s}
+.oracle-typing span:nth-child(3){animation-delay:.4s}
+@keyframes oTypingDot{0%,60%,100%{transform:translateY(0);opacity:.3}30%{transform:translateY(-6px);opacity:1}}
+.oracle-textarea{flex:1;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--radius-sm);color:var(--text);font-family:var(--font);font-size:13px;padding:11px 13px;outline:none;resize:none;height:72px;line-height:1.5;transition:border-color .2s,box-shadow .2s}
+.oracle-textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(91,110,245,.1)}
+.oracle-textarea::placeholder{color:var(--text3)}
+.oracle-analyze-btn{width:100%;padding:14px;background:linear-gradient(135deg,var(--accent2),var(--accent));border:none;border-radius:var(--radius-sm);color:#fff;font-family:var(--font);font-size:14px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;cursor:pointer;margin-bottom:14px;transition:all .2s;box-shadow:0 0 24px rgba(91,110,245,.3)}
+.oracle-analyze-btn:hover{box-shadow:0 0 36px rgba(91,110,245,.5);transform:translateY(-1px)}
+.oracle-analyze-btn:disabled{opacity:.45;cursor:not-allowed;transform:none;box-shadow:none}
+.oracle-plan-btn{width:100%;padding:14px;background:linear-gradient(135deg,rgba(0,180,216,.8),rgba(91,110,245,.8));border:none;border-radius:var(--radius-sm);color:#fff;font-family:var(--font);font-size:14px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;cursor:pointer;margin-bottom:14px;transition:all .2s;box-shadow:0 0 24px rgba(0,180,216,.2)}
+.oracle-plan-btn:hover{box-shadow:0 0 36px rgba(0,180,216,.35);transform:translateY(-1px)}
+.oracle-plan-btn:disabled{opacity:.45;cursor:not-allowed;transform:none}
+.oracle-ctx-row{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
+.oracle-ctx-chip{background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:5px 10px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text2)}
+.oracle-ctx-chip span{font-family:var(--mono);font-size:12px;color:var(--text);margin-left:4px}
+.oracle-section-chip{display:inline-flex;align-items:center;gap:5px;background:rgba(91,110,245,.08);border:1px solid rgba(91,110,245,.22);border-radius:6px;padding:3px 10px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--accent);margin-bottom:10px}
+.oracle-key-item{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border)}
+.oracle-key-item:last-child{border:none}
+.oracle-key-badge{font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px;font-family:var(--mono)}
+.oracle-key-active{background:rgba(0,214,143,.1);color:var(--green);border:1px solid rgba(0,214,143,.25)}
+.oracle-key-waiting{background:rgba(91,110,245,.08);color:var(--text2);border:1px solid var(--border)}
+.oracle-key-failed{background:rgba(255,59,92,.08);color:var(--red);border:1px solid rgba(255,59,92,.2)}
+.oracle-memory-item{padding:9px 12px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:6px;font-size:12px;color:var(--text2);line-height:1.5}
+.oracle-memory-date{font-size:10px;color:var(--text3);font-family:var(--mono);margin-bottom:3px}
+#doubt-subj-row .pick-btn.sel{border-color:var(--accent);background:rgba(91,110,245,.15);color:var(--accent)}
+
 /* ── SMALL PHONE RESPONSIVE (<400px) ── */
 @media(max-width:400px){
   /* Train summary cards: 3 columns is too tight, stack to show all */
@@ -1093,6 +1140,10 @@ input.fi:focus,select.fi:focus{
   <button class="nav-btn" onclick="goTo('analytics',this)">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
     <span>Stats</span>
+  </button>
+  <button class="nav-btn" onclick="goTo('oracle',this)" id="nav-oracle-desktop">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="5"/><path d="M12 13v9"/><path d="M8 17h8"/><circle cx="8.5" cy="7" r="1" fill="currentColor" stroke="none"/><circle cx="15.5" cy="7" r="1" fill="currentColor" stroke="none"/><path d="M9 10q3 2 6 0" stroke-width="1.5"/></svg>
+    <span>Oracle</span>
   </button>
   <div class="nav-spacer"></div>
   <button class="nav-btn" onclick="goTo('settings',this)">
@@ -1765,6 +1816,121 @@ input.fi:focus,select.fi:focus{
   </div>
 </section>
 
+<!-- ══════════════════════════════════════
+     ORACLE AI SECTION
+══════════════════════════════════════ -->
+<section id="s-oracle">
+
+  <div class="oracle-header">
+    <div class="oracle-icon">⚡</div>
+    <div>
+      <div style="font-size:20px;font-weight:700">Oracle</div>
+      <div style="font-size:11px;color:var(--text2);margin-top:2px">AI study intelligence · Powered by Claude</div>
+    </div>
+    <div class="oracle-status-dot"></div>
+  </div>
+
+  <div class="tab-bar" id="oracle-tab-bar">
+    <button class="tab-btn active" onclick="setOracleTab('advisor',this)">📊 Advisor</button>
+    <button class="tab-btn" onclick="setOracleTab('doubt',this)">💬 Doubts</button>
+    <button class="tab-btn" onclick="setOracleTab('planner',this)">📅 Planner</button>
+    <button class="tab-btn" onclick="setOracleTab('memory',this)">🧠 Memory</button>
+    <button class="tab-btn" onclick="setOracleTab('keys',this)">🔑 Keys</button>
+  </div>
+
+  <!-- TAB 1: ADVISOR -->
+  <div id="ot-advisor">
+    <div id="oracle-advisor-ctx"></div>
+    <button class="oracle-analyze-btn" id="oracle-analyze-btn" onclick="runAdvisor()">⚡ Analyze My Progress</button>
+    <div id="oracle-advisor-out" class="oracle-out" style="display:none"></div>
+  </div>
+
+  <!-- TAB 2: DOUBT SOLVER -->
+  <div id="ot-doubt" style="display:none">
+    <div style="margin-bottom:12px">
+      <div style="font-size:10px;text-transform:uppercase;letter-spacing:.7px;color:var(--text2);font-weight:700;margin-bottom:7px">Subject</div>
+      <div class="pick-row" id="doubt-subj-row" style="margin-bottom:0;gap:6px">
+        <button class="pick-btn sel" onclick="setDoubtSubject('physics',this)">⚡ Physics</button>
+        <button class="pick-btn" onclick="setDoubtSubject('chemistry',this)">🧪 Chemistry</button>
+        <button class="pick-btn" onclick="setDoubtSubject('maths',this)">📐 Maths</button>
+        <button class="pick-btn" onclick="setDoubtSubject('general',this)">📖 General</button>
+      </div>
+    </div>
+    <div id="doubt-chat" class="oracle-chat-box">
+      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;min-height:200px;color:var(--text3);text-align:center;gap:8px">
+        <div style="font-size:28px;opacity:.4">💬</div>
+        <div style="font-size:13px;line-height:1.6">Ask any JEE doubt — derivations, problems, concepts.<br><span style="font-size:10px;color:var(--text3)">Full solution + concept + JEE trap notes. Conversation is remembered.</span></div>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:10px;align-items:flex-end">
+      <textarea id="doubt-input" class="oracle-textarea"
+        placeholder="Type your doubt… e.g. 'Derive mirror formula' · 'Why does entropy increase?' · 'Solve ∫x²eˣ dx'"
+        onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendDoubt();}"></textarea>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <button id="doubt-send-btn" class="btn btn-primary" onclick="sendDoubt()" style="padding:12px 16px;white-space:nowrap">Send ⚡</button>
+        <button class="btn btn-ghost btn-sm" onclick="clearDoubtHistory()" style="font-size:10px;padding:6px 10px">Clear</button>
+      </div>
+    </div>
+    <div style="font-size:10px;color:var(--text3);margin-top:5px;text-align:center">Shift+Enter for new line · Enter to send</div>
+  </div>
+
+  <!-- TAB 3: DAILY PLANNER -->
+  <div id="ot-planner" style="display:none">
+    <div id="oracle-planner-ctx"></div>
+    <button class="oracle-plan-btn" id="oracle-plan-btn" onclick="generateDailyPlan()">📅 Generate Today's Battle Plan</button>
+    <div id="oracle-plan-out" class="oracle-out" style="display:none"></div>
+  </div>
+
+  <!-- TAB 4: MEMORY -->
+  <div id="ot-memory" style="display:none">
+    <div class="card" style="margin-bottom:14px">
+      <div class="card-hdr"><span class="hl">🧠 Oracle Memory</span></div>
+      <div style="font-size:12px;color:var(--text2);line-height:1.7;margin-bottom:12px">
+        Oracle remembers every analysis and key insight across sessions. This memory is passed as context in every conversation so Oracle always knows your history.
+      </div>
+      <div style="display:flex;gap:8px;margin-bottom:12px">
+        <textarea id="oracle-memory-input" class="oracle-textarea" style="height:58px" placeholder="Add a manual memory entry… e.g. 'I struggle most with integration by parts' or 'My target college is IIT Bombay CSE'"></textarea>
+        <button class="btn btn-primary btn-sm" onclick="addManualMemory()" style="flex-shrink:0;padding:10px 14px">Add</button>
+      </div>
+      <div id="oracle-memory-list"></div>
+      <div style="display:flex;gap:8px;margin-top:10px">
+        <button class="btn btn-ghost btn-sm" onclick="renderMemoryList()">↺ Refresh</button>
+        <button class="btn btn-danger btn-sm" onclick="clearAllMemory()">Clear All Memory</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 5: API KEYS -->
+  <div id="ot-keys" style="display:none">
+    <div class="card" style="margin-bottom:14px">
+      <div class="card-hdr"><span class="hl">🔑 API Key Manager</span></div>
+      <div style="font-size:12px;color:var(--text2);line-height:1.7;margin-bottom:12px">
+        Add your own Anthropic API keys. Oracle auto-rotates to the next key when one hits its rate limit — so you never get blocked.
+        <br><br>
+        <span style="color:var(--text3)">Get keys at <b style="color:var(--accent)">console.anthropic.com</b> → API Keys. Keys are stored locally only, never synced to cloud.</span>
+      </div>
+      <div style="display:flex;gap:8px;margin-bottom:14px">
+        <input id="oracle-key-input" type="password" class="fi" placeholder="sk-ant-api03-..." style="flex:1;font-family:var(--mono);font-size:12px">
+        <input id="oracle-key-label" type="text" class="fi" placeholder="Label (e.g. Key 1)" style="width:100px">
+        <button class="btn btn-primary btn-sm" onclick="addOracleKey()" style="flex-shrink:0">Add Key</button>
+      </div>
+      <div id="oracle-key-list"></div>
+      <div id="oracle-key-status" style="margin-top:10px;font-size:11px;color:var(--text2)"></div>
+    </div>
+    <div class="card" style="border-color:rgba(244,196,48,.2)">
+      <div class="card-hdr"><span style="color:var(--gold)">⚡ How Key Rotation Works</span></div>
+      <div style="font-size:12px;color:var(--text2);line-height:1.9">
+        <div>1. Oracle tries the <b style="color:var(--text)">active key</b> first</div>
+        <div>2. If it hits a rate limit (429), it <b style="color:var(--text)">automatically switches</b> to the next key</div>
+        <div>3. After all keys are tried, it waits and retries the first key</div>
+        <div>4. You can see which key is currently active in the list above</div>
+        <div style="margin-top:8px;color:var(--text3)">Adding 2–3 keys from different accounts gives you continuous uninterrupted access.</div>
+      </div>
+    </div>
+  </div>
+
+</section>
+
 </main>
 
 <!-- RIGHT PANEL (desktop) -->
@@ -1827,6 +1993,10 @@ input.fi:focus,select.fi:focus{
   </button>
   <button class="bnav-btn" onclick="goTo('analytics',this)">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>Stats
+  </button>
+  <button class="bnav-btn" onclick="goTo('oracle',this)" id="nav-oracle-mobile">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="5"/><path d="M12 13v9"/><path d="M8 17h8"/><circle cx="8.5" cy="7" r="1" fill="currentColor" stroke="none"/><circle cx="15.5" cy="7" r="1" fill="currentColor" stroke="none"/><path d="M9 10q3 2 6 0" stroke-width="1.5"/></svg>
+    Oracle
   </button>
   <button class="bnav-btn" onclick="goTo('settings',this)">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>Setup
@@ -2360,6 +2530,7 @@ function goTo(name,btn){
   if(name==='workout')renderWorkout();
   if(name==='analytics')setTimeout(renderCharts,60);
   if(name==='settings')renderSettings();
+  if(name==='oracle')initOracleSection();
 }
 
 // ── UNIFIED TOTAL XP TODAY (all sources) ──
@@ -6363,6 +6534,358 @@ function renderRadarChart(){
     }
   });
 }
+// ══════════════════════════════════════════════════════════════════
+//  ORACLE AI ENGINE — Multi-key · Persistent Memory · Full Context
+// ══════════════════════════════════════════════════════════════════
+let oracleTab='advisor';
+let doubtHistory=[];
+let doubtSubject='physics';
+let oracleStreaming=false;
+let _oracleKeys=[];
+let _oracleKeyIdx=0;
+function initOracleSection(){
+  loadOracleKeys();
+  if(!S.oracleMemory)S.oracleMemory=[];
+  if(!S.oracleDoubtHistory)S.oracleDoubtHistory={};
+  const saved=S.oracleDoubtHistory[doubtSubject]||[];
+  if(!doubtHistory.length&&saved.length)doubtHistory=saved;
+  renderAdvisorContext();renderDoubtChat();renderPlannerContext();
+  if(oracleTab==='keys')renderKeyList();
+  if(oracleTab==='memory')renderMemoryList();
+}
+function setOracleTab(tab,btn){
+  oracleTab=tab;
+  ['advisor','doubt','planner','memory','keys'].forEach(t=>{
+    const el=document.getElementById('ot-'+t);if(el)el.style.display=t===tab?'block':'none';
+  });
+  document.querySelectorAll('#oracle-tab-bar .tab-btn').forEach(b=>b.classList.remove('active'));
+  if(btn)btn.classList.add('active');
+  if(tab==='advisor')renderAdvisorContext();
+  if(tab==='planner')renderPlannerContext();
+  if(tab==='keys')renderKeyList();
+  if(tab==='memory')renderMemoryList();
+  if(tab==='doubt')renderDoubtChat();
+}
+function loadOracleKeys(){
+  try{const raw=localStorage.getItem('oracle_keys');if(raw)_oracleKeys=JSON.parse(raw);}catch(e){_oracleKeys=[];}
+  _oracleKeys.forEach(k=>{if(k.status==='failed')k.status='waiting';});
+}
+function saveOracleKeys(){try{localStorage.setItem('oracle_keys',JSON.stringify(_oracleKeys));}catch(e){}}
+function addOracleKey(){
+  const keyEl=document.getElementById('oracle-key-input');
+  const lblEl=document.getElementById('oracle-key-label');
+  const key=(keyEl&&keyEl.value||'').trim();
+  const label=(lblEl&&lblEl.value||'Key '+(_oracleKeys.length+1)).trim();
+  if(!key||!key.startsWith('sk-')){showToast('Enter a valid Anthropic API key (starts with sk-)');return;}
+  _oracleKeys.push({label,key,status:_oracleKeys.length===0?'active':'waiting'});
+  saveOracleKeys();if(keyEl)keyEl.value='';if(lblEl)lblEl.value='';
+  renderKeyList();showToast('Key added: '+label+' ⚡');
+}
+function removeOracleKey(idx){
+  _oracleKeys.splice(idx,1);
+  if(_oracleKeyIdx>=_oracleKeys.length)_oracleKeyIdx=0;
+  if(_oracleKeys.length>0)_oracleKeys[0].status='active';
+  saveOracleKeys();renderKeyList();showToast('Key removed.');
+}
+function setActiveKey(idx){
+  _oracleKeys.forEach((k,i)=>k.status=i===idx?'active':'waiting');
+  _oracleKeyIdx=idx;saveOracleKeys();renderKeyList();
+  showToast('Switched to: '+_oracleKeys[idx].label);
+}
+function renderKeyList(){
+  const el=document.getElementById('oracle-key-list');if(!el)return;
+  if(!_oracleKeys.length){
+    el.innerHTML='<div style="color:var(--text3);font-size:13px;padding:8px 0">No keys added yet. Add your Anthropic API key above to use Oracle.</div>';
+    const st=document.getElementById('oracle-key-status');
+    if(st)st.innerHTML='<span style="color:var(--red)">⚠ No API keys — Oracle needs at least one key to work outside claude.ai</span>';
+    return;
+  }
+  let h='';
+  _oracleKeys.forEach((k,i)=>{
+    const masked='sk-...'+k.key.slice(-8);
+    const bc=k.status==='active'?'oracle-key-active':k.status==='failed'?'oracle-key-failed':'oracle-key-waiting';
+    h+=`<div class="oracle-key-item">
+      <span class="oracle-key-badge ${bc}">${k.status.toUpperCase()}</span>
+      <span style="font-size:12px;font-weight:700;flex:1">${k.label}</span>
+      <span style="font-family:var(--mono);font-size:10px;color:var(--text3)">${masked}</span>
+      <button class="btn btn-ghost btn-sm" onclick="setActiveKey(${i})" style="font-size:10px;padding:4px 8px;margin-left:4px">Use</button>
+      <button onclick="removeOracleKey(${i})" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:15px;padding:2px 6px">✕</button>
+    </div>`;
+  });
+  el.innerHTML=h;
+  const active=_oracleKeys.find(k=>k.status==='active');
+  const st=document.getElementById('oracle-key-status');
+  if(st)st.innerHTML=active
+    ?`<span style="color:var(--green)">✓ Active: ${active.label}</span> · ${_oracleKeys.length} key${_oracleKeys.length>1?'s':''} loaded · Auto-rotation ON`
+    :'<span style="color:var(--red)">⚠ No active key — click Use</span>';
+}
+async function oracleCall(messages,systemMsg,maxTokens){
+  maxTokens=maxTokens||1200;
+  if(!_oracleKeys.length)return await _oracleRaw(null,messages,systemMsg,maxTokens);
+  for(let attempt=0;attempt<_oracleKeys.length+1;attempt++){
+    const idx=_oracleKeyIdx%_oracleKeys.length;
+    const k=_oracleKeys[idx];
+    try{
+      const r=await _oracleRaw(k.key,messages,systemMsg,maxTokens);
+      k.status='active';_oracleKeys.forEach((x,i)=>{if(i!==idx&&x.status==='active')x.status='waiting';});
+      _oracleKeyIdx=idx;saveOracleKeys();renderKeyList();return r;
+    }catch(e){
+      if(e.status===429||e.status===529||e.status===503){
+        k.status='failed';_oracleKeyIdx=(idx+1)%_oracleKeys.length;saveOracleKeys();
+        if(_oracleKeys.length>1)showToast('Rate limit hit — rotating to next key ↺');
+        continue;
+      }
+      throw e;
+    }
+  }
+  throw new Error('All keys rate limited. Try again shortly.');
+}
+async function _oracleRaw(apiKey,messages,systemMsg,maxTokens){
+  const headers={'Content-Type':'application/json'};
+  if(apiKey)headers['x-api-key']=apiKey;
+  const body={model:'claude-sonnet-4-20250514',max_tokens:maxTokens,messages};
+  if(systemMsg)body.system=systemMsg;
+  const resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers,body:JSON.stringify(body)});
+  if(!resp.ok){const e=new Error('API '+resp.status);e.status=resp.status;throw e;}
+  const data=await resp.json();
+  return data.content?.map(b=>b.text||'').join('')||'';
+}
+function buildMemoryContext(){
+  if(!S.oracleMemory||!S.oracleMemory.length)return '';
+  return '\n\n--- ORACLE MEMORY (past sessions) ---\n'+S.oracleMemory.slice(-20).map(m=>`[${m.date}] ${m.text}`).join('\n')+'\n--- END MEMORY ---';
+}
+function addToMemory(text,auto){
+  if(!S.oracleMemory)S.oracleMemory=[];
+  S.oracleMemory.push({date:today(),text,auto:!!auto});
+  if(S.oracleMemory.length>50)S.oracleMemory=S.oracleMemory.slice(-50);
+  save();
+}
+function addManualMemory(){
+  const inp=document.getElementById('oracle-memory-input');
+  const txt=(inp&&inp.value||'').trim();
+  if(!txt){showToast('Type something first');return;}
+  addToMemory(txt,false);if(inp)inp.value='';
+  renderMemoryList();showToast('Memory saved ⚡');
+}
+function renderMemoryList(){
+  const el=document.getElementById('oracle-memory-list');if(!el)return;
+  if(!S.oracleMemory||!S.oracleMemory.length){
+    el.innerHTML='<div style="color:var(--text3);font-size:13px;padding:8px 0">No memories yet. Oracle auto-saves key insights after each analysis.</div>';
+    return;
+  }
+  el.innerHTML=[...S.oracleMemory].reverse().map((m,i)=>`<div class="oracle-memory-item">
+    <div class="oracle-memory-date">${m.date} · ${m.auto?'📡 Auto':'✋ Manual'}
+      <button onclick="deleteMemory(${S.oracleMemory.length-1-i})" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:12px;float:right;padding:0">✕</button>
+    </div><div>${escHtml(m.text)}</div></div>`).join('');
+}
+function deleteMemory(idx){
+  if(!S.oracleMemory)return;S.oracleMemory.splice(idx,1);save();renderMemoryList();
+}
+function clearAllMemory(){
+  if(!confirm('Clear all Oracle memory?'))return;S.oracleMemory=[];save();renderMemoryList();showToast('Memory cleared 🧹');
+}
+function buildFullContext(){
+  const t=today();
+  const name=S.hunter?.name||'Hunter';
+  const rank=S.hunter?.rank||'E';
+  const xp=S.hunter?.xp||0;
+  const streak=S.hunter?.streak||0;
+  const mana=S.hunter?.mana||100;
+  const last7=[];for(let i=6;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);last7.push(d.toISOString().split('T')[0]);}
+  const weekSess=S.sessions.filter(s=>last7.includes(s.date)&&!s.paused);
+  const weekMins=weekSess.reduce((a,s)=>a+s.min,0);
+  const todaySess=S.sessions.filter(s=>s.date===t&&!s.paused);
+  const todayMins=todaySess.reduce((a,s)=>a+s.min,0);
+  const totalMins=S.sessions.filter(s=>!s.paused).reduce((a,s)=>a+s.min,0);
+  const sub={physics:0,chemistry:0,maths:0};
+  weekSess.forEach(s=>{if(sub[s.sub]!==undefined)sub[s.sub]+=s.min;});
+  const avgRating=S.sessions.filter(s=>s.stars>0).length?(S.sessions.filter(s=>s.stars>0).reduce((a,s)=>a+s.stars,0)/S.sessions.filter(s=>s.stars>0).length).toFixed(1):'N/A';
+  const recentTests=S.tests.slice(-5);
+  const avgTest=recentTests.length?Math.round(recentTests.reduce((a,t)=>a+(t.total/(t.max||300)*100),0)/recentTests.length):0;
+  const allT=[...(S.topics.physics11||[]),...(S.topics.physics12||[]),...(S.topics.chemistry11||[]),...(S.topics.chemistry12||[]),...(S.topics.maths11||[]),...(S.topics.maths12||[])];
+  const weakT=allT.filter(t=>t.conf>0&&t.conf<40).sort((a,b)=>a.conf-b.conf);
+  const strongT=allT.filter(t=>t.conf>=80).length;
+  const avgConf=allT.length?Math.round(allT.reduce((a,t)=>a+t.conf,0)/allT.length):0;
+  const activeQ=getActiveQuests();
+  let qD=0,qTo=0;last7.forEach(d=>{const c=S.questComp[d]||{};qTo+=activeQ.length;qD+=Object.values(c).filter(Boolean).length;});
+  const questRate=qTo>0?Math.round(qD/qTo*100):0;
+  const goalH=S.goals?.studyHours||6;
+  const questGoalH=S.goals?.questStudyHours||2;
+  const examDate=new Date(S.examDate||'2026-05-18');
+  const daysLeft=Math.max(0,Math.ceil((examDate-new Date())/86400000));
+  const todayComp=S.questComp[t]||{};
+  const questStatus=activeQ.map(q=>`  ${todayComp[q.id]?'✓':'○'} ${q.name} (${q.xp}XP, ${q.auto?'auto':'manual'})`).join('\n');
+  const boardAvg={};
+  if(S.boardTests&&S.boardTests.length){
+    ['physics','chemistry','maths','english','cs'].forEach(subj=>{
+      const tests=S.boardTests.filter(bt=>bt.subj===subj);
+      if(tests.length)boardAvg[subj]=Math.round(tests.reduce((a,bt)=>a+bt.pct,0)/tests.length);
+    });
+  }
+  return `=== SHADOW SYSTEM — FULL HUNTER PROFILE ===
+Hunter: ${name} | Rank: ${rank} | XP: ${xp} | Streak: ${streak}d | Mana: ${mana}/100
+Class: ${S.classYear||'12'} | Exam: ${S.examName||'JEE Advanced'} in ${daysLeft} DAYS
+
+=== USER SETTINGS ===
+Daily study goal: ${goalH}h | Quest study threshold: ${questGoalH}h
+Active quests today (${activeQ.length} total, configured by user):
+${questStatus}
+
+=== TODAY (${t}) ===
+Studied: ${(todayMins/60).toFixed(1)}h | Sessions: ${todaySess.length} | Quests: ${Object.values(todayComp).filter(Boolean).length}/${activeQ.length}
+
+=== THIS WEEK ===
+Total: ${(weekMins/60).toFixed(1)}h | Physics: ${(sub.physics/60).toFixed(1)}h | Chemistry: ${(sub.chemistry/60).toFixed(1)}h | Maths: ${(sub.maths/60).toFixed(1)}h
+Quest completion: ${questRate}% | All-time: ${(totalMins/60).toFixed(1)}h | Avg rating: ${avgRating}/5
+
+=== TESTS ===
+Recent avg: ${avgTest}% (last ${recentTests.length} tests)
+${recentTests.slice(-3).map(t=>`  ${t.date}: PHY${t.phy} CHE${t.che} MAT${t.mat} = ${t.total}/${t.max||300} (${Math.round(t.total/(t.max||300)*100)}%)`).join('\n')||'  No tests yet'}
+${Object.keys(boardAvg).length?'Board averages: '+Object.entries(boardAvg).map(([k,v])=>k+' '+v+'%').join(' | '):''}
+
+=== TOPIC CONFIDENCE ===
+Overall avg: ${avgConf}% | Mastered: ${strongT}/${allT.length}
+WEAK (<40%): ${weakT.map(t=>t.name+' '+t.conf+'%').join(', ')||'None'}
+
+=== PHYSICAL TRAINING ===
+Workout streak: ${S.workout?.woStreak||0}d | Strength: ${S.workout?.strengthStat||0}/100
+${buildMemoryContext()}
+=== END ===`.trim();
+}
+function renderAdvisorContext(){
+  const ctx=document.getElementById('oracle-advisor-ctx');if(!ctx)return;
+  const t=today();
+  const todayM=S.sessions.filter(s=>s.date===t&&!s.paused).reduce((a,s)=>a+s.min,0);
+  const streak=S.hunter?.streak||0;const rank=S.hunter?.rank||'E';const xp=S.hunter?.xp||0;const mana=S.hunter?.mana||100;
+  const examDate=new Date(S.examDate||'2026-05-18');const daysLeft=Math.max(0,Math.ceil((examDate-new Date())/86400000));
+  const allT=[...(S.topics.physics11||[]),...(S.topics.physics12||[]),...(S.topics.chemistry11||[]),...(S.topics.chemistry12||[]),...(S.topics.maths11||[]),...(S.topics.maths12||[])];
+  const weakCt=allT.filter(t=>t.conf>0&&t.conf<40).length;
+  const avgScore=S.tests.length?Math.round(S.tests.slice(-5).reduce((a,t)=>a+(t.total/(t.max||300)*100),0)/Math.min(5,S.tests.length)):0;
+  ctx.innerHTML=`<div class="oracle-ctx-row">
+    <div class="oracle-ctx-chip">Rank <span>${rank}</span></div>
+    <div class="oracle-ctx-chip">XP <span>${xp.toLocaleString()}</span></div>
+    <div class="oracle-ctx-chip">Streak <span>${streak}d 🔥</span></div>
+    <div class="oracle-ctx-chip">Mana <span style="color:${mana>=60?'var(--mana)':'var(--red)'}">${mana}/100</span></div>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:14px">
+    <div class="dstat"><div class="dstat-val">${(todayM/60).toFixed(1)}h</div><div class="dstat-lbl">Today</div></div>
+    <div class="dstat"><div class="dstat-val" style="color:var(--gold)">${streak}</div><div class="dstat-lbl">Streak</div></div>
+    <div class="dstat"><div class="dstat-val" style="color:var(--red)">${weakCt}</div><div class="dstat-lbl">Weak</div></div>
+    <div class="dstat"><div class="dstat-val" style="color:${avgScore>=60?'var(--green)':'var(--gold)'}">${avgScore}%</div><div class="dstat-lbl">Avg Test</div></div>
+  </div>
+  <div style="background:rgba(91,110,245,.06);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 13px;margin-bottom:14px;font-size:12px;color:var(--text2);line-height:1.8">
+    <span style="color:var(--gold)">⏳ ${daysLeft} days</span> to ${S.examName||'JEE Advanced'} · Goal: ${S.goals?.studyHours||6}h/day · Class ${S.classYear||'12'}
+  </div>`;
+}
+async function runAdvisor(){
+  if(oracleStreaming)return;oracleStreaming=true;
+  const btn=document.getElementById('oracle-analyze-btn');const out=document.getElementById('oracle-advisor-out');
+  if(btn){btn.disabled=true;btn.textContent='⏳ Oracle analyzing...';}
+  if(out){out.style.display='block';out.innerHTML='<div class="oracle-typing"><span></span><span></span><span></span></div>';}
+  const context=buildFullContext();
+  const prompt=`You are Oracle, the AI strategy advisor for a JEE Advanced student using Shadow System.\n\n${context}\n\nProvide sharp, data-driven coaching. EXACT structure:\n\n**OVERALL ASSESSMENT**\n2-3 sentences on current trajectory. Be honest.\n\n**TOP 3 PRIORITIES**\n1. [Specific action using real data]\n2. [Specific action]\n3. [Specific action]\n\n**THE WARNING**\nOne specific risk. Be direct.\n\n**POWER MOVE**\nHighest-leverage action for next 48 hours.\n\nUnder 260 words. Use their actual numbers.`;
+  try{
+    const text=await oracleCall([{role:'user',content:prompt}],null,1200);
+    if(out)out.innerHTML=`<div class="oracle-section-chip">⚡ Oracle Report · ${new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})}</div>${formatOracleMD(text)}`;
+    addToMemory('Advisor: '+text.slice(0,120).replace(/\n/g,' ')+'…',true);
+  }catch(e){if(out)out.innerHTML=`<div style="color:var(--red);font-size:13px;padding:6px 0">⚠ ${e.message||'Oracle offline. Add API keys in Keys tab.'}</div>`;}
+  oracleStreaming=false;if(btn){btn.disabled=false;btn.textContent='⚡ Analyze My Progress';}
+}
+function setDoubtSubject(sub,btn){
+  if(!S.oracleDoubtHistory)S.oracleDoubtHistory={};
+  S.oracleDoubtHistory[doubtSubject]=doubtHistory.slice(-30);save();
+  doubtSubject=sub;doubtHistory=S.oracleDoubtHistory[sub]||[];
+  document.querySelectorAll('#doubt-subj-row .pick-btn').forEach(b=>b.classList.remove('sel'));
+  if(btn)btn.classList.add('sel');renderDoubtChat();
+}
+async function sendDoubt(){
+  const input=document.getElementById('doubt-input');
+  if(!input||!input.value.trim()||oracleStreaming)return;
+  const question=input.value.trim();input.value='';oracleStreaming=true;
+  const sendBtn=document.getElementById('doubt-send-btn');
+  if(sendBtn){sendBtn.disabled=true;sendBtn.textContent='⏳';}
+  doubtHistory.push({role:'user',content:question});renderDoubtChat();
+  const chat=document.getElementById('doubt-chat');
+  const typingId='typing-'+Date.now();
+  if(chat){const div=document.createElement('div');div.id=typingId;div.className='oracle-typing';div.innerHTML='<span></span><span></span><span></span>';chat.appendChild(div);chat.scrollTop=chat.scrollHeight;}
+  const subjectMap={physics:'Physics',chemistry:'Chemistry',maths:'Mathematics',general:'JEE General'};
+  const systemMsg=`You are an expert JEE Advanced tutor for ${subjectMap[doubtSubject]||'all subjects'}.
+Hunter: ${S.hunter?.name||'Hunter'}, Rank ${S.hunter?.rank||'E'}, ${Math.max(0,Math.ceil((new Date(S.examDate||'2026-05-18')-new Date())/86400000))} days to exam.${buildMemoryContext()}
+Rules: Step-by-step numbered solution. Explain the underlying principle. Flag JEE traps. Include shortcut if any. End with **JEE Key Point:** line. Be precise, no padding.`;
+  const messages=doubtHistory.slice(-10).map(m=>({role:m.role,content:m.content}));
+  try{
+    const text=await oracleCall(messages,systemMsg,1200);
+    const te=document.getElementById(typingId);if(te)te.remove();
+    doubtHistory.push({role:'assistant',content:text});
+    if(!S.oracleDoubtHistory)S.oracleDoubtHistory={};
+    S.oracleDoubtHistory[doubtSubject]=doubtHistory.slice(-30);save();
+    renderDoubtChat();if(chat)chat.scrollTop=chat.scrollHeight;
+  }catch(e){
+    const te=document.getElementById(typingId);
+    if(te){te.className='oracle-bubble assistant';te.innerHTML=`<span style="color:var(--red)">⚠ ${e.message||'Error. Check API keys.'}</span>`;}
+  }
+  oracleStreaming=false;if(sendBtn){sendBtn.disabled=false;sendBtn.textContent='Send ⚡';}
+}
+function renderDoubtChat(){
+  const chat=document.getElementById('doubt-chat');if(!chat)return;
+  if(!doubtHistory.length){
+    chat.innerHTML='<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;min-height:200px;color:var(--text3);text-align:center;gap:8px"><div style="font-size:28px;opacity:.4">💬</div><div style="font-size:13px;line-height:1.6">Ask any JEE doubt.<br><span style="font-size:10px">Conversations are saved and remembered across sessions.</span></div></div>';
+    return;
+  }
+  chat.innerHTML=doubtHistory.map(m=>`<div class="oracle-bubble ${m.role}">${m.role==='assistant'?formatOracleMD(m.content):`<span>${escHtml(m.content)}</span>`}</div>`).join('');
+  chat.scrollTop=chat.scrollHeight;
+}
+function clearDoubtHistory(){
+  if(doubtHistory.length&&!confirm('Clear this conversation?'))return;
+  doubtHistory=[];if(S.oracleDoubtHistory)S.oracleDoubtHistory[doubtSubject]=[];
+  save();renderDoubtChat();showToast('Cleared 🧹');
+}
+function renderPlannerContext(){
+  const ctx=document.getElementById('oracle-planner-ctx');if(!ctx)return;
+  const goalH=S.goals?.studyHours||6;
+  const examDate=new Date(S.examDate||'2026-05-18');const daysLeft=Math.max(0,Math.ceil((examDate-new Date())/86400000));
+  const dow=new Date().toLocaleDateString('en-IN',{weekday:'long'});
+  const allT=[...(S.topics.physics11||[]),...(S.topics.physics12||[]),...(S.topics.chemistry11||[]),...(S.topics.chemistry12||[]),...(S.topics.maths11||[]),...(S.topics.maths12||[])];
+  const weak=allT.filter(t=>t.conf>0&&t.conf<50).sort((a,b)=>a.conf-b.conf).slice(0,3);
+  const t=today();const todayDone=S.sessions.filter(s=>s.date===t&&!s.paused).reduce((a,s)=>a+s.min,0);
+  ctx.innerHTML=`<div class="card" style="margin-bottom:14px;border-color:rgba(0,180,216,.2)">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div><div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.7px">Today</div><div style="font-size:14px;font-weight:700;margin-top:2px">${dow}</div></div>
+      <div><div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.7px">Countdown</div><div style="font-size:14px;font-weight:700;color:var(--gold);margin-top:2px">${daysLeft} days</div></div>
+      <div><div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.7px">Goal</div><div style="font-size:14px;font-weight:700;color:var(--mana);margin-top:2px">${goalH}h today</div></div>
+      <div><div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.7px">Done</div><div style="font-size:14px;font-weight:700;color:${todayDone>=goalH*60?'var(--green)':'var(--text)'};margin-top:2px">${(todayDone/60).toFixed(1)}h</div></div>
+    </div>
+    ${weak.length?`<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border)"><div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.7px;margin-bottom:6px">Oracle will prioritise these</div><div style="display:flex;gap:6px;flex-wrap:wrap">${weak.map(t=>`<span style="background:rgba(255,59,92,.08);border:1px solid rgba(255,59,92,.2);border-radius:5px;padding:2px 8px;font-size:11px;color:var(--red)">${t.name} ${t.conf}%</span>`).join('')}</div></div>`:''}
+  </div>`;
+}
+async function generateDailyPlan(){
+  if(oracleStreaming)return;oracleStreaming=true;
+  const btn=document.getElementById('oracle-plan-btn');const out=document.getElementById('oracle-plan-out');
+  if(btn){btn.disabled=true;btn.textContent='⏳ Building...';}
+  if(out){out.style.display='block';out.innerHTML='<div class="oracle-typing"><span></span><span></span><span></span></div>';}
+  const context=buildFullContext();
+  const goalH=S.goals?.studyHours||6;
+  const dow=new Date().toLocaleDateString('en-IN',{weekday:'long'});
+  const timeStr=new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+  const prompt=`You are Oracle, AI study planner. Current time: ${timeStr} (${dow}).\n\n${context}\n\nGenerate optimized plan for rest of TODAY. Target: ${goalH} hours.\n\nFormat:\n**BATTLE PLAN — ${dow.toUpperCase()}**\n\n**Morning Block** [time range]\n- [Subject]: [topic] — [specific task] — [duration]\n\n**Afternoon Block** [time range]\n- [Subject]: [topic] — [specific task] — [duration]\n\n**Evening Block** [time range]\n- [Subject]: [topic] — [specific task] — [duration]\n\n**Checkpoints**\n- [ ] [goal 1]\n- [ ] [goal 2]\n- [ ] [goal 3]\n\n**Oracle's Note**\n[1-2 sentences]\n\nRules: Only blocks from ${timeStr} onwards. Prioritise weak topics. Specific tasks (e.g. "Solve 10 Kinematics PYQs", not "study physics"). Total ≈ ${goalH}h. Respect user's daily goal of ${goalH}h.`;
+  try{
+    const text=await oracleCall([{role:'user',content:prompt}],null,1200);
+    if(out)out.innerHTML=`<div class="oracle-section-chip">📅 ${dow} · ${timeStr}</div>${formatOracleMD(text)}`;
+    addToMemory(`Plan generated: ${today()}, ${dow}, ${goalH}h goal`,true);
+  }catch(e){if(out)out.innerHTML=`<div style="color:var(--red);font-size:13px;padding:6px 0">⚠ ${e.message||'Oracle offline.'}</div>`;}
+  oracleStreaming=false;if(btn){btn.disabled=false;btn.textContent='📅 Generate Today\'s Battle Plan';}
+}
+function formatOracleMD(text){
+  return text
+    .replace(/^\*\*(.+?)\*\*$/gm,'<div class="o-heading">$1</div>')
+    .replace(/\*\*(.+?)\*\*/g,'<strong style="color:var(--text)">$1</strong>')
+    .replace(/\*(.+?)\*/g,'<em style="color:var(--text2)">$1</em>')
+    .replace(/^-\s+\[ \]\s+(.+)$/gm,'<div class="o-check"><div class="o-check-box"></div><span style="font-size:13px">$1</span></div>')
+    .replace(/^-\s+(.+)$/gm,'<div class="o-bullet"><span class="o-bullet-dot">▸</span><span>$1</span></div>')
+    .replace(/^(\d+)\.\s+(.+)$/gm,'<div class="o-bullet"><span class="o-bullet-dot" style="color:var(--gold);font-family:var(--mono);font-size:11px">$1.</span><span>$2</span></div>')
+    .replace(/\n\n/g,'<br style="line-height:2.5">').replace(/\n/g,'<br>');
+}
+function escHtml(text){return String(text).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 </script>
 <!-- SL PENALTY OVERLAY — top priority messages -->
 <div class="sl-penalty-overlay" id="sl-penalty-overlay" style="display:none">
