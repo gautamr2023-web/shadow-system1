@@ -1907,7 +1907,15 @@ input.fi:focus,select.fi:focus{
       <div style="font-size:12px;color:var(--text2);line-height:1.7;margin-bottom:12px">
         Add your own Anthropic API keys. Oracle auto-rotates to the next key when one hits its rate limit — so you never get blocked.
         <br><br>
-        <span style="color:var(--text3)">Get keys at <b style="color:var(--accent)">console.anthropic.com</b> → API Keys. Keys are stored locally only, never synced to cloud.</span>
+        <span style="color:var(--text3)">Get keys at <b style="color:var(--accent)">platform.openai.com</b> → API Keys → Create new secret key. New accounts get free credits. Keys stored locally only, never synced to cloud.</span>
+      </div>
+      <div style="display:flex;gap:8px;margin-bottom:10px;align-items:center">
+        <div style="font-size:10px;color:var(--text2);text-transform:uppercase;letter-spacing:.7px;font-weight:700;white-space:nowrap">Model:</div>
+        <select id="oracle-model-select" class="fi" style="font-size:12px;padding:6px 10px" onchange="changeOracleModel(this.value)">
+          <option value="gpt-4o-mini" selected>gpt-4o-mini — Fast &amp; cheap ⚡ (recommended)</option>
+          <option value="gpt-4o">gpt-4o — Smarter, costs more 🧠</option>
+          <option value="gpt-3.5-turbo">gpt-3.5-turbo — Fastest, lowest cost</option>
+        </select>
       </div>
       <div style="display:flex;gap:8px;margin-bottom:14px">
         <input id="oracle-key-input" type="password" class="fi" placeholder="sk-ant-api03-..." style="flex:1;font-family:var(--mono);font-size:12px">
@@ -6549,6 +6557,10 @@ function initOracleSection(){
   if(!S.oracleDoubtHistory)S.oracleDoubtHistory={};
   const saved=S.oracleDoubtHistory[doubtSubject]||[];
   if(!doubtHistory.length&&saved.length)doubtHistory=saved;
+  // Restore saved model selection
+  ORACLE_MODEL=localStorage.getItem('oracle_model')||'gpt-4o-mini';
+  const modelSel=document.getElementById('oracle-model-select');
+  if(modelSel)modelSel.value=ORACLE_MODEL;
   renderAdvisorContext();renderDoubtChat();renderPlannerContext();
   if(oracleTab==='keys')renderKeyList();
   if(oracleTab==='memory')renderMemoryList();
@@ -6576,7 +6588,7 @@ function addOracleKey(){
   const lblEl=document.getElementById('oracle-key-label');
   const key=(keyEl&&keyEl.value||'').trim();
   const label=(lblEl&&lblEl.value||'Key '+(_oracleKeys.length+1)).trim();
-  if(!key||!key.startsWith('sk-')){showToast('Enter a valid Anthropic API key (starts with sk-)');return;}
+  if(!key||!key.startsWith('sk-')){showToast('Enter a valid OpenAI API key (starts with sk-)');return;}
   _oracleKeys.push({label,key,status:_oracleKeys.length===0?'active':'waiting'});
   saveOracleKeys();if(keyEl)keyEl.value='';if(lblEl)lblEl.value='';
   renderKeyList();showToast('Key added: '+label+' ⚡');
@@ -6619,9 +6631,20 @@ function renderKeyList(){
     ?`<span style="color:var(--green)">✓ Active: ${active.label}</span> · ${_oracleKeys.length} key${_oracleKeys.length>1?'s':''} loaded · Auto-rotation ON`
     :'<span style="color:var(--red)">⚠ No active key — click Use</span>';
 }
+// OpenAI model — gpt-4o-mini is fast + cheap; change to gpt-4o for smarter answers
+let ORACLE_MODEL=localStorage.getItem('oracle_model')||'gpt-4o-mini';
+
+function changeOracleModel(val){
+  ORACLE_MODEL=val;
+  try{localStorage.setItem('oracle_model',val);}catch(e){}
+  showToast('Oracle model set to: '+val+' ⚡');
+}
+
 async function oracleCall(messages,systemMsg,maxTokens){
   maxTokens=maxTokens||1200;
-  if(!_oracleKeys.length)return await _oracleRaw(null,messages,systemMsg,maxTokens);
+  if(!_oracleKeys.length){
+    throw new Error('No API key found. Go to Oracle → Keys tab and add your OpenAI key.');
+  }
   for(let attempt=0;attempt<_oracleKeys.length+1;attempt++){
     const idx=_oracleKeyIdx%_oracleKeys.length;
     const k=_oracleKeys[idx];
@@ -6630,7 +6653,7 @@ async function oracleCall(messages,systemMsg,maxTokens){
       k.status='active';_oracleKeys.forEach((x,i)=>{if(i!==idx&&x.status==='active')x.status='waiting';});
       _oracleKeyIdx=idx;saveOracleKeys();renderKeyList();return r;
     }catch(e){
-      if(e.status===429||e.status===529||e.status===503){
+      if(e.status===429||e.status===503||e.status===529){
         k.status='failed';_oracleKeyIdx=(idx+1)%_oracleKeys.length;saveOracleKeys();
         if(_oracleKeys.length>1)showToast('Rate limit hit — rotating to next key ↺');
         continue;
@@ -6638,17 +6661,37 @@ async function oracleCall(messages,systemMsg,maxTokens){
       throw e;
     }
   }
-  throw new Error('All keys rate limited. Try again shortly.');
+  throw new Error('All keys rate limited. Try again in a minute.');
 }
+
 async function _oracleRaw(apiKey,messages,systemMsg,maxTokens){
-  const headers={'Content-Type':'application/json'};
-  if(apiKey)headers['x-api-key']=apiKey;
-  const body={model:'claude-sonnet-4-20250514',max_tokens:maxTokens,messages};
-  if(systemMsg)body.system=systemMsg;
-  const resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers,body:JSON.stringify(body)});
-  if(!resp.ok){const e=new Error('API '+resp.status);e.status=resp.status;throw e;}
+  // Build OpenAI-format messages array
+  const oaiMessages=[];
+  // System message goes first as a system role entry
+  if(systemMsg)oaiMessages.push({role:'system',content:systemMsg});
+  // Add conversation messages
+  messages.forEach(m=>oaiMessages.push({role:m.role,content:m.content}));
+
+  const headers={
+    'Content-Type':'application/json',
+    'Authorization':'Bearer '+apiKey
+  };
+  const body={
+    model:ORACLE_MODEL,
+    max_tokens:maxTokens,
+    messages:oaiMessages,
+    temperature:0.7
+  };
+  const resp=await fetch('https://api.openai.com/v1/chat/completions',{
+    method:'POST',headers,body:JSON.stringify(body)
+  });
+  if(!resp.ok){
+    const errData=await resp.json().catch(()=>({}));
+    const e=new Error(errData?.error?.message||'OpenAI API error '+resp.status);
+    e.status=resp.status;throw e;
+  }
   const data=await resp.json();
-  return data.content?.map(b=>b.text||'').join('')||'';
+  return data.choices?.[0]?.message?.content||'';
 }
 function buildMemoryContext(){
   if(!S.oracleMemory||!S.oracleMemory.length)return '';
