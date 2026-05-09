@@ -1905,16 +1905,16 @@ input.fi:focus,select.fi:focus{
     <div class="card" style="margin-bottom:14px">
       <div class="card-hdr"><span class="hl">🔑 API Key Manager</span></div>
       <div style="font-size:12px;color:var(--text2);line-height:1.7;margin-bottom:12px">
-        Add your own Anthropic API keys. Oracle auto-rotates to the next key when one hits its rate limit — so you never get blocked.
+        Add your Groq API keys below. Oracle auto-rotates to the next key when one hits its rate limit — so you never get blocked.
         <br><br>
-        <span style="color:var(--text3)">Get keys at <b style="color:var(--accent)">platform.openai.com</b> → API Keys → Create new secret key. New accounts get free credits. Keys stored locally only, never synced to cloud.</span>
+        <span style="color:var(--text3)">Get keys at <b style="color:var(--accent)">console.groq.com</b> → API Keys → Create API Key. 100% free, no credit card needed. Keys stored locally only, never synced to cloud.</span>
       </div>
       <div style="display:flex;gap:8px;margin-bottom:10px;align-items:center">
         <div style="font-size:10px;color:var(--text2);text-transform:uppercase;letter-spacing:.7px;font-weight:700;white-space:nowrap">Model:</div>
         <select id="oracle-model-select" class="fi" style="font-size:12px;padding:6px 10px" onchange="changeOracleModel(this.value)">
-          <option value="gpt-4o-mini" selected>gpt-4o-mini — Fast &amp; cheap ⚡ (recommended)</option>
-          <option value="gpt-4o">gpt-4o — Smarter, costs more 🧠</option>
-          <option value="gpt-3.5-turbo">gpt-3.5-turbo — Fastest, lowest cost</option>
+          <option value="llama-3.3-70b-versatile" selected>Llama 3.3 70B — Best quality 🧠 (recommended)</option>
+          <option value="llama3-8b-8192">Llama 3 8B — Fastest ⚡</option>
+          <option value="mixtral-8x7b-32768">Mixtral 8x7B — Long context 📄</option>
         </select>
       </div>
       <div style="display:flex;gap:8px;margin-bottom:14px">
@@ -6558,7 +6558,7 @@ function initOracleSection(){
   const saved=S.oracleDoubtHistory[doubtSubject]||[];
   if(!doubtHistory.length&&saved.length)doubtHistory=saved;
   // Restore saved model selection
-  ORACLE_MODEL=localStorage.getItem('oracle_model')||'gpt-4o-mini';
+  ORACLE_MODEL=localStorage.getItem('oracle_model')||'llama-3.3-70b-versatile';
   const modelSel=document.getElementById('oracle-model-select');
   if(modelSel)modelSel.value=ORACLE_MODEL;
   renderAdvisorContext();renderDoubtChat();renderPlannerContext();
@@ -6588,7 +6588,7 @@ function addOracleKey(){
   const lblEl=document.getElementById('oracle-key-label');
   const key=(keyEl&&keyEl.value||'').trim();
   const label=(lblEl&&lblEl.value||'Key '+(_oracleKeys.length+1)).trim();
-  if(!key||!key.startsWith('sk-')){showToast('Enter a valid OpenAI API key (starts with sk-)');return;}
+  if(!key||key.length<10){showToast('Paste your full Groq API key first');return;}
   _oracleKeys.push({label,key,status:_oracleKeys.length===0?'active':'waiting'});
   saveOracleKeys();if(keyEl)keyEl.value='';if(lblEl)lblEl.value='';
   renderKeyList();showToast('Key added: '+label+' ⚡');
@@ -6607,9 +6607,9 @@ function setActiveKey(idx){
 function renderKeyList(){
   const el=document.getElementById('oracle-key-list');if(!el)return;
   if(!_oracleKeys.length){
-    el.innerHTML='<div style="color:var(--text3);font-size:13px;padding:8px 0">No keys added yet. Add your Anthropic API key above to use Oracle.</div>';
+    el.innerHTML='<div style="color:var(--text3);font-size:13px;padding:8px 0">No keys added yet. Get a free key at <b style="color:var(--accent)">console.groq.com</b> → API Keys (no credit card needed).</div>';
     const st=document.getElementById('oracle-key-status');
-    if(st)st.innerHTML='<span style="color:var(--red)">⚠ No API keys — Oracle needs at least one key to work outside claude.ai</span>';
+    if(st)st.innerHTML='<span style="color:var(--red)">⚠ Add your free Groq API key above to use Oracle</span>';
     return;
   }
   let h='';
@@ -6631,8 +6631,9 @@ function renderKeyList(){
     ?`<span style="color:var(--green)">✓ Active: ${active.label}</span> · ${_oracleKeys.length} key${_oracleKeys.length>1?'s':''} loaded · Auto-rotation ON`
     :'<span style="color:var(--red)">⚠ No active key — click Use</span>';
 }
-// OpenAI model — gpt-4o-mini is fast + cheap; change to gpt-4o for smarter answers
-let ORACLE_MODEL=localStorage.getItem('oracle_model')||'gpt-4o-mini';
+// Groq API — free, browser-compatible, no credit card needed
+// Models: llama-3.3-70b-versatile (best), mixtral-8x7b-32768, llama3-8b-8192 (fastest)
+let ORACLE_MODEL=localStorage.getItem('oracle_model')||'llama-3.3-70b-versatile';
 
 function changeOracleModel(val){
   ORACLE_MODEL=val;
@@ -6643,7 +6644,7 @@ function changeOracleModel(val){
 async function oracleCall(messages,systemMsg,maxTokens){
   maxTokens=maxTokens||1200;
   if(!_oracleKeys.length){
-    throw new Error('No API key found. Go to Oracle → Keys tab and add your OpenAI key.');
+    throw new Error('No API key found. Go to Oracle → Keys tab, add your free Groq key from console.groq.com');
   }
   for(let attempt=0;attempt<_oracleKeys.length+1;attempt++){
     const idx=_oracleKeyIdx%_oracleKeys.length;
@@ -6665,11 +6666,9 @@ async function oracleCall(messages,systemMsg,maxTokens){
 }
 
 async function _oracleRaw(apiKey,messages,systemMsg,maxTokens){
-  // Build OpenAI-format messages array
+  // Build messages array (Groq uses OpenAI-compatible format)
   const oaiMessages=[];
-  // System message goes first as a system role entry
   if(systemMsg)oaiMessages.push({role:'system',content:systemMsg});
-  // Add conversation messages
   messages.forEach(m=>oaiMessages.push({role:m.role,content:m.content}));
 
   const headers={
@@ -6682,13 +6681,13 @@ async function _oracleRaw(apiKey,messages,systemMsg,maxTokens){
     messages:oaiMessages,
     temperature:0.7
   };
-  const resp=await fetch('https://api.openai.com/v1/chat/completions',{
+  const resp=await fetch('https://api.groq.com/openai/v1/chat/completions',{
     method:'POST',headers,body:JSON.stringify(body)
   });
   if(!resp.ok){
     const errData=await resp.json().catch(()=>({}));
-    const e=new Error(errData?.error?.message||'OpenAI API error '+resp.status);
-    e.status=resp.status;throw e;
+    const msg=errData?.error?.message||'Groq API error '+resp.status;
+    const e=new Error(msg);e.status=resp.status;throw e;
   }
   const data=await resp.json();
   return data.choices?.[0]?.message?.content||'';
