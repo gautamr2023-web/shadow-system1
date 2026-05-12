@@ -970,7 +970,13 @@ input.fi:focus,select.fi:focus{
 .oracle-out .o-bullet{display:flex;gap:9px;margin:5px 0;align-items:flex-start}
 .oracle-out .o-bullet-dot{color:var(--accent);flex-shrink:0;margin-top:1px}
 .oracle-out .o-check{display:flex;gap:9px;margin:6px 0;align-items:center}
-.oracle-out .o-check-box{width:15px;height:15px;border:1.5px solid var(--border2);border-radius:3px;flex-shrink:0}
+.oracle-out .o-check-box{width:15px;height:15px;border:1.5px solid var(--border2);border-radius:3px;flex-shrink:0;cursor:pointer;transition:all .15s;display:flex;align-items:center;justify-content:center;font-size:10px;color:#fff}
+.oracle-out .o-check-box:hover{border-color:var(--accent);background:rgba(91,110,245,.1)}
+.oracle-out .o-check-box.o-checked{background:var(--accent);border-color:var(--accent)}
+.conf-nudge-bar{margin-top:10px;padding:10px 12px;background:rgba(91,110,245,.06);border:1px solid rgba(91,110,245,.2);border-radius:8px}
+.conf-nudge-bar select{background:var(--bg3);border:1px solid var(--border2);border-radius:5px;color:var(--text);font-family:var(--font);font-size:12px;padding:5px 7px;outline:none;flex:1;min-width:0}
+.conf-nudge-btn{border-radius:5px;font-size:11px;font-weight:700;padding:5px 10px;cursor:pointer;font-family:var(--font);border:1px solid rgba(0,214,143,.4);background:rgba(0,214,143,.1);color:var(--green);flex-shrink:0;transition:all .15s}
+.conf-nudge-btn:hover{background:rgba(0,214,143,.2)}
 .oracle-chat-box{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:14px;min-height:260px;max-height:420px;overflow-y:auto;display:flex;flex-direction:column;gap:10px;scroll-behavior:smooth}
 .oracle-bubble{padding:11px 14px;border-radius:12px;max-width:92%;line-height:1.65;font-size:13px;animation:oBubbleIn .22s cubic-bezier(.34,1.2,.64,1)}
 @keyframes oBubbleIn{from{opacity:0;transform:translateY(8px) scale(.97)}to{opacity:1;transform:none}}
@@ -1905,9 +1911,16 @@ input.fi:focus,select.fi:focus{
     <div class="card" style="margin-bottom:14px">
       <div class="card-hdr"><span class="hl">🔑 API Key Manager</span></div>
       <div style="font-size:12px;color:var(--text2);line-height:1.7;margin-bottom:12px">
-        Add your Groq API keys below. Oracle auto-rotates to the next key when one hits its rate limit — so you never get blocked.
+        Add your API keys below. Oracle auto-rotates Groq keys when rate-limited, and falls back to OpenRouter if all Groq keys fail. Zero downtime.
         <br><br>
-        <span style="color:var(--text3)">Get keys at <b style="color:var(--accent)">console.groq.com</b> → API Keys → Create API Key. 100% free, no credit card needed. Keys stored locally only, never synced to cloud.</span>
+        <span style="color:var(--text3)">Groq keys: <b style="color:var(--accent)">console.groq.com</b> → API Keys (free, no card). &nbsp;&nbsp;OpenRouter keys: <b style="color:var(--gold)">openrouter.ai</b> → Keys (free tier available). Keys stored locally only.</span>
+      </div>
+      <div style="display:flex;gap:8px;margin-bottom:10px;align-items:center">
+        <div style="font-size:10px;color:var(--text2);text-transform:uppercase;letter-spacing:.7px;font-weight:700;white-space:nowrap">Provider:</div>
+        <select id="oracle-key-provider" class="fi" style="font-size:12px;padding:6px 10px;width:auto">
+          <option value="groq">Groq (recommended)</option>
+          <option value="openrouter">OpenRouter (fallback)</option>
+        </select>
       </div>
       <div style="display:flex;gap:8px;margin-bottom:10px;align-items:center">
         <div style="font-size:10px;color:var(--text2);text-transform:uppercase;letter-spacing:.7px;font-weight:700;white-space:nowrap">Model:</div>
@@ -3644,13 +3657,18 @@ function showSecModal(sessInfo){
       `<span style="font-size:10px;color:var(--red)">−${drain}</span>`+
     `</div>`;
 
-  // ── Advice ──
+  // ── Advice (static first, AI upgrade if Oracle keys loaded) ──
   const advEl=document.getElementById('sec-advice');
   if(advEl)advEl.textContent=advice;
 
   // ── Suggestion ──
   const sugEl=document.getElementById('sec-suggest');
   if(sugEl)sugEl.textContent=suggest;
+
+  // ── AI Advice upgrade — async Oracle call if keys ready and Oracle not busy ──
+  if(_oracleKeys&&_oracleKeys.length>0&&!oracleStreaming){
+    _upgradeSecAdviceAI(mins,sub,taskType,manaAfter,advice,suggest);
+  }
 
   // ── Learn This — rich 3-category item ──
   const item=getLearnItem();
@@ -3675,6 +3693,37 @@ function showSecModal(sessInfo){
   }
 
   document.getElementById('sec-modal').classList.add('show');
+}
+
+// ── AI-powered session end advice — fires async after modal opens ──
+async function _upgradeSecAdviceAI(mins,sub,taskType,manaAfter,staticAdvice,staticSuggest){
+  const advEl=document.getElementById('sec-advice');
+  if(!advEl)return;
+  advEl.innerHTML='<span style="opacity:.45;font-size:11px;font-style:italic">⚡ Oracle reading your session...</span>';
+  const daysLeft=Math.max(0,Math.ceil((new Date(S.examDate||'2026-05-18')-new Date())/86400000));
+  const allT=[...(S.topics.physics11||[]),...(S.topics.physics12||[]),...(S.topics.chemistry11||[]),...(S.topics.chemistry12||[]),...(S.topics.maths11||[]),...(S.topics.maths12||[])];
+  const weakT=allT.filter(t=>t.conf>0&&t.conf<40).sort((a,b)=>a.conf-b.conf).slice(0,3);
+  const todayTotal=S.sessions.filter(s=>s.date===today()&&!s.paused).reduce((a,s)=>a+s.min,0);
+  const subLabel={physics:'Physics',chemistry:'Chemistry',maths:'Maths',other:'Other'}[sub]||sub;
+  const prompt=`JEE student just finished: ${mins}min ${taskType} session on ${subLabel}. Mana=${manaAfter}/100. Days to exam=${daysLeft}. Today total=${Math.round(todayTotal/60*10)/10}h. Weak topics: ${weakT.length?weakT.map(t=>t.name+' ('+t.conf+'%)').join(', '):'not set yet'}.
+Give EXACTLY 2 lines — no preamble, no extra text:
+ADVICE: [sharp actionable advice using their actual numbers, max 22 words]
+NEXT: [specific next session suggestion, max 18 words]`;
+  try{
+    const text=await oracleCall([{role:'user',content:prompt}],null,180);
+    if(!document.getElementById('sec-modal').classList.contains('show'))return;
+    const advMatch=text.match(/ADVICE:\s*(.+)/i);
+    const nextMatch=text.match(/NEXT:\s*(.+)/i);
+    const advEl2=document.getElementById('sec-advice');
+    if(advEl2&&advMatch){
+      advEl2.innerHTML='<span style="font-size:9px;color:var(--accent);letter-spacing:.8px;text-transform:uppercase;font-weight:700;display:block;margin-bottom:4px">⚡ Oracle</span>'+escHtml(advMatch[1].trim());
+    } else if(advEl2){advEl2.textContent=staticAdvice;}
+    const sugEl2=document.getElementById('sec-suggest');
+    if(sugEl2&&nextMatch){sugEl2.textContent=nextMatch[1].trim();}
+  }catch(e){
+    const advEl3=document.getElementById('sec-advice');
+    if(advEl3)advEl3.textContent=staticAdvice;
+  }
 }
 
 function selBreakLen(len,btn){
@@ -6586,12 +6635,14 @@ function saveOracleKeys(){try{localStorage.setItem('oracle_keys',JSON.stringify(
 function addOracleKey(){
   const keyEl=document.getElementById('oracle-key-input');
   const lblEl=document.getElementById('oracle-key-label');
+  const provEl=document.getElementById('oracle-key-provider');
   const key=(keyEl&&keyEl.value||'').trim();
   const label=(lblEl&&lblEl.value||'Key '+(_oracleKeys.length+1)).trim();
-  if(!key||key.length<10){showToast('Paste your full Groq API key first');return;}
-  _oracleKeys.push({label,key,status:_oracleKeys.length===0?'active':'waiting'});
+  const provider=(provEl&&provEl.value)||'groq';
+  if(!key||key.length<10){showToast('Paste your full API key first');return;}
+  _oracleKeys.push({label,key,provider,status:_oracleKeys.length===0?'active':'waiting'});
   saveOracleKeys();if(keyEl)keyEl.value='';if(lblEl)lblEl.value='';
-  renderKeyList();showToast('Key added: '+label+' ⚡');
+  renderKeyList();showToast('Key added: '+label+' ('+provider+') ⚡');
 }
 function removeOracleKey(idx){
   _oracleKeys.splice(idx,1);
@@ -6616,23 +6667,27 @@ function renderKeyList(){
   _oracleKeys.forEach((k,i)=>{
     const masked='sk-...'+k.key.slice(-8);
     const bc=k.status==='active'?'oracle-key-active':k.status==='failed'?'oracle-key-failed':'oracle-key-waiting';
+    const provLabel=k.provider==='openrouter'?'<span style="font-size:9px;background:rgba(244,196,48,.15);color:var(--gold);border:1px solid rgba(244,196,48,.3);border-radius:4px;padding:1px 5px;margin-left:5px">OpenRouter</span>':'<span style="font-size:9px;background:rgba(91,110,245,.15);color:var(--accent);border:1px solid rgba(91,110,245,.3);border-radius:4px;padding:1px 5px;margin-left:5px">Groq</span>';
     h+=`<div class="oracle-key-item">
       <span class="oracle-key-badge ${bc}">${k.status.toUpperCase()}</span>
-      <span style="font-size:12px;font-weight:700;flex:1">${k.label}</span>
+      <span style="font-size:12px;font-weight:700;flex:1">${k.label}${provLabel}</span>
       <span style="font-family:var(--mono);font-size:10px;color:var(--text3)">${masked}</span>
       <button class="btn btn-ghost btn-sm" onclick="setActiveKey(${i})" style="font-size:10px;padding:4px 8px;margin-left:4px">Use</button>
       <button onclick="removeOracleKey(${i})" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:15px;padding:2px 6px">✕</button>
     </div>`;
   });
   el.innerHTML=h;
+  const groqKeys=_oracleKeys.filter(k=>k.provider!=='openrouter');
+  const orKeys=_oracleKeys.filter(k=>k.provider==='openrouter');
   const active=_oracleKeys.find(k=>k.status==='active');
   const st=document.getElementById('oracle-key-status');
   if(st)st.innerHTML=active
-    ?`<span style="color:var(--green)">✓ Active: ${active.label}</span> · ${_oracleKeys.length} key${_oracleKeys.length>1?'s':''} loaded · Auto-rotation ON`
+    ?`<span style="color:var(--green)">✓ Active: ${active.label}</span> · ${groqKeys.length} Groq${orKeys.length?' · '+orKeys.length+' OpenRouter (fallback)':''} · Auto-rotation ON`
     :'<span style="color:var(--red)">⚠ No active key — click Use</span>';
 }
 // Groq API — free, browser-compatible, no credit card needed
 // Models: llama-3.3-70b-versatile (best), mixtral-8x7b-32768, llama3-8b-8192 (fastest)
+// OpenRouter fallback — free tier available at openrouter.ai
 let ORACLE_MODEL=localStorage.getItem('oracle_model')||'llama-3.3-70b-versatile';
 
 function changeOracleModel(val){
@@ -6646,47 +6701,65 @@ async function oracleCall(messages,systemMsg,maxTokens){
   if(!_oracleKeys.length){
     throw new Error('No API key found. Go to Oracle → Keys tab, add your free Groq key from console.groq.com');
   }
+  // Separate Groq and OpenRouter keys
+  const groqKeys=_oracleKeys.filter(k=>k.provider!=='openrouter');
+  const orKeys=_oracleKeys.filter(k=>k.provider==='openrouter');
+  // Try all Groq keys first
+  let groqAllFailed=true;
   for(let attempt=0;attempt<_oracleKeys.length+1;attempt++){
     const idx=_oracleKeyIdx%_oracleKeys.length;
     const k=_oracleKeys[idx];
+    if(k.provider==='openrouter'){_oracleKeyIdx=(idx+1)%_oracleKeys.length;continue;}
     try{
-      const r=await _oracleRaw(k.key,messages,systemMsg,maxTokens);
+      const r=await _oracleRaw(k.key,messages,systemMsg,maxTokens,k.provider||'groq');
       k.status='active';_oracleKeys.forEach((x,i)=>{if(i!==idx&&x.status==='active')x.status='waiting';});
       _oracleKeyIdx=idx;saveOracleKeys();renderKeyList();return r;
     }catch(e){
       if(e.status===429||e.status===503||e.status===529){
         k.status='failed';_oracleKeyIdx=(idx+1)%_oracleKeys.length;saveOracleKeys();
-        if(_oracleKeys.length>1)showToast('Rate limit hit — rotating to next key ↺');
+        if(groqKeys.filter(x=>x.status!=='failed').length>0)showToast('Rate limit hit — rotating to next key ↺');
         continue;
       }
       throw e;
     }
   }
-  throw new Error('All keys rate limited. Try again in a minute.');
+  // All Groq keys failed — try OpenRouter fallback
+  if(orKeys.length>0){
+    showToast('⚡ Groq rate limited — switching to OpenRouter backup');
+    for(const k of orKeys){
+      try{
+        const r=await _oracleRaw(k.key,messages,systemMsg,maxTokens,'openrouter');
+        k.status='active';saveOracleKeys();renderKeyList();return r;
+      }catch(e){
+        k.status='failed';saveOracleKeys();
+        if(e.status!==429&&e.status!==503)throw e;
+      }
+    }
+  }
+  throw new Error('All keys rate limited. Try again in a minute, or add more keys in Oracle → Keys.');
 }
 
-async function _oracleRaw(apiKey,messages,systemMsg,maxTokens){
-  // Build messages array (Groq uses OpenAI-compatible format)
+async function _oracleRaw(apiKey,messages,systemMsg,maxTokens,provider){
+  // Build messages array (both Groq and OpenRouter use OpenAI-compatible format)
   const oaiMessages=[];
   if(systemMsg)oaiMessages.push({role:'system',content:systemMsg});
   messages.forEach(m=>oaiMessages.push({role:m.role,content:m.content}));
 
-  const headers={
-    'Content-Type':'application/json',
-    'Authorization':'Bearer '+apiKey
-  };
-  const body={
-    model:ORACLE_MODEL,
-    max_tokens:maxTokens,
-    messages:oaiMessages,
-    temperature:0.7
-  };
-  const resp=await fetch('https://api.groq.com/openai/v1/chat/completions',{
-    method:'POST',headers,body:JSON.stringify(body)
-  });
+  // Route to correct endpoint and model
+  const isOR=provider==='openrouter';
+  const endpoint=isOR
+    ?'https://openrouter.ai/api/v1/chat/completions'
+    :'https://api.groq.com/openai/v1/chat/completions';
+  // OpenRouter free model: google/gemma-3-12b-it:free or meta-llama/llama-3.1-8b-instruct:free
+  const model=isOR?'meta-llama/llama-3.1-8b-instruct:free':ORACLE_MODEL;
+
+  const headers={'Content-Type':'application/json','Authorization':'Bearer '+apiKey};
+  if(isOR){headers['HTTP-Referer']='https://shadowsystem.app';headers['X-Title']='Shadow System';}
+  const body={model,max_tokens:maxTokens,messages:oaiMessages,temperature:0.7};
+  const resp=await fetch(endpoint,{method:'POST',headers,body:JSON.stringify(body)});
   if(!resp.ok){
     const errData=await resp.json().catch(()=>({}));
-    const msg=errData?.error?.message||'Groq API error '+resp.status;
+    const msg=errData?.error?.message||'API error '+resp.status;
     const e=new Error(msg);e.status=resp.status;throw e;
   }
   const data=await resp.json();
@@ -6862,11 +6935,50 @@ Rules: Step-by-step numbered solution. Explain the underlying principle. Flag JE
     if(!S.oracleDoubtHistory)S.oracleDoubtHistory={};
     S.oracleDoubtHistory[doubtSubject]=doubtHistory.slice(-30);save();
     renderDoubtChat();if(chat)chat.scrollTop=chat.scrollHeight;
+    _appendConfidenceNudge(chat);
   }catch(e){
     const te=document.getElementById(typingId);
     if(te){te.className='oracle-bubble assistant';te.innerHTML=`<span style="color:var(--red)">⚠ ${e.message||'Error. Check API keys.'}</span>`;}
   }
   oracleStreaming=false;if(sendBtn){sendBtn.disabled=false;sendBtn.textContent='Send ⚡';}
+}
+function _appendConfidenceNudge(chat){
+  if(!chat||!doubtSubject||doubtSubject==='general')return;
+  const existing=chat.querySelector('.conf-nudge-bar');if(existing)existing.remove();
+  const subTopics=[...(S.topics[doubtSubject+'11']||[]),...(S.topics[doubtSubject+'12']||[])];
+  if(!subTopics.length)return;
+  const nudge=document.createElement('div');
+  nudge.className='conf-nudge-bar';
+  const topicOpts=subTopics.map(t=>`<option value="${escHtml(t.name)}">${escHtml(t.name)} (${t.conf}%)</option>`).join('');
+  nudge.innerHTML=`<div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;font-weight:700;margin-bottom:7px">💡 Update confidence after this doubt</div>
+    <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+      <select id="conf-nudge-topic" class="conf-nudge-topic-sel" style="flex:1;min-width:120px;background:var(--bg3);border:1px solid var(--border2);border-radius:5px;color:var(--text);font-family:var(--font);font-size:12px;padding:5px 7px;outline:none">${topicOpts}</select>
+      <button class="conf-nudge-btn" onclick="_applyConfNudge(5)">+5%</button>
+      <button class="conf-nudge-btn" onclick="_applyConfNudge(10)">+10%</button>
+    </div>`;
+  chat.appendChild(nudge);
+  chat.scrollTop=chat.scrollHeight;
+}
+function _applyConfNudge(amount){
+  const sel=document.getElementById('conf-nudge-topic');
+  if(!sel)return;
+  const topicName=sel.value;
+  let found=false;
+  ['11','12'].forEach(yr=>{
+    const arr=S.topics[doubtSubject+yr]||[];
+    const t=arr.find(x=>x.name===topicName);
+    if(t){t.conf=Math.min(100,t.conf+amount);found=true;}
+  });
+  if(found){
+    save();
+    showToast(`${topicName} confidence +${amount}% ⚡`);
+    const chat=document.getElementById('doubt-chat');
+    const bar=chat&&chat.querySelector('.conf-nudge-bar');
+    if(bar){
+      bar.innerHTML=`<span style="color:var(--green);font-size:12px;font-weight:700">✓ Confidence updated for ${escHtml(topicName)}</span>`;
+      setTimeout(()=>{if(bar.parentNode)bar.remove();},2500);
+    }
+  }
 }
 function renderDoubtChat(){
   const chat=document.getElementById('doubt-chat');if(!chat)return;
@@ -6917,12 +7029,39 @@ async function generateDailyPlan(){
   }catch(e){if(out)out.innerHTML=`<div style="color:var(--red);font-size:13px;padding:6px 0">⚠ ${e.message||'Oracle offline.'}</div>`;}
   oracleStreaming=false;if(btn){btn.disabled=false;btn.textContent='📅 Generate Today\'s Battle Plan';}
 }
+function togglePlanCheck(el){
+  if(el.classList.contains('o-checked')){
+    el.classList.remove('o-checked');
+    el.innerHTML='';
+    el.style.background='';
+    el.style.borderColor='';
+  } else {
+    el.classList.add('o-checked');
+    el.innerHTML='✓';
+    // Track completion count on parent container for XP
+    const container=el.closest('.oracle-out')||el.closest('[id^="oracle"]');
+    if(container){
+      const total=container.querySelectorAll('.o-check-box').length;
+      const done=container.querySelectorAll('.o-check-box.o-checked').length;
+      if(done===total&&total>0){
+        showToast('🏆 All battle plan tasks done! +20 XP');
+        S.hunter.xp+=20;save();updateHeader();
+        setTimeout(()=>checkRankUp(),400);
+      } else {
+        showToast('Task done ⚡  ('+done+'/'+total+')');
+      }
+    } else {
+      showToast('Task done ⚡');
+    }
+    playSLSound('quest');
+  }
+}
 function formatOracleMD(text){
   return text
     .replace(/^\*\*(.+?)\*\*$/gm,'<div class="o-heading">$1</div>')
     .replace(/\*\*(.+?)\*\*/g,'<strong style="color:var(--text)">$1</strong>')
     .replace(/\*(.+?)\*/g,'<em style="color:var(--text2)">$1</em>')
-    .replace(/^-\s+\[ \]\s+(.+)$/gm,'<div class="o-check"><div class="o-check-box"></div><span style="font-size:13px">$1</span></div>')
+    .replace(/^-\s+\[ \]\s+(.+)$/gm,'<div class="o-check"><div class="o-check-box" onclick="togglePlanCheck(this)" title="Mark done"></div><span style="font-size:13px">$1</span></div>')
     .replace(/^-\s+(.+)$/gm,'<div class="o-bullet"><span class="o-bullet-dot">▸</span><span>$1</span></div>')
     .replace(/^(\d+)\.\s+(.+)$/gm,'<div class="o-bullet"><span class="o-bullet-dot" style="color:var(--gold);font-family:var(--mono);font-size:11px">$1.</span><span>$2</span></div>')
     .replace(/\n\n/g,'<br style="line-height:2.5">').replace(/\n/g,'<br>');
