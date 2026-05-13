@@ -41,11 +41,11 @@ html,body{background:var(--bg);color:var(--text);font-family:var(--font);min-hei
   section{max-width:100%;overflow-x:hidden}
 }
 @media(min-width:900px){
-  .app-shell{grid-template-columns:var(--nav-w) 1fr var(--right-w);grid-template-rows:100vh}
+  .app-shell{grid-template-columns:var(--nav-w) 1fr var(--right-w);grid-template-rows:100vh;height:100vh;overflow:hidden}
   .top-bar{display:none}
   .left-nav{grid-column:1;grid-row:1;position:sticky;top:0;height:100vh;background:var(--bg);border-right:1px solid var(--border);display:flex;flex-direction:column;align-items:center;padding:20px 0;gap:4px;overflow-y:auto}
-  .main-content{grid-column:2;grid-row:1;overflow-y:auto;padding:28px 32px}
-  .right-panel{grid-column:3;grid-row:1;overflow-y:auto;background:var(--bg2);border-left:1px solid var(--border);padding:24px 18px}
+  .main-content{grid-column:2;grid-row:1;height:100vh;overflow-y:auto;padding:28px 32px;box-sizing:border-box}
+  .right-panel{grid-column:3;grid-row:1;height:100vh;overflow-y:auto;background:var(--bg2);border-left:1px solid var(--border);padding:24px 18px;box-sizing:border-box}
   .bottom-nav{display:none}
 }
 
@@ -1262,6 +1262,8 @@ input.fi:focus,select.fi:focus{
     <div class="dstat"><div class="dstat-val" id="ds-sess">0</div><div class="dstat-lbl">🎯 Sessions</div></div>
   </div>
   <div id="todays-mission"></div>
+  <!-- Upcoming Exams mini-countdown — only shows if exams are set -->
+  <div id="upcoming-exams-dash" style="display:none;margin-bottom:14px"></div>
   <div class="card">
     <div class="card-hdr"><span class="hl">Daily Quests</span></div>
     <div id="quest-list"></div>
@@ -1457,11 +1459,22 @@ input.fi:focus,select.fi:focus{
         <div class="fg"><label class="fl">Chemistry</label><input type="number" class="fi" id="t-che" placeholder="0"></div>
         <div class="fg full"><label class="fl">Maths</label><input type="number" class="fi" id="t-mat" placeholder="0"></div>
         <div class="fg full"><label class="fl">Test Type</label>
-          <select class="fi" id="t-type">
-            <option value="school">School Weekly Test</option>
-            <option value="mock">JEE Mock</option>
+          <select class="fi" id="t-type" onchange="updateTestFormForType()">
+            <option value="mock">JEE Full Mock (3 subjects)</option>
+            <option value="school">School / Unit Test</option>
             <option value="chapter">Chapter Test</option>
+            <option value="jee-mains">JEE Mains Pattern</option>
+            <option value="advanced">JEE Advanced Pattern</option>
+            <option value="board">Board Exam</option>
           </select>
+        </div>
+        <div class="fg full" id="t-subjects-row">
+          <label class="fl">Subjects in this test <span style="color:var(--text3);font-weight:400;text-transform:none;letter-spacing:0">(uncheck subjects not in this test)</span></label>
+          <div style="display:flex;gap:10px;margin-top:7px">
+            <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer"><input type="checkbox" id="ts-phy" checked style="accent-color:var(--accent)"> Physics</label>
+            <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer"><input type="checkbox" id="ts-che" checked style="accent-color:var(--green)"> Chemistry</label>
+            <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer"><input type="checkbox" id="ts-mat" checked style="accent-color:var(--gold)"> Maths</label>
+          </div>
         </div>
         <div class="fg full"><label class="fl">Chapters Covered <span style="color:var(--text3);font-weight:400;text-transform:none;letter-spacing:0">(optional — e.g. Kinematics, Limits)</span></label>
           <input type="text" class="fi" id="t-chapters" placeholder="e.g. Kinematics, Thermodynamics, Integration…">
@@ -1726,6 +1739,27 @@ input.fi:focus,select.fi:focus{
     </div>
     <div style="font-size:11px;color:var(--text2);margin-bottom:10px" id="s-exam-hint">JEE Advanced 2026 is on <b style="color:var(--gold)">18 May 2026</b>. You can set a custom date if your board exam or target is different.</div>
     <button class="btn btn-primary btn-sm" onclick="saveExamSettings()">Save Exam Date</button>
+  </div>
+
+  <!-- Upcoming Exams — multi-exam tracker -->
+  <div class="card">
+    <div class="card-hdr"><span class="hl">📅 Upcoming Exams</span></div>
+    <div style="font-size:12px;color:var(--text2);margin-bottom:12px;line-height:1.6">Track all your exams — JEE Mains, Advanced, Board tests, Practicals. Oracle will factor these into every recommendation.</div>
+    <div class="form-grid" style="margin-bottom:10px">
+      <div class="fg"><label class="fl">Exam Name</label><input type="text" class="fi" id="ue-name" placeholder="e.g. JEE Mains, Board Physics, BITSAT"></div>
+      <div class="fg"><label class="fl">Date</label><input type="date" class="fi" id="ue-date"></div>
+      <div class="fg full"><label class="fl">Type</label>
+        <select class="fi" id="ue-type">
+          <option value="jee-mains">JEE Mains</option>
+          <option value="jee-advanced">JEE Advanced</option>
+          <option value="board">Board Exam</option>
+          <option value="school">School / Unit Test</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+    </div>
+    <button class="btn btn-primary btn-sm" onclick="addUpcomingExam()" style="margin-bottom:14px">+ Add Exam</button>
+    <div id="upcoming-exams-list"></div>
   </div>
 
   <!-- Class / Starting point -->
@@ -2204,6 +2238,7 @@ const DEF={
   classYear:'12',
   goals:{studyHours:6,questStudyHours:2},
   customQuests:null,
+  upcomingExams:[],       // [{id,name,date,type,subject?}] — multi-exam tracking
   // ── NEW SYSTEM KEYS (v4) ──
   dailyStatus:{},        // {date: 'valid'|'failed'|'zero'}
   consecutiveFailures:0,
@@ -2530,6 +2565,14 @@ function checkRankUp(){
 function checkRankDown(){
   const rk=S.hunter.rank||'E';
   const idx=RANK_ORDER.indexOf(rk);if(idx<=0)return;
+  // XP floor: rank can never drop below what XP justifies
+  const xpFloorRank=getRankByXPStatic(S.hunter.xp||0);
+  const xpFloorIdx=RANK_ORDER.indexOf(xpFloorRank);
+  if(idx-1<=xpFloorIdx){
+    showToast('⚠ Performance dipped, but your XP holds your rank. Keep going!');
+    S.consecutiveFailures=0;save();
+    return;
+  }
   const newRank=RANK_ORDER[idx-1];
   const old=S.hunter.rank;
   S.hunter.rank=newRank;S.consecutiveFailures=0;save();
@@ -2603,6 +2646,70 @@ function isSprintMode(){
   return Math.max(0,Math.ceil((new Date(S.examDate||'2026-05-18')-new Date())/86400000))<=30;
 }
 
+// ── Upcoming Exams system ──
+function addUpcomingExam(){
+  const name=(document.getElementById('ue-name').value||'').trim();
+  const date=document.getElementById('ue-date').value;
+  const type=document.getElementById('ue-type').value;
+  if(!name||!date){showToast('Enter exam name and date');return;}
+  if(new Date(date)<new Date(today())){showToast('Date is in the past');return;}
+  if(!S.upcomingExams)S.upcomingExams=[];
+  S.upcomingExams.push({id:Date.now(),name,date,type});
+  S.upcomingExams.sort(function(a,b){return new Date(a.date)-new Date(b.date);});
+  save();
+  document.getElementById('ue-name').value='';
+  document.getElementById('ue-date').value='';
+  renderUpcomingExamsList();
+  renderUpcomingExamsDash();
+  showToast('Exam added: '+name+' ⚡');
+}
+function removeUpcomingExam(id){
+  if(!S.upcomingExams)return;
+  S.upcomingExams=S.upcomingExams.filter(function(e){return e.id!==id;});
+  save();renderUpcomingExamsList();renderUpcomingExamsDash();
+  showToast('Exam removed');
+}
+function renderUpcomingExamsList(){
+  var el2=document.getElementById('upcoming-exams-list');if(!el2)return;
+  if(!S.upcomingExams||!S.upcomingExams.length){
+    el2.innerHTML='<div style="font-size:12px;color:var(--text3);padding:6px 0">No upcoming exams added yet.</div>';return;
+  }
+  var now=new Date();
+  var typeColors={'jee-mains':'var(--accent)','jee-advanced':'var(--gold)','board':'var(--green)','school':'var(--text2)','other':'var(--text3)'};
+  el2.innerHTML=S.upcomingExams.filter(function(e){return new Date(e.date)>=now;}).map(function(e){
+    var dLeft=Math.max(0,Math.ceil((new Date(e.date)-now)/86400000));
+    var col=typeColors[e.type]||'var(--text2)';
+    return '<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)">'
+      +'<div style="flex:1"><div style="font-size:13px;font-weight:600">'+escHtml(e.name)+'</div>'
+      +'<div style="font-size:11px;color:var(--text3)">'+e.date+'</div></div>'
+      +'<div style="font-size:16px;font-weight:700;color:'+col+'">'+dLeft+'d</div>'
+      +'<button onclick="removeUpcomingExam('+e.id+')" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:15px;padding:0 4px">✕</button>'
+      +'</div>';
+  }).join('')||'<div style="font-size:12px;color:var(--text3);padding:6px 0">All upcoming exams passed.</div>';
+}
+function renderUpcomingExamsDash(){
+  var wrap=document.getElementById('upcoming-exams-dash');if(!wrap)return;
+  if(!S.upcomingExams||!S.upcomingExams.length){wrap.style.display='none';return;}
+  var now=new Date();
+  var future=S.upcomingExams.filter(function(e){return new Date(e.date)>=now;}).slice(0,4);
+  if(!future.length){wrap.style.display='none';return;}
+  var typeColors={'jee-mains':'rgba(91,110,245,1)','jee-advanced':'rgba(244,196,48,1)','board':'rgba(0,214,143,1)','school':'rgba(255,255,255,.4)','other':'rgba(255,255,255,.3)'};
+  wrap.style.display='block';
+  wrap.innerHTML='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px">'
+    +future.map(function(e){
+      var dLeft=Math.max(0,Math.ceil((new Date(e.date)-now)/86400000));
+      var col=typeColors[e.type]||'rgba(255,255,255,.4)';
+      var urgency=dLeft<=7?'rgba(255,59,92,.15)':dLeft<=14?'rgba(244,196,48,.07)':'rgba(255,255,255,.03)';
+      var border=dLeft<=7?'rgba(255,59,92,.3)':dLeft<=14?'rgba(244,196,48,.2)':'rgba(255,255,255,.08)';
+      return '<div style="background:'+urgency+';border:1px solid '+border+';border-radius:9px;padding:10px 12px">'
+        +'<div style="font-size:10px;color:'+col+';text-transform:uppercase;letter-spacing:.7px;font-weight:700;margin-bottom:4px">'+escHtml(e.name)+'</div>'
+        +'<div style="font-size:20px;font-weight:700;color:var(--text);line-height:1">'+dLeft+'</div>'
+        +'<div style="font-size:10px;color:var(--text3)">days left</div>'
+        +'</div>';
+    }).join('')
+    +'</div>';
+}
+
 // DASHBOARD
 function renderDash(){
   updateHeader();
@@ -2625,6 +2732,7 @@ function renderDash(){
   renderStatusWindow();
   renderQuests();renderGates();renderPenalty();renderTodaysMission();
   renderFeedbackBanner();
+  renderUpcomingExamsDash();
 }
 
 function renderQuests(){
@@ -4667,6 +4775,84 @@ function setTTab(t,btn){
     renderBoardPerformance();
   }
 }
+function updateTestFormForType(){
+  var type=document.getElementById('t-type').value;
+  var phyEl=document.getElementById('t-phy');
+  var cheEl=document.getElementById('t-che');
+  var matEl=document.getElementById('t-mat');
+  var maxEl=document.getElementById('t-max');
+  var phyCb=document.getElementById('ts-phy');
+  var cheCb=document.getElementById('ts-che');
+  var matCb=document.getElementById('ts-mat');
+  // Reset checkboxes
+  if(phyCb)phyCb.checked=true;if(cheCb)cheCb.checked=true;if(matCb)matCb.checked=true;
+  if(type==='chapter'){
+    // Chapter test: let user choose which subject(s)
+    if(maxEl)maxEl.value='100';
+  } else if(type==='board'){
+    if(cheCb)cheCb.checked=false;if(matCb)matCb.checked=false;
+    if(maxEl)maxEl.value='70';
+  } else if(type==='mock'||type==='jee-mains'||type==='advanced'){
+    if(maxEl)maxEl.value='300';
+  } else if(type==='school'){
+    if(maxEl)maxEl.value='100';
+  }
+}
+function deleteTest(id){
+  if(!confirm('Delete this test result?'))return;
+  S.tests=S.tests.filter(function(t){return t.id!==id;});
+  save();renderTests();showToast('Test deleted');
+}
+function openTestEdit(id){
+  var t=S.tests.find(function(x){return x.id===id;});
+  if(!t)return;
+  var overlay=document.getElementById('test-edit-modal');
+  if(!overlay){
+    overlay=document.createElement('div');
+    overlay.id='test-edit-modal';
+    overlay.style.cssText='position:fixed;inset:0;z-index:800;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;padding:20px';
+    document.body.appendChild(overlay);
+  }
+  const typeLabels={mock:'JEE Full Mock (3 subjects)','jee-mains':'JEE Mains Pattern',advanced:'JEE Advanced Pattern',school:'School / Unit Test',chapter:'Chapter Test',board:'Board Exam'};
+  const subjects=t.subjects||['physics','chemistry','maths'];
+  overlay.innerHTML='<div style="background:var(--card2);border:1px solid var(--border2);border-radius:14px;padding:20px;width:100%;max-width:420px;max-height:90vh;overflow-y:auto">'
+    +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">'
+    +'<div style="font-size:14px;font-weight:700">Edit Test</div>'
+    +'<button onclick="document.getElementById(\'test-edit-modal\').style.display=\'none\'" style="background:none;border:none;color:var(--text2);cursor:pointer;font-size:18px">✕</button></div>'
+    +'<div class="form-grid">'
+    +'<div class="fg"><label class="fl">Date</label><input type="date" class="fi" id="te-date" value="'+t.date+'"></div>'
+    +'<div class="fg"><label class="fl">Max Score</label><input type="number" class="fi" id="te-max" value="'+(t.max||300)+'"></div>'
+    +'<div class="fg"><label class="fl">Physics</label><input type="number" class="fi" id="te-phy" value="'+t.phy+'"></div>'
+    +'<div class="fg"><label class="fl">Chemistry</label><input type="number" class="fi" id="te-che" value="'+t.che+'"></div>'
+    +'<div class="fg full"><label class="fl">Maths</label><input type="number" class="fi" id="te-mat" value="'+t.mat+'"></div>'
+    +'<div class="fg full"><label class="fl">Type</label><select class="fi" id="te-type">'
+    +Object.entries(typeLabels).map(function(e){return '<option value="'+e[0]+'"'+(t.type===e[0]?' selected':'')+'>'+e[1]+'</option>';}).join('')
+    +'</select></div>'
+    +'<div class="fg full"><label class="fl">Chapters</label><input type="text" class="fi" id="te-chapters" value="'+escHtml(t.chapters||'')+'"></div>'
+    +'<div class="fg full"><label class="fl">Notes</label><input type="text" class="fi" id="te-notes" value="'+escHtml(t.notes||'')+'"></div>'
+    +'</div>'
+    +'<button class="btn btn-primary" onclick="saveTestEdit('+id+')" style="width:100%;margin-top:12px">Save Changes</button>'
+    +'</div>';
+  overlay.style.display='flex';
+}
+function saveTestEdit(id){
+  var t=S.tests.find(function(x){return x.id===id;});
+  if(!t)return;
+  var phy=parseFloat(document.getElementById('te-phy').value)||0;
+  var che=parseFloat(document.getElementById('te-che').value)||0;
+  var mat=parseFloat(document.getElementById('te-mat').value)||0;
+  t.date=document.getElementById('te-date').value||t.date;
+  t.max=parseFloat(document.getElementById('te-max').value)||300;
+  t.phy=phy;t.che=che;t.mat=mat;
+  t.total=phy+che+mat;
+  t.type=document.getElementById('te-type').value||t.type;
+  t.chapters=document.getElementById('te-chapters').value||'';
+  t.notes=document.getElementById('te-notes').value||'';
+  S.tests.sort(function(a,b){return new Date(a.date)-new Date(b.date);});
+  save();
+  document.getElementById('test-edit-modal').style.display='none';
+  renderTests();showToast('Test updated ✓');
+}
 // ── Test weak topic chips — tap to mark where you lost marks ──
 function renderTestWeakChips(){
   const cont=document.getElementById('test-weak-chips');if(!cont)return;
@@ -4710,11 +4896,19 @@ function addTest(){
   const type=document.getElementById('t-type').value;
   const chapters=(document.getElementById('t-chapters').value||'').trim();
   const notes=(document.getElementById('t-notes').value||'').trim();
-  const total=phy+che+mat;
+  // Which subjects are in this test
+  const subjects=[];
+  if(!document.getElementById('ts-phy')||document.getElementById('ts-phy').checked)subjects.push('physics');
+  if(!document.getElementById('ts-che')||document.getElementById('ts-che').checked)subjects.push('chemistry');
+  if(!document.getElementById('ts-mat')||document.getElementById('ts-mat').checked)subjects.push('maths');
+  const phyF=subjects.indexOf('physics')>-1?phy:0;
+  const cheF=subjects.indexOf('chemistry')>-1?che:0;
+  const matF=subjects.indexOf('maths')>-1?mat:0;
+  const total=phyF+cheF+matF;
   // ── Collect weak topic chips ──
   const weakChipEls=[...document.querySelectorAll('.twc.twc-on')];
   const weakTopics=weakChipEls.map(el=>({name:el.dataset.topic,subject:el.dataset.subject}));
-  S.tests.push({id:Date.now(),date,phy,che,mat,total,max,type,chapters,notes,weakTopics});
+  S.tests.push({id:Date.now(),date,phy:phyF,che:cheF,mat:matF,total,max,type,chapters,notes,weakTopics,subjects});
   S.tests.sort((a,b)=>new Date(a.date)-new Date(b.date));
   // ── Apply confidence drop for weak topics ──
   if(weakTopics.length){
@@ -4754,19 +4948,30 @@ function renderTests(){
   renderTestWeakChips();
   const tests=[...S.tests].reverse();
   if(!tests.length){document.getElementById('test-hist').innerHTML='<div class="empty">No tests logged yet.</div>';return;}
-  let h='<div style="overflow-x:auto"><table class="t-table"><thead><tr><th>Date</th><th>Type</th><th>PHY</th><th>CHE</th><th>MAT</th><th>Total</th></tr></thead><tbody>';
-  tests.forEach(t=>{
-    const pct=Math.round(t.total/t.max*100);
+  const typeLabels={mock:'JEE Mock','jee-mains':'JEE Mains','advanced':'JEE Advanced',school:'School',chapter:'Chapter',board:'Board'};
+  let h='';
+  tests.forEach(function(t){
+    const pct=Math.round(t.total/(t.max||300)*100);
     const cls=pct>=70?'sh':pct>=50?'sm':'sl';
-    h+=`<tr><td style="font-size:12px">${fmtDate(t.date)}</td><td style="font-size:11px;color:var(--text2)">${{school:'School',mock:'Mock',chapter:'Chapter'}[t.type]||t.type}</td><td class="sc">${t.phy}</td><td class="sc">${t.che}</td><td class="sc">${t.mat}</td><td class="sc ${cls}">${t.total}/${t.max}</td></tr>`;
-    if(t.chapters||t.notes){
-      h+=`<tr><td colspan="6" style="padding:2px 6px 10px;border-bottom:1px solid var(--border)">`;
-      if(t.chapters)h+=`<div style="font-size:11px;color:var(--text2);margin-bottom:2px"><span style="color:var(--accent);font-weight:700">📚 Chapters:</span> ${t.chapters}</div>`;
-      if(t.notes)h+=`<div style="font-size:11px;color:var(--text3);font-style:italic">💬 ${t.notes}</div>`;
-      h+=`</td></tr>`;
-    }
+    const subjects=t.subjects||['physics','chemistry','maths'];
+    const subParts=[];
+    if(subjects.indexOf('physics')>-1)subParts.push('<span style="color:var(--accent)">P:'+t.phy+'</span>');
+    if(subjects.indexOf('chemistry')>-1)subParts.push('<span style="color:var(--green)">C:'+t.che+'</span>');
+    if(subjects.indexOf('maths')>-1)subParts.push('<span style="color:var(--gold)">M:'+t.mat+'</span>');
+    h+='<div style="padding:10px 0;border-bottom:1px solid var(--border)">'
+      +'<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">'
+      +'<span style="font-size:12px;font-weight:600;flex:1;min-width:80px">'+fmtDate(t.date)+'</span>'
+      +'<span style="font-size:10px;color:var(--text3);background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:4px;padding:2px 6px">'+(typeLabels[t.type]||t.type||'Test')+'</span>'
+      +'<span style="font-size:12px;font-weight:700" class="'+cls+'">'+t.total+'/'+(t.max||300)+'</span>'
+      +'<button onclick="openTestEdit('+t.id+')" style="background:none;border:1px solid var(--border);border-radius:5px;color:var(--text2);cursor:pointer;font-size:10px;padding:3px 8px;font-family:var(--font)">✏ Edit</button>'
+      +'<button onclick="deleteTest('+t.id+')" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:13px;padding:0 4px">✕</button>'
+      +'</div>'
+      +'<div style="font-size:12px;color:var(--text2);margin-top:5px;display:flex;gap:10px;flex-wrap:wrap">'+subParts.join(' ')+'</div>'
+      +(t.chapters?'<div style="font-size:11px;color:var(--text2);margin-top:3px"><span style="color:var(--accent)">📚</span> '+escHtml(t.chapters)+'</div>':'')
+      +(t.notes?'<div style="font-size:11px;color:var(--text3);font-style:italic;margin-top:2px">💬 '+escHtml(t.notes)+'</div>':'')
+      +'</div>';
   });
-  h+='</tbody></table></div>';document.getElementById('test-hist').innerHTML=h;
+  document.getElementById('test-hist').innerHTML=h;
 }
 function renderTopics(){
   const col={physics:'var(--accent)',chemistry:'var(--green)',maths:'var(--gold)'};
@@ -5701,6 +5906,8 @@ function renderSettings(){
   }
   const sd=document.getElementById('s-start-date');if(sd)sd.value=S.hunter.startDate||today();
   const sc=document.getElementById('s-class');if(sc)sc.value=S.classYear||'12';
+  if(!S.upcomingExams)S.upcomingExams=[];
+  renderUpcomingExamsList();
   const gsh=document.getElementById('s-goal-study');if(gsh)gsh.value=S.goals&&S.goals.studyHours?S.goals.studyHours:6;
   const gqh=document.getElementById('s-goal-quest');if(gqh)gqh.value=S.goals&&S.goals.questStudyHours?S.goals.questStudyHours:2;
   const hn=document.getElementById('s-hunter-name');if(hn)hn.value=S.hunter.name||'Gautam';
@@ -6205,6 +6412,13 @@ function restoreLastMusic(){
 // INIT
 function initApp(){
   checkStreak();setupPWA();
+  // XP floor: correct rank if it's below what XP justifies (e.g. after inactivity streak)
+  if(S.hunter&&S.hunter.xp){
+    const xpJustified=getRankByXPStatic(S.hunter.xp);
+    const curIdx=RANK_ORDER.indexOf(S.hunter.rank||'E');
+    const xpIdx=RANK_ORDER.indexOf(xpJustified);
+    if(xpIdx>curIdx){S.hunter.rank=xpJustified;save();}
+  }
   loadPomoPrefs(); // restore custom pomodoro durations
   setupInlineSW(); // prepare SW for lock-screen notifications
   updateTimerUI();renderDash();renderFocusStatsBar();renderTests();renderWorkout();
@@ -7135,9 +7349,15 @@ function buildFullContext(){
   const woRate=woPlannedDays.length?Math.round(woDoneDays.length/woPlannedDays.length*100):0;
   const woStreak=S.workout&&S.workout.woStreak||0;
   const woStrength=S.workout&&S.workout.strengthStat||0;
+  // Upcoming exams for Oracle context
+  const now2=new Date();
+  const futureExams=(S.upcomingExams||[]).filter(function(e){return new Date(e.date)>=now2;})
+    .map(function(e){var d=Math.max(0,Math.ceil((new Date(e.date)-now2)/86400000));return e.name+' in '+d+' days ('+e.date+')';});
+  const examLine=futureExams.length?'\nUpcoming exams: '+futureExams.join(' | '):'';
+
   return `=== SHADOW SYSTEM — FULL HUNTER PROFILE ===
 Hunter: ${name} | Rank: ${rank} | XP: ${xp} | Streak: ${streak}d | Mana: ${mana}/100
-Class: ${S.classYear||'12'} | Exam: ${S.examName||'JEE Advanced'} in ${daysLeft} DAYS
+Class: ${S.classYear||'12'} | Exam: ${S.examName||'JEE Advanced'} in ${daysLeft} DAYS${examLine}
 
 === USER SETTINGS ===
 Daily study goal: ${goalH}h | Quest study threshold: ${questGoalH}h
