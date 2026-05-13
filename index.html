@@ -1903,15 +1903,21 @@ input.fi:focus,select.fi:focus{
       <div style="font-size:12px;color:var(--text2);line-height:1.7;margin-bottom:12px">
         Oracle remembers every analysis and key insight across sessions. This memory is passed as context in every conversation so Oracle always knows your history.
       </div>
+      <div id="pattern-stale-banner" style="display:none;margin-bottom:12px;padding:10px 13px;background:rgba(244,196,48,.07);border:1px solid rgba(244,196,48,.25);border-radius:8px;font-size:12px;color:var(--gold);gap:10px;align-items:center">
+        <span style="flex:1">⚡ It's been a while — extract fresh patterns from your recent sessions.</span>
+        <button onclick="extractWeeklyPatterns()" style="background:none;border:1px solid rgba(244,196,48,.4);border-radius:5px;color:var(--gold);font-family:var(--font);font-size:11px;padding:4px 10px;cursor:pointer;white-space:nowrap;margin-left:8px">Extract Now</button>
+      </div>
       <div style="display:flex;gap:8px;margin-bottom:12px">
         <textarea id="oracle-memory-input" class="oracle-textarea" style="height:58px" placeholder="Add a manual memory entry… e.g. 'I struggle most with integration by parts' or 'My target college is IIT Bombay CSE'"></textarea>
         <button class="btn btn-primary btn-sm" onclick="addManualMemory()" style="flex-shrink:0;padding:10px 14px">Add</button>
       </div>
       <div id="oracle-memory-list"></div>
-      <div style="display:flex;gap:8px;margin-top:10px">
+      <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
         <button class="btn btn-ghost btn-sm" onclick="renderMemoryList()">↺ Refresh</button>
+        <button id="pattern-extract-btn" class="btn btn-ghost btn-sm" onclick="extractWeeklyPatterns()" style="border-color:rgba(244,196,48,.4);color:var(--gold)">⚡ Extract Weekly Patterns</button>
         <button class="btn btn-danger btn-sm" onclick="clearAllMemory()">Clear All Memory</button>
       </div>
+      <div id="pattern-extract-status" style="font-size:11px;color:var(--text3);margin-top:8px"></div>
     </div>
   </div>
 
@@ -6737,7 +6743,7 @@ function setOracleTab(tab,btn){
   if(tab==='advisor')renderAdvisorContext();
   if(tab==='planner')renderPlannerContext();
   if(tab==='keys')renderKeyList();
-  if(tab==='memory')renderMemoryList();
+  if(tab==='memory'){renderMemoryList();checkPatternStaleness();}
   if(tab==='doubt')renderDoubtChat();
 }
 function loadOracleKeys(){
@@ -6912,6 +6918,64 @@ function deleteMemory(idx){
 function clearAllMemory(){
   if(!confirm('Clear all Oracle memory?'))return;S.oracleMemory=[];save();renderMemoryList();showToast('Memory cleared 🧹');
 }
+async function extractWeeklyPatterns(){
+  if(!_oracleKeys||!_oracleKeys.length){showToast('Add an Oracle API key first — Oracle tab, Keys');return;}
+  var btn=document.getElementById('pattern-extract-btn');
+  var status=document.getElementById('pattern-extract-status');
+  var banner=document.getElementById('pattern-stale-banner');
+  if(btn){btn.disabled=true;btn.textContent='⏳ Extracting...';}
+  if(status)status.textContent='Oracle is reading your last 7 days...';
+  var last7=[];for(var i=6;i>=0;i--){var dd=new Date();dd.setDate(dd.getDate()-i);last7.push(dd.toISOString().split('T')[0]);}
+  var wSess=S.sessions.filter(function(s){return last7.indexOf(s.date)>-1&&!s.paused;});
+  if(wSess.length<2){
+    if(status)status.textContent='Not enough sessions this week. Study a few more days first.';
+    if(btn){btn.disabled=false;btn.textContent='⚡ Extract Weekly Patterns';}
+    return;
+  }
+  var subMins={physics:0,chemistry:0,maths:0};
+  wSess.forEach(function(s){if(subMins[s.sub]!==undefined)subMins[s.sub]+=s.min;});
+  var sessLines=wSess.map(function(s){return s.date+': '+s.sub+' '+(s.taskType||'')+' '+s.min+'min rating='+(s.stars||'?')+'/5';}).join('\n');
+  var allT=[].concat(S.topics.physics11||[],S.topics.physics12||[],S.topics.chemistry11||[],S.topics.chemistry12||[],S.topics.maths11||[],S.topics.maths12||[]);
+  var weakT=allT.filter(function(t){return t.conf>0&&t.conf<40;}).sort(function(a,b){return a.conf-b.conf;}).slice(0,4);
+  var phH=Math.round(subMins.physics/60*10)/10;
+  var chH=Math.round(subMins.chemistry/60*10)/10;
+  var maH=Math.round(subMins.maths/60*10)/10;
+  var prompt='Analyze this JEE student\'s last 7 days of study sessions. '+wSess.length+' sessions total.\nSessions:\n'+sessLines+'\nWeek split — Physics: '+phH+'h Chemistry: '+chH+'h Maths: '+maH+'h\nWeak topics: '+(weakT.length?weakT.map(function(t){return t.name+' '+t.conf+'%';}).join(', '):'not set yet')+'\n\nGive EXACTLY 3 pattern insights. Each line must start with PATTERN: then the insight. Use the actual numbers. Be specific.';
+  try{
+    var text=await oracleCall([{role:'user',content:prompt}],null,350);
+    var lines=text.split('\n').filter(function(l){return l.trim().toUpperCase().indexOf('PATTERN:')===0;});
+    if(lines.length===0){lines=text.split('\n').filter(function(l){return l.trim().length>20;}).slice(0,3);}
+    lines.forEach(function(l){addToMemory('📊 '+l.trim(),true);});
+    S.lastPatternExtract=today();save();
+    renderMemoryList();
+    if(status)status.textContent='✓ '+(lines.length||3)+' patterns saved to memory · '+today();
+    if(banner)banner.style.display='none';
+    showToast('⚡ Weekly patterns extracted!');
+  }catch(e){
+    if(status)status.textContent='⚠ '+(e.message||'Oracle offline');
+  }
+  if(btn){btn.disabled=false;btn.textContent='⚡ Extract Weekly Patterns';}
+}
+function checkPatternStaleness(){
+  var banner=document.getElementById('pattern-stale-banner');
+  var status=document.getElementById('pattern-extract-status');
+  if(!banner)return;
+  var last=S.lastPatternExtract;
+  if(!last){
+    var enough=S.sessions&&S.sessions.filter(function(s){return !s.paused;}).length>=5;
+    if(enough){banner.style.display='flex';}else{banner.style.display='none';}
+    if(status&&enough)status.textContent='Tip: Extract patterns after a few days of study for best results.';
+    return;
+  }
+  var daysSince=Math.floor((new Date()-new Date(last))/86400000);
+  if(daysSince>=7){
+    banner.style.display='flex';
+    if(status)status.textContent='Last extraction: '+daysSince+' days ago ('+last+')';
+  }else{
+    banner.style.display='none';
+    if(status)status.textContent='Last extraction: '+daysSince+(daysSince===1?' day':' days')+' ago ('+last+')';
+  }
+}
 function buildFullContext(){
   const t=today();
   const name=S.hunter?.name||'Hunter';
@@ -6950,6 +7014,26 @@ function buildFullContext(){
       if(tests.length)boardAvg[subj]=Math.round(tests.reduce((a,bt)=>a+bt.pct,0)/tests.length);
     });
   }
+  // ── Workout context for Oracle ──
+  const woDays=['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
+  const todayDN=woDays[new Date().getDay()];
+  const tomorrowDN=woDays[(new Date().getDay()+1)%7];
+  const todayWoPlan=S.workout&&S.workout.plan&&S.workout.plan[todayDN];
+  const tomorrowWoPlan=S.workout&&S.workout.plan&&S.workout.plan[tomorrowDN];
+  const todayWoLog=S.workout&&S.workout.logs&&S.workout.logs.find(function(l){return l.date===t&&l.day===todayDN;});
+  const todayWoTotal=todayWoPlan&&todayWoPlan.exercises?todayWoPlan.exercises.length:0;
+  const todayWoDone=todayWoLog?Object.values(todayWoLog.comp||{}).filter(Boolean).length:0;
+  const todayWoStatus=(!todayWoPlan||!todayWoPlan.active)?'Rest Day'
+    :(todayWoLog&&todayWoDone===todayWoTotal&&todayWoTotal>0)?('Done: '+todayWoPlan.name+' ('+todayWoDone+'/'+todayWoTotal+')')
+    :(todayWoLog&&todayWoDone>0)?('In progress: '+todayWoPlan.name+' ('+todayWoDone+'/'+todayWoTotal+')')
+    :(todayWoPlan.name+' — not started');
+  const tomorrowWoStatus=(!tomorrowWoPlan||!tomorrowWoPlan.active)?'Rest Day'
+    :(tomorrowWoPlan.name+' ('+((tomorrowWoPlan.exercises&&tomorrowWoPlan.exercises.length)||0)+' exercises)');
+  const woPlannedDays=last7.filter(function(d){var dn=woDays[new Date(d+'T12:00:00').getDay()];return S.workout&&S.workout.plan&&S.workout.plan[dn]&&S.workout.plan[dn].active;});
+  const woDoneDays=woPlannedDays.filter(function(d){var dn=woDays[new Date(d+'T12:00:00').getDay()];var log=S.workout&&S.workout.logs&&S.workout.logs.find(function(l){return l.date===d&&l.day===dn;});var tot=(S.workout&&S.workout.plan&&S.workout.plan[dn]&&S.workout.plan[dn].exercises&&S.workout.plan[dn].exercises.length)||0;return log&&tot>0&&Object.values(log.comp||{}).filter(Boolean).length===tot;});
+  const woRate=woPlannedDays.length?Math.round(woDoneDays.length/woPlannedDays.length*100):0;
+  const woStreak=S.workout&&S.workout.woStreak||0;
+  const woStrength=S.workout&&S.workout.strengthStat||0;
   return `=== SHADOW SYSTEM — FULL HUNTER PROFILE ===
 Hunter: ${name} | Rank: ${rank} | XP: ${xp} | Streak: ${streak}d | Mana: ${mana}/100
 Class: ${S.classYear||'12'} | Exam: ${S.examName||'JEE Advanced'} in ${daysLeft} DAYS
@@ -6976,7 +7060,9 @@ Overall avg: ${avgConf}% | Mastered: ${strongT}/${allT.length}
 WEAK (<40%): ${weakT.map(t=>t.name+' '+t.conf+'%').join(', ')||'None'}
 
 === PHYSICAL TRAINING ===
-Workout streak: ${S.workout?.woStreak||0}d | Strength: ${S.workout?.strengthStat||0}/100
+Workout streak: ${woStreak}d | Strength: ${woStrength}/100 | Last 7 days: ${woRate}% workouts completed
+Today: ${todayWoStatus}
+Tomorrow: ${tomorrowWoStatus}
 ${buildMemoryContext()}
 === END ===`.trim();
 }
