@@ -1903,22 +1903,15 @@ input.fi:focus,select.fi:focus{
       <div style="font-size:12px;color:var(--text2);line-height:1.7;margin-bottom:12px">
         Oracle remembers every analysis and key insight across sessions. This memory is passed as context in every conversation so Oracle always knows your history.
       </div>
-      <!-- Pattern extraction banner — shown when stale -->
-      <div id="pattern-stale-banner" style="display:none;margin-bottom:12px;padding:10px 13px;background:rgba(244,196,48,.07);border:1px solid rgba(244,196,48,.25);border-radius:var(--radius-sm);font-size:12px;color:var(--gold);display:flex;align-items:center;gap:10px">
-        <span style="flex:1">⚡ It's been a while since Oracle analyzed your patterns.</span>
-        <button class="btn btn-ghost btn-sm" onclick="extractWeeklyPatterns()" style="border-color:rgba(244,196,48,.4);color:var(--gold);font-size:11px;white-space:nowrap">Extract Now</button>
-      </div>
       <div style="display:flex;gap:8px;margin-bottom:12px">
         <textarea id="oracle-memory-input" class="oracle-textarea" style="height:58px" placeholder="Add a manual memory entry… e.g. 'I struggle most with integration by parts' or 'My target college is IIT Bombay CSE'"></textarea>
         <button class="btn btn-primary btn-sm" onclick="addManualMemory()" style="flex-shrink:0;padding:10px 14px">Add</button>
       </div>
       <div id="oracle-memory-list"></div>
-      <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+      <div style="display:flex;gap:8px;margin-top:10px">
         <button class="btn btn-ghost btn-sm" onclick="renderMemoryList()">↺ Refresh</button>
-        <button id="pattern-extract-btn" class="btn btn-ghost btn-sm" onclick="extractWeeklyPatterns()" style="border-color:rgba(244,196,48,.4);color:var(--gold)">⚡ Extract Weekly Patterns</button>
         <button class="btn btn-danger btn-sm" onclick="clearAllMemory()">Clear All Memory</button>
       </div>
-      <div id="pattern-extract-status" style="font-size:11px;color:var(--text3);margin-top:8px"></div>
     </div>
   </div>
 
@@ -6744,7 +6737,7 @@ function setOracleTab(tab,btn){
   if(tab==='advisor')renderAdvisorContext();
   if(tab==='planner')renderPlannerContext();
   if(tab==='keys')renderKeyList();
-  if(tab==='memory'){renderMemoryList();checkPatternStaleness();}
+  if(tab==='memory')renderMemoryList();
   if(tab==='doubt')renderDoubtChat();
 }
 function loadOracleKeys(){
@@ -6919,88 +6912,7 @@ function deleteMemory(idx){
 function clearAllMemory(){
   if(!confirm('Clear all Oracle memory?'))return;S.oracleMemory=[];save();renderMemoryList();showToast('Memory cleared 🧹');
 }
-
-// ── Oracle Memory — Weekly pattern extraction ──
-async function extractWeeklyPatterns(){
-  if(!_oracleKeys||!_oracleKeys.length){showToast('Add an Oracle API key first → Oracle → Keys');return;}
-  const btn=document.getElementById('pattern-extract-btn');
-  const status=document.getElementById('pattern-extract-status');
-  const banner=document.getElementById('pattern-stale-banner');
-  if(btn){btn.disabled=true;btn.textContent='⏳ Extracting...';}
-  if(status)status.textContent='Oracle is analyzing your last 7 days...';
-
-  // Build session summary for last 7 days
-  const last7=[];for(let i=6;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);last7.push(d.toISOString().split('T')[0]);}
-  const weekSess=S.sessions.filter(s=>last7.includes(s.date)&&!s.paused);
-  if(weekSess.length<2){
-    if(status)status.textContent='Not enough sessions this week to extract patterns. Study more first!';
-    if(btn){btn.disabled=false;btn.textContent='⚡ Extract Weekly Patterns';}
-    return;
-  }
-  const sessLines=weekSess.map(s=>`${s.date}: ${s.sub} ${s.taskType||''} ${s.min}min rating=${s.stars||'?'}/5`).join('\n');
-  const byHour={};
-  weekSess.forEach(s=>{
-    if(s.startTime){const h=new Date(s.startTime).getHours();byHour[h]=(byHour[h]||0)+s.min;}
-  });
-  const bestHourEntry=Object.entries(byHour).sort((a,b)=>b[1]-a[1])[0];
-  const bestHour=bestHourEntry?`Most productive hour: ${bestHourEntry[0]}:00 (${bestHourEntry[1]}min)`:'';
-  const subMins={physics:0,chemistry:0,maths:0};
-  weekSess.forEach(s=>{if(subMins[s.sub]!==undefined)subMins[s.sub]+=s.min;});
-  const allT=[...(S.topics.physics11||[]),...(S.topics.physics12||[]),...(S.topics.chemistry11||[]),...(S.topics.chemistry12||[]),...(S.topics.maths11||[]),...(S.topics.maths12||[])];
-  const weakT=allT.filter(t=>t.conf>0&&t.conf<40).sort((a,b)=>a.conf-b.conf).slice(0,4);
-
-  const prompt=`Analyze this JEE student's last 7 days of study sessions. ${weekSess.length} sessions total.
-Sessions:
-${sessLines}
-${bestHour}
-Week subject split — Physics: ${Math.round(subMins.physics/60*10)/10}h Chemistry: ${Math.round(subMins.chemistry/60*10)/10}h Maths: ${Math.round(subMins.maths/60*10)/10}h
-Weak topics: ${weakT.map(t=>t.name+' '+t.conf+'%').join(', ')||'not set'}
-
-Give EXACTLY 3 pattern insights. Each on its own line starting with "PATTERN:". Use the actual data. Be specific, no fluff.
-Example: PATTERN: Best sessions happen before 10am — 78% of 5-star ratings were morning sessions.`;
-
-  try{
-    const text=await oracleCall([{role:'user',content:prompt}],null,350);
-    const patterns=text.split('\n').filter(l=>l.trim().toUpperCase().startsWith('PATTERN:'));
-    if(patterns.length===0){
-      // Try to extract any bullet lines as fallback
-      const lines=text.split('\n').filter(l=>l.trim().length>20).slice(0,3);
-      lines.forEach(l=>addToMemory('📊 Pattern: '+l.replace(/^[-•*\d.]+\s*/,'').trim(),true));
-    } else {
-      patterns.forEach(l=>addToMemory('📊 '+l.trim(),true));
-    }
-    S.lastPatternExtract=today();save();
-    renderMemoryList();
-    if(status)status.textContent=`✓ ${patterns.length||3} patterns extracted and saved to memory · ${today()}`;
-    if(banner)banner.style.display='none';
-    showToast('⚡ Weekly patterns extracted to memory!');
-  }catch(e){
-    if(status)status.textContent='⚠ '+( e.message||'Oracle offline');
-  }
-  if(btn){btn.disabled=false;btn.textContent='⚡ Extract Weekly Patterns';}
-}
-
-function checkPatternStaleness(){
-  const banner=document.getElementById('pattern-stale-banner');
-  const status=document.getElementById('pattern-extract-status');
-  if(!banner)return;
-  const last=S.lastPatternExtract;
-  if(!last){
-    // Never extracted — show banner only if they have enough sessions
-    const hasSessions=S.sessions&&S.sessions.filter(s=>!s.paused).length>=5;
-    banner.style.display=hasSessions?'flex':'none';
-    if(status&&hasSessions)status.textContent='Tip: Extract patterns after a few days of study for best results.';
-    return;
-  }
-  const daysSince=Math.floor((new Date()-new Date(last))/86400000);
-  if(daysSince>=7){
-    banner.style.display='flex';
-    if(status)status.textContent=`Last extraction: ${daysSince} days ago (${last})`;
-  } else {
-    banner.style.display='none';
-    if(status)status.textContent=`Last extraction: ${daysSince} day${daysSince!==1?'s':''} ago (${last})`;
-  }
-}
+function buildFullContext(){
   const t=today();
   const name=S.hunter?.name||'Hunter';
   const rank=S.hunter?.rank||'E';
@@ -7038,34 +6950,6 @@ function checkPatternStaleness(){
       if(tests.length)boardAvg[subj]=Math.round(tests.reduce((a,bt)=>a+bt.pct,0)/tests.length);
     });
   }
-  // ── Workout context ──
-  const woStreak=S.workout?.woStreak||0;
-  const strength=S.workout?.strengthStat||0;
-  const days=['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
-  const todayDN=days[new Date().getDay()];
-  const tomorrowDN=days[(new Date().getDay()+1)%7];
-  const todayWoPlan=S.workout?.plan?.[todayDN];
-  const tomorrowWoPlan=S.workout?.plan?.[tomorrowDN];
-  const todayWoLog=S.workout?.logs?.find(l=>l.date===t&&l.day===todayDN);
-  const todayWoTotal=todayWoPlan?.exercises?.length||0;
-  const todayWoDone=todayWoLog?Object.values(todayWoLog.comp||{}).filter(Boolean).length:0;
-  const todayWoStatus=!todayWoPlan||!todayWoPlan.active?'Rest Day'
-    :todayWoLog&&todayWoDone===todayWoTotal&&todayWoTotal>0?`✓ ${todayWoPlan.name} complete (${todayWoDone}/${todayWoTotal} exercises)`
-    :todayWoLog&&todayWoDone>0?`In progress: ${todayWoPlan.name} (${todayWoDone}/${todayWoTotal})`
-    :`${todayWoPlan.name} — not started yet`;
-  const tomorrowStatus=!tomorrowWoPlan||!tomorrowWoPlan.active?'Rest Day':`${tomorrowWoPlan.name} (${tomorrowWoPlan.exercises?.length||0} exercises)`;
-  const woLast7=last7.filter(d=>{
-    const dn=days[new Date(d+'T12:00:00').getDay()];
-    return S.workout?.plan?.[dn]?.active;
-  });
-  const woLast7Done=woLast7.filter(d=>{
-    const dn=days[new Date(d+'T12:00:00').getDay()];
-    const log=S.workout?.logs?.find(l=>l.date===d&&l.day===dn);
-    const total=S.workout?.plan?.[dn]?.exercises?.length||0;
-    return log&&total>0&&Object.values(log.comp||{}).filter(Boolean).length===total;
-  }).length;
-  const woRate=woLast7.length?Math.round(woLast7Done/woLast7.length*100):0;
-
   return `=== SHADOW SYSTEM — FULL HUNTER PROFILE ===
 Hunter: ${name} | Rank: ${rank} | XP: ${xp} | Streak: ${streak}d | Mana: ${mana}/100
 Class: ${S.classYear||'12'} | Exam: ${S.examName||'JEE Advanced'} in ${daysLeft} DAYS
@@ -7092,9 +6976,7 @@ Overall avg: ${avgConf}% | Mastered: ${strongT}/${allT.length}
 WEAK (<40%): ${weakT.map(t=>t.name+' '+t.conf+'%').join(', ')||'None'}
 
 === PHYSICAL TRAINING ===
-Workout streak: ${woStreak}d | Strength: ${strength}/100 | Last 7 days: ${woRate}% workouts completed
-Today: ${todayWoStatus}
-Tomorrow: ${tomorrowStatus}
+Workout streak: ${S.workout?.woStreak||0}d | Strength: ${S.workout?.strengthStat||0}/100
 ${buildMemoryContext()}
 === END ===`.trim();
 }
