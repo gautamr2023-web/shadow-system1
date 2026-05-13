@@ -1248,6 +1248,13 @@ input.fi:focus,select.fi:focus{
     <div class="daily-rating" id="daily-rating"></div>
   </div>
 
+  <!-- FINAL SPRINT BANNER — visible only when ≤30 days to exam -->
+  <div id="sprint-banner" style="display:none;margin-bottom:10px;padding:12px 16px;background:rgba(255,59,92,.08);border:1.5px solid rgba(255,59,92,.3);border-radius:10px">
+    <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:var(--red);margin-bottom:5px">⚠ Final Sprint Mode Active</div>
+    <div id="sprint-banner-days" style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:3px"></div>
+    <div style="font-size:12px;color:var(--text2);line-height:1.6">No new topics. PYQs, mocks, and revision only. Oracle is in sprint mode.</div>
+  </div>
+
   <!-- TODAY SUMMARY (single source of truth) -->
   <div class="dash-stats">
     <div class="dstat"><div class="dstat-val" id="ds-hrs">0h0m</div><div class="dstat-lbl">📚 Study Today</div></div>
@@ -1586,6 +1593,14 @@ input.fi:focus,select.fi:focus{
   <div class="card">
     <div class="card-hdr"><span class="hl">📋 Recent Logs</span></div>
     <div id="wo-log"></div>
+  </div>
+
+  <!-- ── ORACLE WORKOUT COACH ── -->
+  <div class="card" style="margin-bottom:14px">
+    <div class="card-hdr"><span class="hl">🧠 Oracle Training Coach</span></div>
+    <div style="font-size:12px;color:var(--text2);margin-bottom:12px;line-height:1.6">Oracle analyzes your training load, progress, and study schedule to give a specific coaching recommendation.</div>
+    <button id="wo-oracle-btn" onclick="oracleWorkoutCoach()" style="width:100%;background:rgba(0,214,143,.07);border:1px solid rgba(0,214,143,.25);border-radius:var(--radius-sm);color:var(--green);font-family:var(--font);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:10px;cursor:pointer;transition:all .2s">⚡ Oracle: Analyze My Training</button>
+    <div id="wo-oracle-out" style="display:none;margin-top:12px;padding:12px 13px;background:rgba(0,214,143,.05);border:1px solid rgba(0,214,143,.15);border-radius:var(--radius-sm)"></div>
   </div>
 </section>
 
@@ -2584,6 +2599,10 @@ function getTotalXpToday(){
   return sessXP+questXP+woXP+testXP;
 }
 
+function isSprintMode(){
+  return Math.max(0,Math.ceil((new Date(S.examDate||'2026-05-18')-new Date())/86400000))<=30;
+}
+
 // DASHBOARD
 function renderDash(){
   updateHeader();
@@ -2593,6 +2612,16 @@ function renderDash(){
   const totalXpToday=getTotalXpToday();
   el('ds-hrs',Math.floor(tMins/60)+'h'+(tMins%60)+'m');
   el('ds-xp','+'+totalXpToday);el('ds-sess',tSess.length);
+  // Sprint banner
+  const daysLeftNow=Math.max(0,Math.ceil((new Date(S.examDate||'2026-05-18')-new Date())/86400000));
+  const sb=document.getElementById('sprint-banner');
+  const sd=document.getElementById('sprint-banner-days');
+  if(sb){
+    if(daysLeftNow<=30&&daysLeftNow>0){
+      sb.style.display='block';
+      if(sd)sd.textContent=daysLeftNow+' days to '+(S.examName||'JEE Advanced')+' — sprint begins now.';
+    }else{sb.style.display='none';}
+  }
   renderStatusWindow();
   renderQuests();renderGates();renderPenalty();renderTodaysMission();
   renderFeedbackBanner();
@@ -3151,6 +3180,11 @@ function submitRating(save_it){
         updateHeader();
       }
       save();
+      // ── Post-rating confidence nudge for 4★ / 5★ sessions ──
+      if(ratingStars>=4&&sess.sub&&sess.sub!=='other'){
+        const _sub=sess.sub;const _stars=ratingStars;
+        setTimeout(function(){_showPostRatingNudge(_sub,_stars);},600);
+      }
     }
   }
   document.getElementById('rating-modal').classList.remove('show');
@@ -3158,6 +3192,46 @@ function submitRating(save_it){
   pendingRating=null;ratingStars=0;ratingMood='';
   if(focusTab==='log')renderSessionLog();
   if(typeof renderDash==='function')renderDash();
+}
+
+// ── Post-rating topic confidence nudge ──
+function _showPostRatingNudge(sub,stars){
+  var topics=[].concat(S.topics[sub+'11']||[],S.topics[sub+'12']||[]);
+  if(!topics.length)return;
+  var existing=document.getElementById('post-rating-nudge');
+  if(existing)existing.remove();
+  var banner=document.createElement('div');
+  banner.id='post-rating-nudge';
+  banner.style.cssText='position:fixed;bottom:80px;left:50%;transform:translateX(-50%);width:calc(100% - 32px);max-width:420px;z-index:900;background:var(--card2);border:1px solid rgba(0,214,143,.35);border-radius:12px;padding:13px 15px;box-shadow:0 4px 24px rgba(0,0,0,.35)';
+  var boost=stars===5?5:3;
+  var opts=topics.map(function(t){return '<option value="'+escHtml(t.name)+'">'+escHtml(t.name)+' ('+t.conf+'%)</option>';}).join('');
+  banner.innerHTML='<div style="font-size:10px;color:var(--green);text-transform:uppercase;letter-spacing:.8px;font-weight:700;margin-bottom:9px">'+stars+'⭐ Great session — did a topic improve?</div>'
+    +'<div style="display:flex;gap:6px;align-items:center">'
+    +'<select id="prnudge-topic" style="flex:1;background:var(--bg3);border:1px solid var(--border2);border-radius:5px;color:var(--text);font-family:var(--font);font-size:12px;padding:5px 7px;outline:none">'+opts+'</select>'
+    +'<button onclick="_applyPostRatingNudge('+boost+')" style="background:rgba(0,214,143,.12);border:1px solid rgba(0,214,143,.4);border-radius:5px;color:var(--green);font-size:12px;font-weight:700;padding:6px 12px;cursor:pointer;font-family:var(--font);white-space:nowrap">+'+boost+'%</button>'
+    +'<button onclick="document.getElementById(\'post-rating-nudge\').remove()" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:18px;line-height:1;padding:0 4px">✕</button>'
+    +'</div>';
+  document.body.appendChild(banner);
+  setTimeout(function(){var b=document.getElementById('post-rating-nudge');if(b)b.remove();},12000);
+}
+function _applyPostRatingNudge(amount){
+  var sel=document.getElementById('prnudge-topic');
+  if(!sel)return;
+  var name=sel.value;
+  var found=false;
+  ['physics','chemistry','maths'].forEach(function(sub){
+    ['11','12'].forEach(function(yr){
+      var arr=S.topics[sub+yr]||[];
+      var t=arr.find(function(x){return x.name===name;});
+      if(t){t.conf=Math.min(100,t.conf+amount);found=true;}
+    });
+  });
+  if(found){
+    save();
+    showToast(name+' confidence +'+amount+'% ⚡');
+    var b=document.getElementById('post-rating-nudge');
+    if(b)b.remove();
+  }
 }
 
 // ── TAB TITLE TIMER ──
@@ -3736,7 +3810,7 @@ function showSecModal(sessInfo){
     _upgradeSecAdviceAI(mins,sub,taskType,manaAfter,advice,suggest);
   }
 
-  // ── Learn This — rich 3-category item ──
+  // ── Learn This — static fallback, Oracle upgrade if available ──
   const item=getLearnItem();
   const micEl=document.getElementById('sec-micro');
   if(micEl){
@@ -3755,6 +3829,10 @@ function showSecModal(sessInfo){
       micEl.innerHTML=
         `<div class="sec-learn-tag">${item.tag}</div>`+
         `<div class="sec-micro-def" style="margin-top:4px">${item.fact}</div>`;
+    }
+    // Oracle upgrade — replace with subject-specific JEE fact if keys available
+    if(_oracleKeys&&_oracleKeys.length>0&&sub&&sub!=='other'){
+      _upgradeLearnThisAI(sub);
     }
   }
 
@@ -3790,6 +3868,29 @@ NEXT: [specific next session suggestion, max 18 words]`;
     const advEl3=document.getElementById('sec-advice');
     if(advEl3)advEl3.textContent=staticAdvice;
   }
+}
+
+// ── Oracle-powered "Learn This" — subject-specific JEE fact on session end ──
+async function _upgradeLearnThisAI(sub){
+  const micEl=document.getElementById('sec-micro');
+  if(!micEl)return;
+  const subLabel={physics:'Physics',chemistry:'Chemistry',maths:'Maths'}[sub]||sub;
+  const allT=[].concat(S.topics[sub+'11']||[],S.topics[sub+'12']||[]);
+  const weakT=allT.filter(function(t){return t.conf>0&&t.conf<50;}).sort(function(a,b){return a.conf-b.conf;}).slice(0,2);
+  const focusHint=weakT.length?' Focus on '+weakT.map(function(t){return t.name;}).join(' or ')+' if possible.':'';
+  const prompt='JEE student just studied '+subLabel+'.'+focusHint+' Give ONE specific JEE concept, formula, or trick they might overlook. EXACTLY 2 lines:\nCONCEPT: [topic name, 3-6 words]\nFACT: [the insight, max 28 words, be precise]\nNo preamble. No extra text.';
+  try{
+    const text=await oracleCall([{role:'user',content:prompt}],null,120);
+    if(!document.getElementById('sec-modal').classList.contains('show'))return;
+    const cMatch=text.match(/CONCEPT:\s*(.+)/i);
+    const fMatch=text.match(/FACT:\s*(.+)/i);
+    const micEl2=document.getElementById('sec-micro');
+    if(micEl2&&cMatch&&fMatch){
+      micEl2.innerHTML='<div class="sec-learn-tag" style="background:rgba(0,180,216,.12);color:var(--mana);border-color:rgba(0,180,216,.3)">⚡ Oracle · '+subLabel+'</div>'
+        +'<div class="sec-micro-word">'+escHtml(cMatch[1].trim())+'</div>'
+        +'<div class="sec-micro-def">'+escHtml(fMatch[1].trim())+'</div>';
+    }
+  }catch(e){/* silently keep static fallback */}
 }
 
 function selBreakLen(len,btn){
@@ -7097,7 +7198,8 @@ async function runAdvisor(){
   if(btn){btn.disabled=true;btn.textContent='⏳ Oracle analyzing...';}
   if(out){out.style.display='block';out.innerHTML='<div class="oracle-typing"><span></span><span></span><span></span></div>';}
   const context=buildFullContext();
-  const prompt=`You are Oracle, the AI strategy advisor for a JEE Advanced student using Shadow System.\n\n${context}\n\nProvide sharp, data-driven coaching. EXACT structure:\n\n**OVERALL ASSESSMENT**\n2-3 sentences on current trajectory. Be honest.\n\n**TOP 3 PRIORITIES**\n1. [Specific action using real data]\n2. [Specific action]\n3. [Specific action]\n\n**THE WARNING**\nOne specific risk. Be direct.\n\n**POWER MOVE**\nHighest-leverage action for next 48 hours.\n\nUnder 260 words. Use their actual numbers.`;
+  const sprintNote=isSprintMode()?'\n\n⚠ FINAL SPRINT MODE: Under 30 days to exam. Recommendations must focus ONLY on PYQs, mock tests, and revision of weak topics. No new topic introduction. Prioritize exam strategy and time management.':'';
+  const prompt=`You are Oracle, the AI strategy advisor for a JEE Advanced student using Shadow System.\n\n${context}${sprintNote}\n\nProvide sharp, data-driven coaching. EXACT structure:\n\n**OVERALL ASSESSMENT**\n2-3 sentences on current trajectory. Be honest.\n\n**TOP 3 PRIORITIES**\n1. [Specific action using real data]\n2. [Specific action]\n3. [Specific action]\n\n**THE WARNING**\nOne specific risk. Be direct.\n\n**POWER MOVE**\nHighest-leverage action for next 48 hours.\n\nUnder 260 words. Use their actual numbers.`;
   try{
     const text=await oracleCall([{role:'user',content:prompt}],null,1200);
     if(out)out.innerHTML=`<div class="oracle-section-chip">⚡ Oracle Report · ${new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})}</div>${formatOracleMD(text)}`;
@@ -7220,13 +7322,49 @@ async function generateDailyPlan(){
   const goalH=S.goals?.studyHours||6;
   const dow=new Date().toLocaleDateString('en-IN',{weekday:'long'});
   const timeStr=new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
-  const prompt=`You are Oracle, AI study planner. Current time: ${timeStr} (${dow}).\n\n${context}\n\nGenerate optimized plan for rest of TODAY. Target: ${goalH} hours.\n\nFormat:\n**BATTLE PLAN — ${dow.toUpperCase()}**\n\n**Morning Block** [time range]\n- [Subject]: [topic] — [specific task] — [duration]\n\n**Afternoon Block** [time range]\n- [Subject]: [topic] — [specific task] — [duration]\n\n**Evening Block** [time range]\n- [Subject]: [topic] — [specific task] — [duration]\n\n**Checkpoints**\n- [ ] [goal 1]\n- [ ] [goal 2]\n- [ ] [goal 3]\n\n**Oracle's Note**\n[1-2 sentences]\n\nRules: Only blocks from ${timeStr} onwards. Prioritise weak topics. Specific tasks (e.g. "Solve 10 Kinematics PYQs", not "study physics"). Total ≈ ${goalH}h. Respect user's daily goal of ${goalH}h.`;
+  const sprintRule=isSprintMode()?'\n⚠ SPRINT MODE: Only PYQs, mock tests, and weak topic revision. No new chapters.':'';
+  const prompt=`You are Oracle, AI study planner. Current time: ${timeStr} (${dow}).\n\n${context}${sprintRule}\n\nGenerate optimized plan for rest of TODAY. Target: ${goalH} hours.\n\nFormat:\n**BATTLE PLAN — ${dow.toUpperCase()}**\n\n**Morning Block** [time range]\n- [Subject]: [topic] — [specific task] — [duration]\n\n**Afternoon Block** [time range]\n- [Subject]: [topic] — [specific task] — [duration]\n\n**Evening Block** [time range]\n- [Subject]: [topic] — [specific task] — [duration]\n\n**Checkpoints**\n- [ ] [goal 1]\n- [ ] [goal 2]\n- [ ] [goal 3]\n\n**Oracle's Note**\n[1-2 sentences]\n\nRules: Only blocks from ${timeStr} onwards. Prioritise weak topics. Specific tasks (e.g. "Solve 10 Kinematics PYQs", not "study physics"). Total ≈ ${goalH}h. Respect user's daily goal of ${goalH}h.`;
   try{
     const text=await oracleCall([{role:'user',content:prompt}],null,1200);
     if(out)out.innerHTML=`<div class="oracle-section-chip">📅 ${dow} · ${timeStr}</div>${formatOracleMD(text)}`;
     addToMemory(`Plan generated: ${today()}, ${dow}, ${goalH}h goal`,true);
   }catch(e){if(out)out.innerHTML=`<div style="color:var(--red);font-size:13px;padding:6px 0">⚠ ${e.message||'Oracle offline.'}</div>`;}
   oracleStreaming=false;if(btn){btn.disabled=false;btn.textContent='📅 Generate Today\'s Battle Plan';}
+}
+async function oracleWorkoutCoach(){
+  if(!_oracleKeys||!_oracleKeys.length){showToast('Add an Oracle API key first → Oracle → Keys');return;}
+  var btn=document.getElementById('wo-oracle-btn');
+  var out=document.getElementById('wo-oracle-out');
+  if(btn){btn.disabled=true;btn.textContent='⏳ Oracle thinking...';}
+  if(out){out.style.display='block';out.innerHTML='<span style="opacity:.45;font-size:11px;font-style:italic">Analyzing your training data...</span>';}
+  var streak=S.workout&&S.workout.woStreak||0;
+  var strength=S.workout&&S.workout.strengthStat||0;
+  var allDays=['monday','tuesday','wednesday','thursday','friday','saturday','sunday'];
+  var planLines=allDays.map(function(d){
+    var p=S.workout&&S.workout.plan&&S.workout.plan[d];
+    if(!p||!p.active)return d+': Rest';
+    return d+': '+p.name+' ('+( p.exercises&&p.exercises.length||0)+' exercises)';
+  }).join('\n');
+  var recentLogs=[].concat(S.workout&&S.workout.logs||[]).sort(function(a,b){return new Date(b.date)-new Date(a.date);}).slice(0,7);
+  var logLines=recentLogs.length?recentLogs.map(function(l){
+    var p=S.workout&&S.workout.plan&&S.workout.plan[l.day];
+    var tot=p&&p.exercises&&p.exercises.length||0;
+    var done=Object.values(l.comp||{}).filter(Boolean).length;
+    return l.date+': '+(p&&p.name||l.day)+' — '+done+'/'+tot+' done';
+  }).join('\n'):'No workout logs yet';
+  var last7=[];for(var i=6;i>=0;i--){var dd=new Date();dd.setDate(dd.getDate()-i);last7.push(dd.toISOString().split('T')[0]);}
+  var studyMins=S.sessions.filter(function(s){return last7.indexOf(s.date)>-1&&!s.paused;}).reduce(function(a,s){return a+s.min;},0);
+  var daysLeft=Math.max(0,Math.ceil((new Date(S.examDate||'2026-05-18')-new Date())/86400000));
+  var prompt='JEE student training profile:\nWorkout streak: '+streak+' days | Strength stat: '+strength+'/100\nDays to exam: '+daysLeft+'\nStudy load this week: '+Math.round(studyMins/60*10)/10+'h\n\nWeekly plan:\n'+planLines+'\n\nRecent logs:\n'+logLines+'\n\nGive a focused training coach response with 3 things:\n1. PROGRESS: One specific exercise/group to increase this week (add reps, sets, or difficulty)\n2. WATCH: One risk to monitor (overtraining, imbalance, or neglect)\n3. ADJUSTMENT: One change for next week given their study load and days to exam\n\nBe specific, use their actual data. Under 120 words total. No fluff.';
+  try{
+    var text=await oracleCall([{role:'user',content:prompt}],null,300);
+    if(out){
+      out.innerHTML='<div style="font-size:9px;color:var(--green);text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-bottom:8px">⚡ Oracle Training Report</div>'+formatOracleMD(text);
+    }
+  }catch(e){
+    if(out)out.innerHTML='<span style="color:var(--red);font-size:12px">⚠ '+(e.message||'Oracle offline')+'</span>';
+  }
+  if(btn){btn.disabled=false;btn.textContent='⚡ Oracle: Analyze My Training';}
 }
 function togglePlanCheck(el){
   if(el.classList.contains('o-checked')){
