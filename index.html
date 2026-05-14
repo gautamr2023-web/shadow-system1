@@ -1757,9 +1757,56 @@ input.fi:focus,select.fi:focus{
           <option value="other">Other</option>
         </select>
       </div>
+      <div class="fg full"><label class="fl">Chapters / Topics <span style="color:var(--text3);font-weight:400;text-transform:none;letter-spacing:0">(helps Oracle make a targeted plan)</span></label>
+        <textarea class="fi" id="ue-chapters" rows="2" style="resize:vertical" placeholder="e.g. Physics: Gravitation, Waves  |  Maths: Integral Calculus, Matrices  |  Chem: Organic - Aldehydes"></textarea>
+      </div>
     </div>
     <button class="btn btn-primary btn-sm" onclick="addUpcomingExam()" style="margin-bottom:14px">+ Add Exam</button>
     <div id="upcoming-exams-list"></div>
+  </div>
+
+  <!-- Study Resources — books, coaching, PYQs, school chapters -->
+  <div class="card">
+    <div class="card-hdr"><span class="hl">📚 Study Resources</span></div>
+    <div style="font-size:12px;color:var(--text2);margin-bottom:12px;line-height:1.6">Tell Oracle what resources you're using and how far you've completed them. This directly improves battle plan quality.</div>
+
+    <!-- School Chapters -->
+    <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--text3);margin-bottom:8px">Current School Chapters</div>
+    <div class="form-grid" style="margin-bottom:14px">
+      <div class="fg"><label class="fl">Physics</label><input type="text" class="fi" id="sr-school-phy" placeholder="e.g. Electromagnetic Induction"></div>
+      <div class="fg"><label class="fl">Chemistry</label><input type="text" class="fi" id="sr-school-che" placeholder="e.g. Coordination Compounds"></div>
+      <div class="fg full"><label class="fl">Maths</label><input type="text" class="fi" id="sr-school-mat" placeholder="e.g. Differential Equations"></div>
+    </div>
+    <button class="btn btn-ghost btn-sm" onclick="saveSchoolChapters()" style="margin-bottom:16px">Save School Chapters</button>
+
+    <!-- Add Resource -->
+    <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--text3);margin-bottom:8px">Add Resource</div>
+    <div class="form-grid" style="margin-bottom:10px">
+      <div class="fg full"><label class="fl">Type</label>
+        <select class="fi" id="sr-type">
+          <option value="refBook">Reference Book</option>
+          <option value="coaching">Coaching Material</option>
+          <option value="pyqs">PYQs / Test Series</option>
+        </select>
+      </div>
+      <div class="fg"><label class="fl">Subject</label>
+        <select class="fi" id="sr-subject">
+          <option value="physics">Physics</option>
+          <option value="chemistry">Chemistry</option>
+          <option value="maths">Maths</option>
+          <option value="all">All Subjects</option>
+        </select>
+      </div>
+      <div class="fg"><label class="fl">Name</label><input type="text" class="fi" id="sr-name" placeholder="e.g. HC Verma, ALLEN Module, Marks App"></div>
+      <div class="fg full"><label class="fl">% Completed</label>
+        <div style="display:flex;gap:10px;align-items:center">
+          <input type="range" id="sr-pct" min="0" max="100" value="0" style="flex:1;accent-color:var(--accent)" oninput="document.getElementById('sr-pct-val').textContent=this.value+'%'">
+          <span id="sr-pct-val" style="font-size:13px;font-weight:700;color:var(--accent);min-width:36px">0%</span>
+        </div>
+      </div>
+    </div>
+    <button class="btn btn-primary btn-sm" onclick="addStudyResource()" style="margin-bottom:14px">+ Add Resource</button>
+    <div id="study-resources-list"></div>
   </div>
 
   <!-- Class / Starting point -->
@@ -2275,8 +2322,14 @@ const DEF={
   classYear:'12',
   goals:{studyHours:6,questStudyHours:2},
   customQuests:null,
-  upcomingExams:[],       // [{id,name,date,type,subject?}] — multi-exam tracking
-  pinnedPlan:{},          // {date: [{text,done,type}]} — Oracle plan pinned to dashboard
+  upcomingExams:[],
+  pinnedPlan:{},
+  studyResources:{
+    refBooks:[],
+    coaching:[],
+    pyqs:[],
+    schoolChapters:{physics:'',chemistry:'',maths:''}
+  },
   // ── NEW SYSTEM KEYS (v4) ──
   dailyStatus:{},        // {date: 'valid'|'failed'|'zero'}
   consecutiveFailures:0,
@@ -2687,14 +2740,16 @@ function addUpcomingExam(){
   const name=(document.getElementById('ue-name').value||'').trim();
   const date=document.getElementById('ue-date').value;
   const type=document.getElementById('ue-type').value;
+  const chapters=(document.getElementById('ue-chapters')&&document.getElementById('ue-chapters').value||'').trim();
   if(!name||!date){showToast('Enter exam name and date');return;}
   if(new Date(date)<new Date(today())){showToast('Date is in the past');return;}
   if(!S.upcomingExams)S.upcomingExams=[];
-  S.upcomingExams.push({id:Date.now(),name,date,type});
+  S.upcomingExams.push({id:Date.now(),name,date,type,chapters});
   S.upcomingExams.sort(function(a,b){return new Date(a.date)-new Date(b.date);});
   save();
   document.getElementById('ue-name').value='';
   document.getElementById('ue-date').value='';
+  const ce=document.getElementById('ue-chapters');if(ce)ce.value='';
   renderUpcomingExamsList();
   renderUpcomingExamsDash();
   showToast('Exam added: '+name+' ⚡');
@@ -3023,10 +3078,11 @@ function renderTodaysMission(){
     const done=pinned.items.filter(function(i){return i.done;}).length;
     const total=pinned.items.length;
     const allPinDone=done===total;
-    let itemsH=pinned.items.map(function(item,idx){
+    var itemsH=pinned.items.map(function(item,idx){
       return '<div style="display:flex;align-items:flex-start;gap:9px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.04)">'
         +'<div onclick="togglePinnedItem('+idx+')" style="width:16px;height:16px;border:1.5px solid '+(item.done?'var(--green)':'var(--border2)')+';border-radius:3px;flex-shrink:0;cursor:pointer;background:'+(item.done?'var(--green)':'transparent')+';display:flex;align-items:center;justify-content:center;margin-top:2px;font-size:10px;color:#fff;transition:all .15s">'+(item.done?'✓':'')+'</div>'
-        +'<span style="font-size:12px;color:'+(item.done?'var(--text3)':'var(--text)')+';'+(item.done?'text-decoration:line-through;opacity:.5;':'')+'line-height:1.5">'+escHtml(item.text)+'</span>'
+        +'<span ondblclick="editPinnedItem('+idx+',this)" style="font-size:12px;color:'+(item.done?'var(--text3)':'var(--text)')+';'+(item.done?'text-decoration:line-through;opacity:.5;':'')+'line-height:1.5;flex:1;cursor:text" title="Double-tap to edit">'+escHtml(item.text)+'</span>'
+        +'<button onclick="deletePinnedItem('+idx+')" style="background:none;border:none;color:rgba(255,255,255,.2);cursor:pointer;font-size:12px;padding:0 2px;flex-shrink:0">✕</button>'
         +'</div>';
     }).join('');
     el.innerHTML+='<div class="card" style="margin-top:10px;'+(allPinDone?'border-color:rgba(0,214,143,.3);':'border-color:rgba(0,180,216,.2);')+'">'
@@ -3036,6 +3092,10 @@ function renderTodaysMission(){
       +'<button onclick="clearPinnedPlan()" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:11px;padding:0 4px;margin-left:6px">clear</button>'
       +'</div>'
       +itemsH
+      +'<div style="margin-top:8px;display:flex;gap:6px">'
+      +'<input type="text" id="pin-add-input" class="fi" style="flex:1;font-size:12px;padding:6px 9px" placeholder="Add task...">'
+      +'<button onclick="addPinnedItem()" style="background:rgba(0,180,216,.12);border:1px solid rgba(0,180,216,.3);border-radius:5px;color:var(--mana);font-size:11px;font-weight:700;padding:6px 12px;cursor:pointer;font-family:var(--font);white-space:nowrap">+ Add</button>'
+      +'</div>'
       +'</div>';
   }
 }
@@ -3620,16 +3680,20 @@ function autoLog(mins,sub,mode,sid){
   const sessObj={
     id:sid||Date.now(),
     date:t,
-    // Primary fields
-    min:mins, duration:mins,   // duration is canonical alias for min
-    sub,      subject:sub,     // subject is canonical alias for sub
+    min:mins, duration:mins,
+    sub,      subject:sub,
     mode, eff,
     xp:xp+starterBonus,
-    taskType:_sessionTaskType||'practice',  // study type for this session
+    taskType:_sessionTaskType||'practice',
     time:new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'}),
     paused:paused||undefined,
-    rating:null,               // populated by submitRating (alias for stars)
+    rating:null,
+    // Resource context — captured from check-in modal
+    resourceType:_sessionResource.type||undefined,
+    chapter:_sessionResource.chapter||undefined,
   };
+  // Reset resource after capturing
+  _sessionResource={type:'',chapter:''};
   S.sessions.push(sessObj);
   if(!paused){
     S.hunter.xp+=xp+starterBonus;
@@ -3734,6 +3798,13 @@ REASON: [why now, max 8 words]`;
 // ══════════════════════════════════════════════
 let _manaEnergy='normal',_manaTask='practice';
 let _manaXPMod=1.0;
+let _sessionResource={type:'',chapter:''}; // captures resource picked in modal
+
+function pickResource(type,btn){
+  _sessionResource.type=type;
+  document.querySelectorAll('#resource-type-pick .pick-btn,#next-resource-pick .pick-btn').forEach(function(b){b.classList.remove('sel');});
+  if(btn)btn.classList.add('sel');
+}
 
 function showManaModal(){
   _manaEnergy='normal';_manaTask='practice';_manaXPMod=1.0;
@@ -3778,6 +3849,11 @@ function confirmManaModal(){
 
   // Set per-session task type
   _sessionTaskType=task;
+
+  // Capture resource + chapter from modal
+  const chInput=document.getElementById('session-chapter-input');
+  _sessionResource.chapter=(chInput&&chInput.value.trim())||'';
+  if(chInput)chInput.value=''; // reset for next session
 
   S.dailyMana[t]={energy:e,task,mod:_manaXPMod};
   save();
@@ -4189,6 +4265,12 @@ function confirmNextSessModal(){
 
   // ── TASK TYPE + XP MOD ──
   _sessionTaskType=_nextSessTask;
+
+  // Capture resource + chapter from next session modal
+  const nextChInput=document.getElementById('next-chapter-input');
+  _sessionResource.chapter=(nextChInput&&nextChInput.value.trim())||'';
+  if(nextChInput)nextChInput.value='';
+
   const t=today();
   const dm=S.dailyMana[t]||{};
   const energy=dm.energy||'normal';
@@ -5973,6 +6055,12 @@ function renderSettings(){
   const sc=document.getElementById('s-class');if(sc)sc.value=S.classYear||'12';
   if(!S.upcomingExams)S.upcomingExams=[];
   renderUpcomingExamsList();
+  _initSR();
+  const srSchool=S.studyResources.schoolChapters||{};
+  const spEl=document.getElementById('sr-school-phy');if(spEl)spEl.value=srSchool.physics||'';
+  const scEl=document.getElementById('sr-school-che');if(scEl)scEl.value=srSchool.chemistry||'';
+  const smEl=document.getElementById('sr-school-mat');if(smEl)smEl.value=srSchool.maths||'';
+  renderStudyResourcesList();
   const gsh=document.getElementById('s-goal-study');if(gsh)gsh.value=S.goals&&S.goals.studyHours?S.goals.studyHours:6;
   const gqh=document.getElementById('s-goal-quest');if(gqh)gqh.value=S.goals&&S.goals.questStudyHours?S.goals.questStudyHours:2;
   const hn=document.getElementById('s-hunter-name');if(hn)hn.value=S.hunter.name||'Gautam';
@@ -7353,6 +7441,69 @@ function checkPatternStaleness(){
     if(status)status.textContent='Last extraction: '+daysSince+(daysSince===1?' day':' days')+' ago ('+last+')';
   }
 }
+// ── Study Resources CRUD ──
+function _initSR(){if(!S.studyResources)S.studyResources={refBooks:[],coaching:[],pyqs:[],schoolChapters:{physics:'',chemistry:'',maths:''}};}
+function addStudyResource(){
+  _initSR();
+  var type=document.getElementById('sr-type').value;
+  var subject=document.getElementById('sr-subject').value;
+  var name=(document.getElementById('sr-name').value||'').trim();
+  var pct=parseInt(document.getElementById('sr-pct').value)||0;
+  if(!name){showToast('Enter resource name');return;}
+  var entry={id:Date.now(),subject:subject,name:name,pct:pct};
+  if(type==='refBook')S.studyResources.refBooks.push(entry);
+  else if(type==='coaching')S.studyResources.coaching.push(entry);
+  else S.studyResources.pyqs.push(entry);
+  save();
+  document.getElementById('sr-name').value='';
+  document.getElementById('sr-pct').value='0';
+  var pv=document.getElementById('sr-pct-val');if(pv)pv.textContent='0%';
+  renderStudyResourcesList();showToast(name+' added ⚡');
+}
+function removeStudyResource(type,id){
+  _initSR();
+  if(type==='refBook')S.studyResources.refBooks=S.studyResources.refBooks.filter(function(r){return r.id!==id;});
+  else if(type==='coaching')S.studyResources.coaching=S.studyResources.coaching.filter(function(r){return r.id!==id;});
+  else S.studyResources.pyqs=S.studyResources.pyqs.filter(function(r){return r.id!==id;});
+  save();renderStudyResourcesList();
+}
+function updateResourcePct(type,id,pct){
+  _initSR();
+  var arr=type==='refBook'?S.studyResources.refBooks:type==='coaching'?S.studyResources.coaching:S.studyResources.pyqs;
+  var r=arr.find(function(x){return x.id===id;});
+  if(r){r.pct=parseInt(pct)||0;save();}
+}
+function saveSchoolChapters(){
+  _initSR();
+  S.studyResources.schoolChapters={
+    physics:(document.getElementById('sr-school-phy').value||'').trim(),
+    chemistry:(document.getElementById('sr-school-che').value||'').trim(),
+    maths:(document.getElementById('sr-school-mat').value||'').trim()
+  };
+  save();showToast('School chapters saved ✓');
+}
+function renderStudyResourcesList(){
+  var el2=document.getElementById('study-resources-list');if(!el2)return;
+  _initSR();
+  var sr=S.studyResources;
+  var all=[];
+  (sr.refBooks||[]).forEach(function(r){all.push(Object.assign({type:'refBook',label:'📚 Ref Book',col:'var(--accent)'},r));});
+  (sr.coaching||[]).forEach(function(r){all.push(Object.assign({type:'coaching',label:'🎓 Coaching',col:'var(--mana)'},r));});
+  (sr.pyqs||[]).forEach(function(r){all.push(Object.assign({type:'pyqs',label:'📋 PYQs',col:'var(--gold)'},r));});
+  if(!all.length){el2.innerHTML='<div style="font-size:12px;color:var(--text3);padding:6px 0">No resources added yet.</div>';return;}
+  el2.innerHTML=all.map(function(r){
+    return '<div style="display:flex;align-items:center;gap:8px;padding:9px 0;border-bottom:1px solid var(--border);flex-wrap:wrap">'
+      +'<div style="flex:1;min-width:120px"><span style="font-size:10px;color:'+r.col+';font-weight:700">'+r.label+'</span> '
+      +'<span style="font-size:13px;font-weight:700;color:var(--text)">'+escHtml(r.name)+'</span>'
+      +(r.subject&&r.subject!=='all'?' <span style="font-size:10px;color:var(--text3)">('+r.subject+')</span>':'')+'</div>'
+      +'<input type="range" min="0" max="100" value="'+r.pct+'" style="width:80px;accent-color:'+r.col+'" '
+      +'onchange="updateResourcePct(\''+r.type+'\','+r.id+',this.value)" '
+      +'oninput="this.nextElementSibling.textContent=this.value+\'%\'">'
+      +'<span style="font-size:12px;font-weight:700;color:'+r.col+';min-width:36px">'+r.pct+'%</span>'
+      +'<button onclick="removeStudyResource(\''+r.type+'\','+r.id+')" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:14px;padding:0 4px">✕</button>'
+      +'</div>';
+  }).join('');
+}
 function buildFullContext(){
   const t=today();
   const name=S.hunter?.name||'Hunter';
@@ -7414,12 +7565,37 @@ function buildFullContext(){
   // Upcoming exams for Oracle context
   const now2=new Date();
   const futureExams=(S.upcomingExams||[]).filter(function(e){return new Date(e.date)>=now2;})
-    .map(function(e){var d=Math.max(0,Math.ceil((new Date(e.date)-now2)/86400000));return e.name+' in '+d+' days ('+e.date+')';});
+    .map(function(e){
+      var d=Math.max(0,Math.ceil((new Date(e.date)-now2)/86400000));
+      var line=e.name+' in '+d+' days ('+e.date+')';
+      if(e.chapters)line+=' — Topics: '+e.chapters;
+      return line;
+    });
   const examLine=futureExams.length?'\nUpcoming exams: '+futureExams.join(' | '):'';
+
+  // Study resources context
+  _initSR();
+  const sr=S.studyResources;
+  const srLines=[];
+  (sr.refBooks||[]).forEach(function(r){srLines.push('Ref Book: '+r.name+(r.subject&&r.subject!=='all'?' ('+r.subject+')':'')+' — '+r.pct+'% complete');});
+  (sr.coaching||[]).forEach(function(r){srLines.push('Coaching: '+r.name+(r.subject&&r.subject!=='all'?' ('+r.subject+')':'')+' — '+r.pct+'% complete');});
+  (sr.pyqs||[]).forEach(function(r){srLines.push('PYQs: '+r.name+' — '+r.pct+'% complete');});
+  const sc2=sr.schoolChapters||{};
+  if(sc2.physics||sc2.chemistry||sc2.maths){
+    srLines.push('Current school chapters — Physics: '+(sc2.physics||'?')+' | Chemistry: '+(sc2.chemistry||'?')+' | Maths: '+(sc2.maths||'?'));
+  }
+
+  // Recent session resource context (last 5 sessions with chapter data)
+  const recentChapters=S.sessions.filter(function(s){return !s.paused&&s.chapter;}).slice(-5)
+    .map(function(s){return s.date+' '+s.sub+' ('+s.resourceType+') — '+s.chapter;});
 
   return `=== SHADOW SYSTEM — FULL HUNTER PROFILE ===
 Hunter: ${name} | Rank: ${rank} | XP: ${xp} | Streak: ${streak}d | Mana: ${mana}/100
 Class: ${S.classYear||'12'} | Exam: ${S.examName||'JEE Advanced'} in ${daysLeft} DAYS${examLine}
+
+=== STUDY RESOURCES ===
+${srLines.length?srLines.join('\n'):'No resources configured yet'}
+${recentChapters.length?'\nRecently studied:\n'+recentChapters.join('\n'):''}
 
 === USER SETTINGS ===
 Daily study goal: ${goalH}h | Quest study threshold: ${questGoalH}h
@@ -7595,6 +7771,39 @@ function renderPlannerContext(){
     ${weak.length?`<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border)"><div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.7px;margin-bottom:6px">Oracle will prioritise these</div><div style="display:flex;gap:6px;flex-wrap:wrap">${weak.map(t=>`<span style="background:rgba(255,59,92,.08);border:1px solid rgba(255,59,92,.2);border-radius:5px;padding:2px 8px;font-size:11px;color:var(--red)">${t.name} ${t.conf}%</span>`).join('')}</div></div>`:''}
   </div>`;
 }
+function editPinnedItem(idx,el){
+  var t=today();
+  if(!S.pinnedPlan||!S.pinnedPlan[t]||!S.pinnedPlan[t].items)return;
+  var item=S.pinnedPlan[t].items[idx];if(!item)return;
+  var cur=item.text;
+  var input=document.createElement('input');
+  input.type='text';input.value=cur;
+  input.style.cssText='width:100%;background:var(--bg3);border:1px solid var(--accent);border-radius:4px;color:var(--text);font-family:var(--font);font-size:12px;padding:3px 7px;outline:none';
+  el.replaceWith(input);input.focus();input.select();
+  function save_(){
+    var v=input.value.trim();
+    if(v){item.text=v;save();}
+    renderTodaysMission();
+  }
+  input.addEventListener('blur',save_);
+  input.addEventListener('keydown',function(e){if(e.key==='Enter')input.blur();if(e.key==='Escape'){item.text=cur;renderTodaysMission();}});
+}
+function deletePinnedItem(idx){
+  var t=today();
+  if(!S.pinnedPlan||!S.pinnedPlan[t])return;
+  S.pinnedPlan[t].items.splice(idx,1);
+  save();renderTodaysMission();
+}
+function addPinnedItem(){
+  var t=today();
+  var inp=document.getElementById('pin-add-input');
+  var text=inp&&inp.value.trim();
+  if(!text)return;
+  if(!S.pinnedPlan)S.pinnedPlan={};
+  if(!S.pinnedPlan[t])S.pinnedPlan[t]={date:t,items:[]};
+  S.pinnedPlan[t].items.push({text:text,done:false,type:'task'});
+  save();renderTodaysMission();
+}
 function togglePinnedItem(idx){
   const t=today();
   if(!S.pinnedPlan||!S.pinnedPlan[t]||!S.pinnedPlan[t].items)return;
@@ -7764,6 +7973,16 @@ function escHtml(text){return String(text).replace(/&/g,'&amp;').replace(/</g,'&
       <button class="pick-btn" onclick="pickTask('revision',this)">🔄 Revision</button>
       <button class="pick-btn" onclick="pickTask('theory',this)">📖 Theory</button>
     </div>
+    <div class="pick-label">3. Resource Type</div>
+    <div class="pick-row" id="resource-type-pick" style="flex-wrap:wrap">
+      <button class="pick-btn" onclick="pickResource('refBook',this)">📚 Ref Book</button>
+      <button class="pick-btn" onclick="pickResource('coaching',this)">🎓 Coaching</button>
+      <button class="pick-btn" onclick="pickResource('pyqs',this)">📋 PYQs</button>
+      <button class="pick-btn" onclick="pickResource('notes',this)">📝 Notes</button>
+      <button class="pick-btn" onclick="pickResource('practice',this)">🔢 Practice</button>
+    </div>
+    <div class="pick-label">4. Chapter / Topic</div>
+    <input type="text" id="session-chapter-input" class="fi" placeholder="e.g. Rotational Motion, Integration, Organic - Amines" style="margin-bottom:10px;font-size:13px">
     <div id="mana-effect-note" style="font-size:11px;color:var(--text2);min-height:18px;margin-bottom:14px;line-height:1.5"></div>
     <button class="btn btn-primary" style="width:100%" onclick="confirmManaModal()">Start Session ⚡</button>
   </div>
@@ -7794,6 +8013,16 @@ function escHtml(text){return String(text).replace(/&/g,'&amp;').replace(/</g,'&
       <button class="pick-btn" onclick="pickNextTask('revision',this)">🔄 Revision</button>
       <button class="pick-btn" onclick="pickNextTask('theory',this)">📖 Theory</button>
     </div>
+    <div class="pick-label">Resource Type</div>
+    <div class="pick-row" id="next-resource-pick" style="flex-wrap:wrap">
+      <button class="pick-btn" onclick="pickResource('refBook',this)">📚 Ref Book</button>
+      <button class="pick-btn" onclick="pickResource('coaching',this)">🎓 Coaching</button>
+      <button class="pick-btn" onclick="pickResource('pyqs',this)">📋 PYQs</button>
+      <button class="pick-btn" onclick="pickResource('notes',this)">📝 Notes</button>
+      <button class="pick-btn" onclick="pickResource('practice',this)">🔢 Practice</button>
+    </div>
+    <div class="pick-label">Chapter / Topic</div>
+    <input type="text" id="next-chapter-input" class="fi" placeholder="e.g. Rotational Motion, Integration" style="margin-bottom:10px;font-size:13px">
     <div id="next-sess-effect-note" style="font-size:11px;min-height:18px;margin-bottom:14px;line-height:1.5"></div>
     <button class="btn btn-primary" style="width:100%" onclick="confirmNextSessModal()">Start Session ⚡</button>
   </div>
