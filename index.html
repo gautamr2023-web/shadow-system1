@@ -2184,6 +2184,43 @@ const RANK_REQS=[
   {from:'A',to:'S',xp:7200,streak:30},
 ];
 const RANK_ORDER=['E','D','C','B','A','S','SS','SSS'];
+
+// ── XP ceiling: cap XP to current rank's max ──
+function capXPToRank(){
+  const rk=S.hunter.rank||'E';
+  const rankData=RANKS.find(r=>r.r===rk)||RANKS[0];
+  const ceiling=rankData.max-1;
+  if((S.hunter.xp||0)>ceiling)S.hunter.xp=ceiling;
+}
+
+// ── XP decay: 200 XP per inactive day, applied on load ──
+function applyXPDecay(){
+  const allSess=(S.sessions||[]).filter(function(s){return !s.paused;});
+  if(!allSess.length)return;
+  const lastStudyDate=allSess.map(function(s){return s.date;}).sort().pop();
+  const todayStr=today();
+  if(lastStudyDate===todayStr)return; // studied today — no decay
+  const lastDecay=S.hunter.lastDecayDate||lastStudyDate;
+  const daysToApply=Math.floor((new Date(todayStr)-new Date(lastDecay))/86400000);
+  if(daysToApply<=0)return;
+  const decayPerDay=200;
+  const totalDecay=daysToApply*decayPerDay;
+  const before=S.hunter.xp||0;
+  S.hunter.xp=Math.max(0,before-totalDecay);
+  S.hunter.lastDecayDate=todayStr;
+  // Rank must match new XP (can only drop, never rise from decay)
+  const xpRank=getRankByXPStatic(S.hunter.xp);
+  const curIdx=RANK_ORDER.indexOf(S.hunter.rank||'E');
+  const xpIdx=RANK_ORDER.indexOf(xpRank);
+  if(xpIdx<curIdx){S.hunter.rank=xpRank;}
+  capXPToRank();
+  save();
+  if(totalDecay>0){
+    setTimeout(function(){
+      showToast('⚠ Decay: -'+totalDecay+' XP ('+daysToApply+' inactive day'+(daysToApply>1?'s':'')+') — study to stop the bleed!');
+    },2000);
+  }
+}
 const DAILY_MIN={sessions:2,hours:2}; // minimum daily standard
 const QUESTS=[
   {id:'q1',name:'Study 2+ hours',desc:'Active sessions today',xp:50,auto:true},
@@ -2239,6 +2276,7 @@ const DEF={
   goals:{studyHours:6,questStudyHours:2},
   customQuests:null,
   upcomingExams:[],       // [{id,name,date,type,subject?}] — multi-exam tracking
+  pinnedPlan:{},          // {date: [{text,done,type}]} — Oracle plan pinned to dashboard
   // ── NEW SYSTEM KEYS (v4) ──
   dailyStatus:{},        // {date: 'valid'|'failed'|'zero'}
   consecutiveFailures:0,
@@ -2565,18 +2603,14 @@ function checkRankUp(){
 function checkRankDown(){
   const rk=S.hunter.rank||'E';
   const idx=RANK_ORDER.indexOf(rk);if(idx<=0)return;
-  // XP floor: rank can never drop below what XP justifies
-  const xpFloorRank=getRankByXPStatic(S.hunter.xp||0);
-  const xpFloorIdx=RANK_ORDER.indexOf(xpFloorRank);
-  if(idx-1<=xpFloorIdx){
-    showToast('⚠ Performance dipped, but your XP holds your rank. Keep going!');
-    S.consecutiveFailures=0;save();
-    return;
-  }
   const newRank=RANK_ORDER[idx-1];
   const old=S.hunter.rank;
-  S.hunter.rank=newRank;S.consecutiveFailures=0;save();
-  setTimeout(()=>showToast('⬇ RANK DROP! '+old+' → '+newRank+'. 2 failures in a row. ⚠'),1000);
+  S.hunter.rank=newRank;
+  S.consecutiveFailures=0;
+  // XP ceiling: cap XP to new (lower) rank's ceiling immediately
+  capXPToRank();
+  save();
+  setTimeout(()=>showToast('⬇ RANK DROP! '+old+' → '+newRank+' | XP capped to rank ceiling ⚠'),1000);
   updateHeader();
 }
 
@@ -2584,6 +2618,8 @@ function updateHeader(){
   const{xp,mana,streak,name}=S.hunter;
   const rk=getRank(xp),prog=getRankProg(xp);
   const cls='rank-'+rk.r,hc=getClass(rk.r);
+  const rankCeiling=(RANKS.find(function(r){return r.r===rk.r;})||RANKS[0]).max-1;
+  const xpDisplay=xp+' / '+rankCeiling+' XP';
   const start=new Date(S.hunter.startDate),now=new Date();
   const dayN=Math.max(1,Math.floor((now-start)/86400000)+1);
   const examD=new Date(S.examDate||'2026-05-18');
@@ -2595,13 +2631,13 @@ function updateHeader(){
   document.querySelectorAll('.exam-label-display').forEach(el=>el.textContent='Days to '+(S.examName||'JEE Adv.'));
   // mobile
   const tb=document.getElementById('tb-rank-badge');if(tb){tb.textContent=rk.r;tb.className='tb-rank '+cls;}
-  el('tb-class',hc);el('tb-streak',streak);el('tb-xp-val',xp+' XP');el('tb-mana-val',mana);
+  el('tb-class',hc);el('tb-streak',streak);el('tb-xp-val',xpDisplay);el('tb-mana-val',mana);
   setW('tb-xp-bar',prog.pct);setW('tb-mana-bar',mana);
   el('mob-day-n','Day '+dayN);el('mob-jee-n',dLeft);
   // desktop right
   const rp=document.getElementById('rp-rank-badge');if(rp){rp.textContent=rk.r;rp.className='rp-rank-badge '+cls;}
   el('rp-class',hc);el('rp-streak',streak);el('rp-day','Day '+dayN);
-  el('rp-xp-val',xp+' XP');el('rp-mana-val',mana);
+  el('rp-xp-val',xpDisplay);el('rp-mana-val',mana);
   setW('rp-xp-bar',prog.pct);setW('rp-mana-bar',mana);
   el('rp-jee-days',dLeft);
   const ms=document.getElementById('mana-study');if(ms)ms.textContent=mana;
@@ -2980,6 +3016,28 @@ function renderTodaysMission(){
       Rank ${rank}→${req.to}: <span style="color:${S.hunter.xp>=req.xp?'var(--green)':'var(--text2)'}">${S.hunter.xp}/${req.xp} XP</span> · <span style="color:${S.hunter.streak>=req.streak?'var(--green)':'var(--text2)'}">${S.hunter.streak}/${req.streak}d streak</span> · <span style="color:var(--text2)">60% quest perf.</span></div>`:''}
     ${allDone?`<div style="font-size:12px;color:var(--green);text-align:center;margin-top:6px;padding-top:6px;border-top:1px solid var(--border)">Day secured. Chase boss fights and bonus XP. ⚔</div>`:''}
   </div>`;
+
+  // ── Pinned Battle Plan card ──
+  const pinned=S.pinnedPlan&&S.pinnedPlan[t];
+  if(pinned&&pinned.items&&pinned.items.length){
+    const done=pinned.items.filter(function(i){return i.done;}).length;
+    const total=pinned.items.length;
+    const allPinDone=done===total;
+    let itemsH=pinned.items.map(function(item,idx){
+      return '<div style="display:flex;align-items:flex-start;gap:9px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.04)">'
+        +'<div onclick="togglePinnedItem('+idx+')" style="width:16px;height:16px;border:1.5px solid '+(item.done?'var(--green)':'var(--border2)')+';border-radius:3px;flex-shrink:0;cursor:pointer;background:'+(item.done?'var(--green)':'transparent')+';display:flex;align-items:center;justify-content:center;margin-top:2px;font-size:10px;color:#fff;transition:all .15s">'+(item.done?'✓':'')+'</div>'
+        +'<span style="font-size:12px;color:'+(item.done?'var(--text3)':'var(--text)')+';'+(item.done?'text-decoration:line-through;opacity:.5;':'')+'line-height:1.5">'+escHtml(item.text)+'</span>'
+        +'</div>';
+    }).join('');
+    el.innerHTML+='<div class="card" style="margin-top:10px;'+(allPinDone?'border-color:rgba(0,214,143,.3);':'border-color:rgba(0,180,216,.2);')+'">'
+      +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">'
+      +'<span class="hl" style="font-size:12px">📌 Battle Plan</span>'
+      +'<span style="font-size:11px;font-weight:700;color:'+(allPinDone?'var(--green)':'var(--mana)')+'">'+done+'/'+total+(allPinDone?' ✓ Done':' tasks')+'</span>'
+      +'<button onclick="clearPinnedPlan()" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:11px;padding:0 4px;margin-left:6px">clear</button>'
+      +'</div>'
+      +itemsH
+      +'</div>';
+  }
 }
 
 // TIMER
@@ -3276,6 +3334,7 @@ function submitRating(save_it){
           sess.xp=Math.max(0,(sess.xp||0)+xpDelta);
           sess.ratingXPDelta=xpDelta;
         }
+        capXPToRank(); // never exceed rank ceiling
         // ── Update Focus & Discipline stats ──
         if(!S.hunter.focusStat)S.hunter.focusStat=50;
         if(!S.hunter.disciplineStat)S.hunter.disciplineStat=50;
@@ -3574,6 +3633,7 @@ function autoLog(mins,sub,mode,sid){
   S.sessions.push(sessObj);
   if(!paused){
     S.hunter.xp+=xp+starterBonus;
+    capXPToRank(); // never overshoot rank ceiling
     setTimeout(()=>checkRankUp(),400);
   }
 
@@ -5724,9 +5784,13 @@ function renderCharts(){
     }
   }else{const sp=document.getElementById('ch-split');if(sp)sp.parentElement.innerHTML='<div class="empty">No sessions logged yet.</div>';}
 
-  // ── 5. TEST SCORE TREND — premium multi-line with area fills ──
+  // ── 5. TEST SCORE TREND — only full 3-subject tests (not chapter/board single-subject) ──
   if(chT)chT.destroy();
-  const tests=S.tests.slice(-12);
+  const fullTests=S.tests.filter(function(t){
+    if(!t.subjects)return true; // legacy tests assumed full
+    return t.subjects.length===3;
+  });
+  const tests=fullTests.slice(-12);
   if(tests.length>=2){
     const tCanvas=document.getElementById('ch-tests');
     if(tCanvas){
@@ -5768,7 +5832,8 @@ function renderCharts(){
               afterBody:items=>{
                 const total=items.find(i=>i.dataset.label==='Total');
                 if(total){
-                  const max=S.tests[S.tests.length-1]?.max||300;
+                  const idx=items[0].dataIndex;
+                  const max=(tests[idx]&&tests[idx].max)||300;
                   return `Pct: ${Math.round(total.raw/max*100)}%`;
                 }
               }
@@ -5782,7 +5847,7 @@ function renderCharts(){
         }
       });
     }
-  }else{const ce=document.getElementById('ch-tests');if(ce)ce.parentElement.innerHTML='<div class="empty">Log at least 2 tests to see the trend.</div>';}
+  }else{const ce=document.getElementById('ch-tests');if(ce)ce.parentElement.innerHTML='<div class="empty">Log at least 2 full JEE mock tests (all 3 subjects) to see the trend.</div>';}
 
   // ── 6. RADAR — RPG stats ──
   renderRadarChart();
@@ -6412,13 +6477,10 @@ function restoreLastMusic(){
 // INIT
 function initApp(){
   checkStreak();setupPWA();
-  // XP floor: correct rank if it's below what XP justifies (e.g. after inactivity streak)
-  if(S.hunter&&S.hunter.xp){
-    const xpJustified=getRankByXPStatic(S.hunter.xp);
-    const curIdx=RANK_ORDER.indexOf(S.hunter.rank||'E');
-    const xpIdx=RANK_ORDER.indexOf(xpJustified);
-    if(xpIdx>curIdx){S.hunter.rank=xpJustified;save();}
-  }
+  // XP ceiling: cap XP to current rank's max, then apply inactivity decay
+  if(!S.hunter.lastDecayDate)S.hunter.lastDecayDate=today();
+  capXPToRank();
+  applyXPDecay();
   loadPomoPrefs(); // restore custom pomodoro durations
   setupInlineSW(); // prepare SW for lock-screen notifications
   updateTimerUI();renderDash();renderFocusStatsBar();renderTests();renderWorkout();
@@ -7533,6 +7595,49 @@ function renderPlannerContext(){
     ${weak.length?`<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border)"><div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.7px;margin-bottom:6px">Oracle will prioritise these</div><div style="display:flex;gap:6px;flex-wrap:wrap">${weak.map(t=>`<span style="background:rgba(255,59,92,.08);border:1px solid rgba(255,59,92,.2);border-radius:5px;padding:2px 8px;font-size:11px;color:var(--red)">${t.name} ${t.conf}%</span>`).join('')}</div></div>`:''}
   </div>`;
 }
+function togglePinnedItem(idx){
+  const t=today();
+  if(!S.pinnedPlan||!S.pinnedPlan[t]||!S.pinnedPlan[t].items)return;
+  const item=S.pinnedPlan[t].items[idx];
+  if(!item)return;
+  item.done=!item.done;
+  // Award XP for completing a pinned task
+  if(item.done){
+    S.hunter.xp=Math.max(0,S.hunter.xp+5);
+    capXPToRank();
+    showToast('Task done ⚡ +5 XP');
+  }
+  save();renderTodaysMission();updateHeader();
+}
+function clearPinnedPlan(){
+  const t=today();
+  if(S.pinnedPlan)delete S.pinnedPlan[t];
+  save();renderTodaysMission();
+  showToast('Battle plan cleared');
+}
+function pinBattlePlan(){
+  const text=S._lastPlanText;
+  if(!text){showToast('Generate a plan first');return;}
+  // Extract - [ ] checkpoint lines AND - Subject: ... block lines
+  const lines=text.split('\n');
+  const items=[];
+  lines.forEach(function(line){
+    const trimmed=line.trim();
+    // Checkpoints: - [ ] task text
+    const cbMatch=trimmed.match(/^-\s+\[\s*\]\s+(.+)$/);
+    if(cbMatch){items.push({text:cbMatch[1].trim(),done:false,type:'checkpoint'});return;}
+    // Time block tasks: - Subject: topic — task — duration
+    const blockMatch=trimmed.match(/^-\s+(.+?:\s*.+—.+)$/);
+    if(blockMatch&&!trimmed.startsWith('-  ')){items.push({text:blockMatch[1].trim(),done:false,type:'task'});return;}
+  });
+  if(!items.length){showToast('No tasks found in plan to pin');return;}
+  if(!S.pinnedPlan)S.pinnedPlan={};
+  S.pinnedPlan[today()]={date:today(),items:items.slice(0,12)};
+  save();
+  renderTodaysMission();
+  showToast('📌 Battle Plan pinned to Dashboard! ('+items.length+' tasks)');
+  goTo('dashboard',null);
+}
 async function generateDailyPlan(){
   if(oracleStreaming)return;oracleStreaming=true;
   const btn=document.getElementById('oracle-plan-btn');const out=document.getElementById('oracle-plan-out');
@@ -7546,7 +7651,11 @@ async function generateDailyPlan(){
   const prompt=`You are Oracle, AI study planner. Current time: ${timeStr} (${dow}).\n\n${context}${sprintRule}\n\nGenerate optimized plan for rest of TODAY. Target: ${goalH} hours.\n\nFormat:\n**BATTLE PLAN — ${dow.toUpperCase()}**\n\n**Morning Block** [time range]\n- [Subject]: [topic] — [specific task] — [duration]\n\n**Afternoon Block** [time range]\n- [Subject]: [topic] — [specific task] — [duration]\n\n**Evening Block** [time range]\n- [Subject]: [topic] — [specific task] — [duration]\n\n**Checkpoints**\n- [ ] [goal 1]\n- [ ] [goal 2]\n- [ ] [goal 3]\n\n**Oracle's Note**\n[1-2 sentences]\n\nRules: Only blocks from ${timeStr} onwards. Prioritise weak topics. Specific tasks (e.g. "Solve 10 Kinematics PYQs", not "study physics"). Total ≈ ${goalH}h. Respect user's daily goal of ${goalH}h.`;
   try{
     const text=await oracleCall([{role:'user',content:prompt}],null,1200);
-    if(out)out.innerHTML=`<div class="oracle-section-chip">📅 ${dow} · ${timeStr}</div>${formatOracleMD(text)}`;
+    if(out){
+      out.innerHTML=`<div class="oracle-section-chip">📅 ${dow} · ${timeStr}</div>${formatOracleMD(text)}`
+        +`<button onclick="pinBattlePlan()" style="width:100%;margin-top:12px;padding:10px;background:rgba(0,214,143,.1);border:1px solid rgba(0,214,143,.3);border-radius:var(--radius-sm);color:var(--green);font-family:var(--font);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;cursor:pointer">📌 Pin to Dashboard</button>`;
+      S._lastPlanText=text; // store raw text for pin parsing
+    }
     addToMemory(`Plan generated: ${today()}, ${dow}, ${goalH}h goal`,true);
   }catch(e){if(out)out.innerHTML=`<div style="color:var(--red);font-size:13px;padding:6px 0">⚠ ${e.message||'Oracle offline.'}</div>`;}
   oracleStreaming=false;if(btn){btn.disabled=false;btn.textContent='📅 Generate Today\'s Battle Plan';}
