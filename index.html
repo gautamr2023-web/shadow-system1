@@ -1767,25 +1767,32 @@ input.fi:focus,select.fi:focus{
 
   <!-- Study Resources — books, coaching, PYQs, school chapters -->
   <div class="card">
-    <div class="card-hdr"><span class="hl">📚 Study Resources</span></div>
-    <div style="font-size:12px;color:var(--text2);margin-bottom:12px;line-height:1.6">Tell Oracle what resources you're using and how far you've completed them. This directly improves battle plan quality.</div>
+    <div class="card-hdr" style="justify-content:space-between">
+      <span class="hl">📚 Study Resources</span>
+      <button id="sr-oracle-btn" onclick="oracleResourceAnalysis()" style="background:rgba(0,180,216,.1);border:1px solid rgba(0,180,216,.3);border-radius:6px;color:var(--mana);font-family:var(--font);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:5px 10px;cursor:pointer">⚡ Oracle Analysis</button>
+    </div>
+    <div id="sr-oracle-out" style="display:none;margin-bottom:14px;padding:12px;background:rgba(0,180,216,.06);border:1px solid rgba(0,180,216,.2);border-radius:8px;font-size:12px;line-height:1.7"></div>
+
+    <!-- Visual grouped resource display -->
+    <div id="study-resources-list"></div>
 
     <!-- School Chapters -->
-    <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--text3);margin-bottom:8px">Current School Chapters</div>
-    <div class="form-grid" style="margin-bottom:14px">
+    <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--text3);margin:16px 0 8px">Current School Chapters</div>
+    <div class="form-grid" style="margin-bottom:10px">
       <div class="fg"><label class="fl">Physics</label><input type="text" class="fi" id="sr-school-phy" placeholder="e.g. Electromagnetic Induction"></div>
       <div class="fg"><label class="fl">Chemistry</label><input type="text" class="fi" id="sr-school-che" placeholder="e.g. Coordination Compounds"></div>
       <div class="fg full"><label class="fl">Maths</label><input type="text" class="fi" id="sr-school-mat" placeholder="e.g. Differential Equations"></div>
     </div>
-    <button class="btn btn-ghost btn-sm" onclick="saveSchoolChapters()" style="margin-bottom:16px">Save School Chapters</button>
+    <button class="btn btn-ghost btn-sm" onclick="saveSchoolChapters()" style="margin-bottom:18px">Save School Chapters</button>
 
     <!-- Add Resource -->
-    <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--text3);margin-bottom:8px">Add Resource</div>
+    <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--text3);margin-bottom:8px">+ Add Resource</div>
     <div class="form-grid" style="margin-bottom:10px">
       <div class="fg full"><label class="fl">Type</label>
         <select class="fi" id="sr-type">
+          <option value="ncert">NCERT</option>
           <option value="refBook">Reference Book</option>
-          <option value="coaching">Coaching Material</option>
+          <option value="coaching">Coaching Material / Module</option>
           <option value="pyqs">PYQs / Test Series</option>
         </select>
       </div>
@@ -1797,16 +1804,41 @@ input.fi:focus,select.fi:focus{
           <option value="all">All Subjects</option>
         </select>
       </div>
-      <div class="fg"><label class="fl">Name</label><input type="text" class="fi" id="sr-name" placeholder="e.g. HC Verma, ALLEN Module, Marks App"></div>
-      <div class="fg full"><label class="fl">% Completed</label>
+      <div class="fg"><label class="fl">Name / Title</label>
+        <input type="text" class="fi" id="sr-name" placeholder="HC Verma Vol 1, ALLEN Physics, Marks App…">
+      </div>
+      <div class="fg full"><label class="fl">% Completed right now</label>
         <div style="display:flex;gap:10px;align-items:center">
           <input type="range" id="sr-pct" min="0" max="100" value="0" style="flex:1;accent-color:var(--accent)" oninput="document.getElementById('sr-pct-val').textContent=this.value+'%'">
-          <span id="sr-pct-val" style="font-size:13px;font-weight:700;color:var(--accent);min-width:36px">0%</span>
+          <span id="sr-pct-val" style="font-size:14px;font-weight:700;color:var(--accent);min-width:38px">0%</span>
         </div>
       </div>
     </div>
-    <button class="btn btn-primary btn-sm" onclick="addStudyResource()" style="margin-bottom:14px">+ Add Resource</button>
-    <div id="study-resources-list"></div>
+    <button class="btn btn-primary btn-sm" onclick="addStudyResource()" style="margin-bottom:20px">+ Add Resource</button>
+
+    <!-- Chapter Log -->
+    <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--text3);margin-bottom:8px">📋 Chapter Log</div>
+    <div style="font-size:12px;color:var(--text2);margin-bottom:10px;line-height:1.5">Track when you start and finish each chapter. Builds your study history over time.</div>
+    <div class="form-grid" style="margin-bottom:10px">
+      <div class="fg full"><label class="fl">Resource</label>
+        <select class="fi" id="cl-resource-sel"><option value="">— pick resource —</option></select>
+      </div>
+      <div class="fg full"><label class="fl">Chapter / Topic</label>
+        <input type="text" class="fi" id="cl-chapter" placeholder="e.g. Rotational Motion, Electrochemistry, Integration">
+      </div>
+      <div class="fg"><label class="fl">Status</label>
+        <select class="fi" id="cl-status">
+          <option value="started">🔄 Started</option>
+          <option value="completed">✅ Completed</option>
+          <option value="revised">📖 Revised</option>
+        </select>
+      </div>
+      <div class="fg"><label class="fl">Date</label>
+        <input type="date" class="fi" id="cl-date">
+      </div>
+    </div>
+    <button class="btn btn-primary btn-sm" onclick="addChapterLog()" style="margin-bottom:12px">+ Log Chapter</button>
+    <div id="chapter-log-list"></div>
   </div>
 
   <!-- Class / Starting point -->
@@ -2216,13 +2248,11 @@ input.fi:focus,select.fi:focus{
 <div class="toast" id="toast"></div>
 
 <script>
-// DATA
 const RANKS=[
   {r:'E',min:0,max:800},{r:'D',min:800,max:1700},{r:'C',min:1700,max:2700},
   {r:'B',min:2700,max:4300},{r:'A',min:4300,max:7200},{r:'S',min:7200,max:15000},
   {r:'SS',min:15000,max:30000},{r:'SSS',min:30000,max:Infinity}
 ];
-// ── RANK REQUIREMENTS (multi-condition: XP + Streak + Performance) ──
 const RANK_REQS=[
   {from:'E',to:'D',xp:800,streak:3},
   {from:'D',to:'C',xp:1700,streak:7},
@@ -2232,7 +2262,6 @@ const RANK_REQS=[
 ];
 const RANK_ORDER=['E','D','C','B','A','S','SS','SSS'];
 
-// ── XP ceiling: cap XP to current rank's max ──
 function capXPToRank(){
   const rk=S.hunter.rank||'E';
   const rankData=RANKS.find(r=>r.r===rk)||RANKS[0];
@@ -2240,7 +2269,6 @@ function capXPToRank(){
   if((S.hunter.xp||0)>ceiling)S.hunter.xp=ceiling;
 }
 
-// ── XP decay: 200 XP per inactive day, applied on load ──
 function applyXPDecay(){
   const allSess=(S.sessions||[]).filter(function(s){return !s.paused;});
   if(!allSess.length)return;
@@ -2255,7 +2283,6 @@ function applyXPDecay(){
   const before=S.hunter.xp||0;
   S.hunter.xp=Math.max(0,before-totalDecay);
   S.hunter.lastDecayDate=todayStr;
-  // Rank must match new XP (can only drop, never rise from decay)
   const xpRank=getRankByXPStatic(S.hunter.xp);
   const curIdx=RANK_ORDER.indexOf(S.hunter.rank||'E');
   const xpIdx=RANK_ORDER.indexOf(xpRank);
@@ -2330,7 +2357,6 @@ const DEF={
     pyqs:[],
     schoolChapters:{physics:'',chemistry:'',maths:''}
   },
-  // ── NEW SYSTEM KEYS (v4) ──
   dailyStatus:{},        // {date: 'valid'|'failed'|'zero'}
   consecutiveFailures:0,
   recoveryMode:{active:false,startDate:null},
@@ -2338,14 +2364,12 @@ const DEF={
   weeklyBoss:{},         // {weekKey: true}
   starterXPDates:{},     // starter trigger per date (prevent double)
   dailyXPCap:{},         // {date: total session XP earned (cap 500)}
-  // ── V8 KEYS ──
   boardTests:[],         // board performance tests
   dailyMana:{},          // {date: {energy, task}} — mana check per day
 };
 
 let S,db,auth,currentUser=null,saveTimer=null;
 
-// FIREBASE
 const firebaseConfig={
   apiKey:"AIzaSyDWmh7WLL_a3eCbcnh3hKL2ZgqTex_SYWM",
   authDomain:"shadow-system-dd646.firebaseapp.com",
@@ -2357,7 +2381,6 @@ const firebaseConfig={
 firebase.initializeApp(firebaseConfig);
 auth=firebase.auth();
 db=firebase.firestore();
-// Handle redirect fallback result
 auth.getRedirectResult().then(r=>{if(r&&r.user)console.log('redirect sign-in ok');}).catch(()=>{});
 
 function signInGoogle(){
@@ -2371,7 +2394,6 @@ function signInGoogle(){
     .catch(e=>{
       if(e.code==='auth/popup-closed-by-user'||e.code==='auth/cancelled-popup-request'){reset();return;}
       if(e.code==='auth/popup-blocked'){
-        // fallback to redirect
         showToast('Popup blocked — redirecting…');
         auth.signInWithRedirect(provider);
         return;
@@ -2384,9 +2406,7 @@ function signOutUser(){if(confirm('Sign out?')){S=null;auth.signOut();}}
 function defState(){return JSON.parse(JSON.stringify(DEF));}
 function ensureKeys(){
   if(!S.topics)S.topics=JSON.parse(JSON.stringify(DEF.topics));
-  // Migrate old single-key topics to class-split format
   if(S.topics.physics&&!S.topics.physics12){
-    // Old format — migrate class 12 data, create empty class 11
     S.topics.physics12=S.topics.physics;
     S.topics.chemistry12=S.topics.chemistry||[];
     S.topics.maths12=S.topics.maths||[];
@@ -2418,7 +2438,6 @@ function ensureKeys(){
   if(!S.goals)S.goals={studyHours:6,questStudyHours:2};
   if(!S.hunter.name)S.hunter.name='Gautam';
   if(S.customQuests===undefined)S.customQuests=null;
-  // v4 keys
   if(!S.dailyStatus)S.dailyStatus={};
   if(S.consecutiveFailures===undefined)S.consecutiveFailures=0;
   if(!S.recoveryMode)S.recoveryMode={active:false,startDate:null};
@@ -2429,7 +2448,6 @@ function ensureKeys(){
   if(!S.hunter.rank)S.hunter.rank=getRankByXPStatic(S.hunter.xp||0);
   if(S.hunter.focusStat===undefined)S.hunter.focusStat=50;
   if(S.hunter.disciplineStat===undefined)S.hunter.disciplineStat=50;
-  // v8 keys
   if(!S.boardTests)S.boardTests=[];
   if(!S.dailyMana)S.dailyMana={};
 }
@@ -2465,7 +2483,6 @@ auth.onAuthStateChanged(async user=>{
     const aw=document.getElementById('nav-avatar-wrap');
     if(user.photoURL)aw.innerHTML=`<img src="${user.photoURL}" class="nav-avatar" title="Settings" onclick="goTo('settings',null)">`;
     else aw.innerHTML=`<div class="nav-avatar-ph" onclick="goTo('settings',null)">${(user.displayName||'?')[0]}</div>`;
-    // Update settings UI
     const sa=document.getElementById('s-avatar');
     if(sa){if(user.photoURL)sa.innerHTML=`<img src="${user.photoURL}" style="width:44px;height:44px;border-radius:50%">`;else sa.textContent=(user.displayName||'?')[0];}
     const sn=document.getElementById('s-user-name');if(sn)sn.textContent=user.displayName||'Signed In';
@@ -2483,7 +2500,6 @@ auth.onAuthStateChanged(async user=>{
   }
 });
 
-// UTILS
 function today(){return new Date().toISOString().split('T')[0];}
 function fmtDate(d){return new Date(d).toLocaleDateString('en-IN',{day:'numeric',month:'short'});}
 function el(id,v){const e=document.getElementById(id);if(e)e.textContent=v;}
@@ -2494,12 +2510,10 @@ function showToast(msg){
   clearTimeout(t._to);t._to=setTimeout(()=>t.classList.remove('show'),2800);
 }
 
-// ── STREAK ENGINE (v4) ──
 function checkStreak(){
   const t=today(),last=S.hunter.lastDate;
   if(last===t)return; // same day — nothing to evaluate
-  
-  // Auto-deactivate expired pause mode
+
   if(S.pauseMode&&S.pauseMode.active&&S.pauseMode.end&&t>S.pauseMode.end){
     S.pauseMode.active=false;
     setTimeout(()=>showToast('Pause Mode ended automatically. System resumed ⚔'),1200);
@@ -2507,7 +2521,6 @@ function checkStreak(){
 
   if(last){
     if(!isPaused(last)){
-      // Evaluate yesterday's performance against DAILY_MIN
       const ySess=S.sessions.filter(s=>s.date===last&&!s.paused);
       const yMins=ySess.reduce((a,s)=>a+s.min,0);
       const yCount=ySess.length;
@@ -2515,7 +2528,6 @@ function checkStreak(){
       const isValid=yCount>=DAILY_MIN.sessions&&yMins>=DAILY_MIN.hours*60;
 
       if(isZero){
-        // ZERO DAY — system failure
         S.dailyStatus[last]='zero';
         S.hunter.streak=0;
         S.hunter.xp=Math.max(0,S.hunter.xp-100);
@@ -2527,7 +2539,6 @@ function checkStreak(){
           if(fo)fo.classList.add('show');
         },1200);
       } else if(!isValid){
-        // FAILED DAY — insufficient sessions/hours
         S.dailyStatus[last]='failed';
         S.hunter.streak=0;
         S.hunter.xp=Math.max(0,S.hunter.xp-100);
@@ -2539,19 +2550,16 @@ function checkStreak(){
           if(fo)fo.classList.add('show');
         },1200);
       } else {
-        // VALID DAY!
         S.dailyStatus[last]='valid';
         S.consecutiveFailures=0;
         const diff=Math.floor((new Date(t)-new Date(last))/86400000);
         S.hunter.streak=diff===1?S.hunter.streak+1:1;
-        // Consistency bonus: every 7 days
         if(S.hunter.streak>0&&S.hunter.streak%7===0){
           S.hunter.xp+=50;
           setTimeout(()=>showToast('🔥 '+S.hunter.streak+'-day streak bonus! +50 XP'),1500);
         }
       }
 
-      // Recovery mode: check if 3 sessions + 2h since start
       if(S.recoveryMode&&S.recoveryMode.active){
         const recSess=S.sessions.filter(s=>s.date>=S.recoveryMode.startDate&&!s.paused);
         if(recSess.length>=3&&recSess.reduce((a,s)=>a+s.min,0)>=120){
@@ -2561,27 +2569,21 @@ function checkStreak(){
         }
       }
 
-      // Activate recovery mode after any failure (if not already in one)
       if((S.dailyStatus[last]==='failed'||S.dailyStatus[last]==='zero')&&!(S.recoveryMode&&S.recoveryMode.active)){
         S.recoveryMode={active:true,startDate:t};
       }
 
-      // Rank down: 2+ consecutive failures
       if(S.consecutiveFailures>=2)checkRankDown();
     }
-    // Mana partial restore on new day — +30, always clamped 0–100
     S.hunter.mana=Math.max(0,Math.min(100,(S.hunter.mana||0)+30));
   } else {
-    // First ever day
     S.hunter.streak=1;
   }
 
   S.hunter.lastDate=t;save();
-  // Check rank up on new day (unless paused)
   if(!isPaused())setTimeout(()=>checkRankUp(),600);
 }
 
-// ── PAUSE MODE ──
 function isPaused(date){
   const pm=S&&S.pauseMode;if(!pm||!pm.active||!pm.start||!pm.end)return false;
   const d=date||today();return d>=pm.start&&d<=pm.end;
@@ -2599,12 +2601,10 @@ function getDailyQuestPct(date){
   return total>0?Math.round(done/total*100):0;
 }
 
-// ── RANK ──
 function getRankByXPStatic(xp){
   for(let i=RANKS.length-1;i>=0;i--)if(xp>=RANKS[i].min)return RANKS[i].r;return'E';
 }
 function getRank(xp){
-  // Use explicitly stored rank (multi-condition), fall back to XP-based
   const stored=S&&S.hunter&&S.hunter.rank?S.hunter.rank:null;
   const r=RANKS.find(x=>x.r===(stored||getRankByXPStatic(xp)))||RANKS[0];
   return r;
@@ -2624,7 +2624,6 @@ function checkRankUp(){
   if(currentIdx>=RANK_ORDER.length-1)return;
   const req=RANK_REQS.find(r=>r.from===currentRank);
   if(!req){
-    // SS/SSS: pure XP-based progression
     const xpRankStr=getRankByXPStatic(xp);
     const xpIdx=RANK_ORDER.indexOf(xpRankStr);
     if(xpIdx>currentIdx){
@@ -2635,7 +2634,6 @@ function checkRankUp(){
     }
     return;
   }
-  // Check performance: quest pct last 7 days
   const last7=[];for(let i=6;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);last7.push(d.toISOString().split('T')[0]);}
   const QN=getActiveQuests().length;
   let qDone=0,qPoss=0;
@@ -2660,7 +2658,6 @@ function checkRankDown(){
   const old=S.hunter.rank;
   S.hunter.rank=newRank;
   S.consecutiveFailures=0;
-  // XP ceiling: cap XP to new (lower) rank's ceiling immediately
   capXPToRank();
   save();
   setTimeout(()=>showToast('⬇ RANK DROP! '+old+' → '+newRank+' | XP capped to rank ceiling ⚠'),1000);
@@ -2678,30 +2675,23 @@ function updateHeader(){
   const examD=new Date(S.examDate||'2026-05-18');
   const dLeft=Math.max(0,Math.ceil((examD-now)/86400000));
   const hunterName=name||'Gautam';
-  // update name displays
   document.querySelectorAll('.hunter-name-display').forEach(el=>el.textContent='Hunter '+hunterName);
-  // update exam label
   document.querySelectorAll('.exam-label-display').forEach(el=>el.textContent='Days to '+(S.examName||'JEE Adv.'));
-  // mobile
   const tb=document.getElementById('tb-rank-badge');if(tb){tb.textContent=rk.r;tb.className='tb-rank '+cls;}
   el('tb-class',hc);el('tb-streak',streak);el('tb-xp-val',xpDisplay);el('tb-mana-val',mana);
   setW('tb-xp-bar',prog.pct);setW('tb-mana-bar',mana);
   el('mob-day-n','Day '+dayN);el('mob-jee-n',dLeft);
-  // desktop right
   const rp=document.getElementById('rp-rank-badge');if(rp){rp.textContent=rk.r;rp.className='rp-rank-badge '+cls;}
   el('rp-class',hc);el('rp-streak',streak);el('rp-day','Day '+dayN);
   el('rp-xp-val',xpDisplay);el('rp-mana-val',mana);
   setW('rp-xp-bar',prog.pct);setW('rp-mana-bar',mana);
   el('rp-jee-days',dLeft);
   const ms=document.getElementById('mana-study');if(ms)ms.textContent=mana;
-  // update exam day label on right panel
   const rdl=document.getElementById('rp-days-label');if(rdl)rdl.textContent='Days to '+(S.examName||'JEE Advanced');
-  // FIX: update status window XP (was missing — causing XP display bug)
   el('sw-xp',xp);
   renderStatusWindow();
 }
 
-// NAV
 function goTo(name,btn){
   document.querySelectorAll('section').forEach(s=>s.classList.remove('active'));
   document.getElementById('s-'+name).classList.add('active');
@@ -2716,17 +2706,12 @@ function goTo(name,btn){
   if(name==='oracle')initOracleSection();
 }
 
-// ── UNIFIED TOTAL XP TODAY (all sources) ──
 function getTotalXpToday(){
   const t=today();
-  // 1. Session XP
   const sessXP=S.sessions.filter(s=>s.date===t).reduce((a,s)=>a+(s.xp||0),0);
-  // 2. Quest XP (sum xp of completed quests for today)
   const comp=S.questComp[t]||{};
   const questXP=getActiveQuests().filter(q=>comp[q.id]).reduce((a,q)=>a+q.xp,0);
-  // 3. Workout XP (from today's logs)
   const woXP=S.workout.logs.filter(l=>l.date===t).reduce((a,l)=>a+(l.xp||0),0);
-  // 4. Test XP (from today's tests)
   const testXP=S.tests.filter(t2=>t2.date===t).reduce((a,t2)=>a+Math.round((t2.total/(t2.max||300))*40),0);
   return sessXP+questXP+woXP+testXP;
 }
@@ -2735,7 +2720,6 @@ function isSprintMode(){
   return Math.max(0,Math.ceil((new Date(S.examDate||'2026-05-18')-new Date())/86400000))<=30;
 }
 
-// ── Upcoming Exams system ──
 function addUpcomingExam(){
   const name=(document.getElementById('ue-name').value||'').trim();
   const date=document.getElementById('ue-date').value;
@@ -2801,7 +2785,6 @@ function renderUpcomingExamsDash(){
     +'</div>';
 }
 
-// DASHBOARD
 function renderDash(){
   updateHeader();
   const t=today();
@@ -2810,7 +2793,6 @@ function renderDash(){
   const totalXpToday=getTotalXpToday();
   el('ds-hrs',Math.floor(tMins/60)+'h'+(tMins%60)+'m');
   el('ds-xp','+'+totalXpToday);el('ds-sess',tSess.length);
-  // Sprint banner
   const daysLeftNow=Math.max(0,Math.ceil((new Date(S.examDate||'2026-05-18')-new Date())/86400000));
   const sb=document.getElementById('sprint-banner');
   const sd=document.getElementById('sprint-banner-days');
@@ -2833,11 +2815,9 @@ function renderQuests(){
   const tSess=S.sessions.filter(s=>s.date===t);
   const tMins=tSess.reduce((a,s)=>a+s.min,0);
   const hasP=tSess.some(s=>s.mode==='pomodoro'&&s.min>=25);
-  // Check if today's workout is fully done — only counts on active workout days
   const todayDow=new Date().getDay();
   const todayDayName=DAYS_ORDER[todayDow===0?6:todayDow-1];
   const todayPlan=S.workout?.plan?.[todayDayName];
-  // Must be an active workout day (active:true, has exercises) — rest days always yield false
   const isWorkoutDay=!!(todayPlan&&todayPlan.active&&todayPlan.exercises&&todayPlan.exercises.length>0);
   const woLog=isWorkoutDay?S.workout?.logs?.find(l=>l.date===t&&l.day===todayDayName):null;
   const woDone=!!(isWorkoutDay&&woLog&&
@@ -2846,9 +2826,7 @@ function renderQuests(){
   let changed=false;
   if(tMins>=(goalH*60)&&!comp.q1){comp.q1=true;S.hunter.xp+=50;changed=true;}
   if(hasP&&!comp.q2){comp.q2=true;S.hunter.xp+=25;changed=true;}
-  // q3: auto-complete when workout fully done
   if(woDone&&!comp.q3&&QUESTS.find(q=>q.id==='q3')){comp.q3=true;changed=true;}
-  // q6: auto-complete at 4h (240 min)
   if(tMins>=240&&!comp.q6&&QUESTS.find(q=>q.id==='q6')){
     comp.q6=true;S.hunter.xp+=30;changed=true;
     setTimeout(()=>showToast('🏆 4h Study Marathon complete! +30 XP'),400);
@@ -2924,7 +2902,6 @@ function renderGates(){
   const rg=document.getElementById('rp-gates');if(rg)rg.innerHTML=rp;
 }
 
-// ── SL PENALTY OVERLAY ──
 let slPenaltyActive=false;
 function showSLPenalty(type,icon,title,sub){
   const overlay=document.getElementById('sl-penalty-overlay');
@@ -2939,7 +2916,6 @@ function showSLPenalty(type,icon,title,sub){
   msg.className='sl-penalty-msg '+type;
   overlay.style.display='flex';
   slPenaltyActive=true;
-  // play SL sound — defer so engine is ready
   setTimeout(()=>playSLSound(type==='good'?'quest':type==='danger'?'fail':'click'),50);
 }
 function closeSLPenalty(){
@@ -2953,7 +2929,6 @@ function renderPenalty(){
   const t=today();const hour=new Date().getHours();
   let html='';
 
-  // ── PAUSE MODE (highest priority) ──
   if(isPaused()){
     const pm=S.pauseMode;
     pz.innerHTML=`<div style="background:rgba(0,180,216,.07);border:1.5px solid rgba(0,180,216,.3);border-radius:var(--radius-sm);padding:14px 16px;display:flex;gap:12px;align-items:center;margin-bottom:10px">
@@ -2968,7 +2943,6 @@ function renderPenalty(){
   const tCount=tSess.length;
   const isValid=tCount>=DAILY_MIN.sessions&&tMins>=DAILY_MIN.hours*60;
 
-  // SL OVERLAY — critical penalty shown as overlay
   if(tCount===0&&hour>=8){
     showSLPenalty('danger','☠','ZERO DAY DETECTED — SYSTEM FAILURE','Start a session NOW. Streak reset + -20 XP incoming at midnight.');
   } else if((S.consecutiveFailures||0)>=2&&!slPenaltyActive){
@@ -2977,7 +2951,6 @@ function renderPenalty(){
     showSLPenalty('warn','⚠','MINIMUM STANDARD NOT MET','Log more sessions before midnight to protect your streak.');
   }
 
-  // ── RECOVERY MODE ──
   if(S.recoveryMode&&S.recoveryMode.active){
     const recSess=S.sessions.filter(s=>s.date>=S.recoveryMode.startDate&&!s.paused);
     const recCount=Math.min(recSess.length,3);
@@ -2997,7 +2970,6 @@ function renderPenalty(){
     </div>`;
   }
 
-  // ── CONSECUTIVE FAILURES (inline) ──
   if((S.consecutiveFailures||0)>=1){
     const rankIdx=RANK_ORDER.indexOf(S.hunter.rank||'E');
     html+=`<div style="background:rgba(255,59,92,.07);border:1px solid rgba(255,59,92,.2);border-radius:var(--radius-sm);padding:12px 16px;margin-bottom:10px;display:flex;gap:10px;align-items:center">
@@ -3006,7 +2978,6 @@ function renderPenalty(){
       <div style="font-size:12px;color:var(--text2);margin-top:2px">${rankIdx>0?'⚠ 2 failures = rank drop.':''} Grind today to recover.</div></div></div>`;
   }
 
-  // ── ALL GOOD ──
   if(isValid&&!(S.recoveryMode&&S.recoveryMode.active)){
     html+=`<div style="background:rgba(0,214,143,.06);border:1px solid rgba(0,214,143,.18);border-radius:var(--radius-sm);padding:11px 14px;display:flex;gap:10px;align-items:center;margin-bottom:10px">
       <span style="font-size:18px">✅</span>
@@ -3017,7 +2988,6 @@ function renderPenalty(){
   pz.innerHTML=html;
 }
 
-// ── TODAY'S MISSION ──
 function renderTodaysMission(){
   const el=document.getElementById('todays-mission');if(!el)return;
   const t=today();
@@ -3033,7 +3003,6 @@ function renderTodaysMission(){
   const qTotal=getActiveQuests().length;
   const hour=new Date().getHours();
 
-  // Workout day detection — mirrors getActiveQuests() logic exactly
   const _tmDow=new Date().getDay();
   const _tmDayName=DAYS_ORDER[_tmDow===0?6:_tmDow-1];
   const _tmPlan=S.workout?.plan?.[_tmDayName];
@@ -3043,13 +3012,12 @@ function renderTodaysMission(){
     {label:'Sessions',icon:'⏱',target:DAILY_MIN.sessions,cur:tCount,disp:tCount+'/'+DAILY_MIN.sessions,col:'var(--accent)',done:tCount>=DAILY_MIN.sessions},
     {label:'Study Time',icon:'📚',target:DAILY_MIN.hours*60,cur:tMins,disp:fmtHM(tMins)+' / '+DAILY_MIN.hours+'h',col:'var(--mana)',done:tMins>=DAILY_MIN.hours*60},
     {label:'Quests',icon:'⚡',target:Math.ceil(qTotal*0.6),cur:qDone,disp:qDone+'/'+qTotal+' (need '+Math.ceil(qTotal*0.6)+')',col:'var(--gold)',done:qDone>=Math.ceil(qTotal*0.6)},
-    // Workout row: ONLY shown on active workout days — hidden completely on rest days
     ...(isWorkoutDay?[{label:'Workout',icon:'💪',target:1,cur:comp.q3?1:0,disp:comp.q3?'Done':'Pending',col:'var(--green)',done:!!comp.q3}]:[]),
   ];
   const allDone=tasks.every(m=>m.done);
   const rank=S.hunter.rank||'E';
   const req=RANK_REQS.find(r=>r.from===rank);
-  
+
   el.innerHTML=`<div class="card" style="margin-bottom:14px;${allDone?'border-color:rgba(0,214,143,.3);':hour>=20&&!allDone?'border-color:rgba(255,59,92,.25);':''}">
     <div class="card-hdr" style="display:flex;justify-content:space-between;align-items:center">
       <span class="hl">🎯 Today's Mission</span>
@@ -3072,7 +3040,6 @@ function renderTodaysMission(){
     ${allDone?`<div style="font-size:12px;color:var(--green);text-align:center;margin-top:6px;padding-top:6px;border-top:1px solid var(--border)">Day secured. Chase boss fights and bonus XP. ⚔</div>`:''}
   </div>`;
 
-  // ── Pinned Battle Plan card ──
   const pinned=S.pinnedPlan&&S.pinnedPlan[t];
   if(pinned&&pinned.items&&pinned.items.length){
     const done=pinned.items.filter(function(i){return i.done;}).length;
@@ -3100,17 +3067,12 @@ function renderTodaysMission(){
   }
 }
 
-// TIMER
-// ═══════════════════════════════════════════════════════════
-//  SHADOW SYSTEM — TIMER + NOTIFICATIONS + RATING + SOUND
-// ═══════════════════════════════════════════════════════════
 const CIRC=2*Math.PI*106;
 let tMode='pomodoro',tRunning=false,tSecs=25*60,tTotal=25*60,tInterval=null;
 let pomoPhase='focus',pomoCount=0,studySub='physics',elapsed=0,pauseCount=0;
 let pendingRating=null, ratingStars=0, ratingMood='';
 let swReg=null; // Service Worker registration
 
-// ── SERVICE WORKER (inline blob) — enables REAL lock-screen notifications ──
 const SW_CODE=`
 self.addEventListener('message',e=>{
   if(e.data&&e.data.type==='NOTIFY'){
@@ -3141,10 +3103,8 @@ self.addEventListener('activate',e=>e.waitUntil(clients.claim()));
 async function setupInlineSW(){
   if(!('serviceWorker' in navigator))return;
   try{
-    // Unregister old sw.js if any
     const regs=await navigator.serviceWorker.getRegistrations();
     for(const r of regs){if(r.active&&r.active.scriptURL.includes('sw.js'))r.unregister();}
-    // Register inline SW via blob URL
     const blob=new Blob([SW_CODE],{type:'application/javascript'});
     const url=URL.createObjectURL(blob);
     swReg=await navigator.serviceWorker.register(url,{scope:'/'});
@@ -3153,7 +3113,6 @@ async function setupInlineSW(){
   }catch(e){console.warn('SW setup:',e);}
 }
 
-// ── NOTIFICATION SYSTEM ──
 async function requestNotifPermission(){
   document.getElementById('notif-modal').classList.add('show');
 }
@@ -3164,7 +3123,6 @@ async function doRequestNotif(){
   if(perm==='granted'){
     showToast('Notifications enabled! 🔔 You\'ll get alerted even on lock screen');
     updateNotifCard();
-    // Send a test notification
     setTimeout(()=>sendNotification('⚔ Shadow System Ready','Timer notifications are working!',false),500);
   } else if(perm==='denied'){
     showToast('Blocked — go to browser site settings to allow notifications');
@@ -3193,7 +3151,6 @@ function updateNotifCard(){
 function sendNotification(title,body,isBreak){
   if(!('Notification' in window)||Notification.permission!=='granted')return;
   const vibPat=isBreak?[200,100,200,100,200]:[400,100,400,100,800];
-  // Use Service Worker notification (works on lock screen)
   if(swReg&&swReg.active){
     swReg.active.postMessage({
       type:'NOTIFY',title,body,
@@ -3202,7 +3159,6 @@ function sendNotification(title,body,isBreak){
       badge:'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">⚔</text></svg>'
     });
   } else {
-    // Fallback: direct Notification (works when app is open)
     try{
       const n=new Notification(title,{body,tag:'shadow-timer',requireInteraction:true});
       setTimeout(()=>n.close(),8000);
@@ -3210,28 +3166,24 @@ function sendNotification(title,body,isBreak){
   }
 }
 
-// ── VIBRATION ──
 function vibrate(pattern){
   if('vibrate' in navigator){
     try{navigator.vibrate(pattern);}catch(e){}
   }
 }
 
-// ── AUDIO CHIME (Web Audio API) ──
 let audioCtx=null;
 function getAudioCtx(){
   if(!audioCtx||audioCtx.state==='closed'){
     audioCtx=new(window.AudioContext||window.webkitAudioContext)();
   }
   if(audioCtx.state==='suspended')audioCtx.resume();
-  // Also keep SL audio in sync
   _audioCtxSL=audioCtx;
   return audioCtx;
 }
 function playChime(isBreak){
   try{
     const ctx=getAudioCtx();
-    // Focus done: descending resolve chord. Break done: ascending bright
     const seq=isBreak
       ?[[523,.0],[659,.18],[784,.36],[1047,.54]]   // C5 E5 G5 C6 — bright break
       :[[880,.0],[698,.2],[587,.38],[523,.54],[392,.72]]; // A5→F5→D5→C5→G4 — session complete
@@ -3247,7 +3199,6 @@ function playChime(isBreak){
       env.gain.exponentialRampToValueAtTime(0.001,now+t+0.5);
       osc.start(now+t);osc.stop(now+t+0.55);
     });
-    // Also a low thump on focus done
     if(!isBreak){
       const osc2=ctx.createOscillator();const g2=ctx.createGain();
       osc2.connect(g2);g2.connect(ctx.destination);
@@ -3259,7 +3210,6 @@ function playChime(isBreak){
   }catch(e){console.warn('chime error',e);}
 }
 
-// ── DONE BANNER ──
 let bannerTimeout=null;
 function showDoneBanner(title,sub,isBreak){
   const b=document.getElementById('done-banner');if(!b)return;
@@ -3275,19 +3225,15 @@ function hideDoneBanner(){
   const b=document.getElementById('done-banner');if(b)b.classList.remove('show');
 }
 
-// ── SESSION RATING MODAL ──
 function showRatingModal(sessInfo){
   pendingRating=sessInfo;ratingStars=0;ratingMood='';
 
-  // Reset star UI
   document.querySelectorAll('#star-row .star-btn').forEach(b=>b.classList.remove('lit'));
-  // Reset mood UI
   document.querySelectorAll('.mood-grid .mood-btn').forEach(b=>b.classList.remove('sel'));
 
   const ni=document.getElementById('rating-note');if(ni)ni.value='';
   const sl=document.getElementById('star-label');if(sl){sl.textContent='Tap a star';sl.style.color='var(--text3)';}
 
-  // Session info line
   const si=document.getElementById('rating-sess-info');
   if(si){
     const taskLabel=(_sessionTaskType||'').charAt(0).toUpperCase()+(_sessionTaskType||'').slice(1);
@@ -3295,7 +3241,6 @@ function showRatingModal(sessInfo){
       +' · '+sessInfo.mode+(taskLabel?' · '+taskLabel:'');
   }
 
-  // Reattach star listeners (replace nodes to wipe any stale handlers)
   const starRow=document.getElementById('star-row');
   if(starRow){
     const fresh=starRow.cloneNode(true);
@@ -3306,10 +3251,8 @@ function showRatingModal(sessInfo){
     starRow.parentNode.replaceChild(fresh,starRow);
   }
 
-  // Reattach mood listeners
   document.querySelectorAll('.mood-grid .mood-btn').forEach(btn=>{
     const m=btn.getAttribute('data-mood')||btn.getAttribute('onclick')||'';
-    // Extract mood value from onclick attr if data-mood not set
     const moodMatch=m.match(/rateMood\('([^']+)'/);
     const moodVal=moodMatch?moodMatch[1]:null;
     if(moodVal){
@@ -3336,13 +3279,11 @@ function rateStar(v){
     sl.textContent=lbls[v]||'';
     sl.style.color=v>=4?'var(--green)':v===3?'var(--gold)':'var(--red)';
   }
-  // Scope to star-row only — avoids touching any other .star-btn elsewhere
   const stars=document.querySelectorAll('#star-row .star-btn');
   stars.forEach((b,i)=>{
     const shouldLit=i<v;
     b.classList.toggle('lit',shouldLit);
     if(shouldLit){
-      // Cascade pop: each lit star gets a tiny staggered scale bounce
       b.style.transform='scale(1.3)';
       setTimeout(()=>{b.style.transform='';},120+i*30);
     }
@@ -3350,15 +3291,12 @@ function rateStar(v){
 }
 function rateMood(m,btn){
   ratingMood=m;
-  // Scope deselect to the rating modal's mood grid only
   document.querySelectorAll('#rating-modal .mood-btn').forEach(b=>b.classList.remove('sel'));
   if(btn)btn.classList.add('sel');
 }
 function submitRating(save_it){
-  // Guard: must select a star before saving
   if(save_it && ratingStars===0){
     showToast('⚠ Please select a star rating');
-    // Shake the star row to draw attention
     const sr=document.getElementById('star-row');
     if(sr){
       sr.style.animation='none';
@@ -3371,7 +3309,6 @@ function submitRating(save_it){
   }
 
   if(save_it&&pendingRating){
-    // Use find() by id — robust, not dependent on session being last in array
     const sess=S.sessions.find(s=>s.id===pendingRating.id);
     if(sess){
       sess.stars=ratingStars||null;
@@ -3379,7 +3316,6 @@ function submitRating(save_it){
       sess.mood=ratingMood||null;
       sess.note=(document.getElementById('rating-note')||{}).value||null;
 
-      // ── TIERED XP MODIFIER based on star rating ──
       if(ratingStars>0&&!sess.ratingApplied){
         sess.ratingApplied=true;
         const baseXP=sess.xp||0;
@@ -3395,7 +3331,6 @@ function submitRating(save_it){
           sess.ratingXPDelta=xpDelta;
         }
         capXPToRank(); // never exceed rank ceiling
-        // ── Update Focus & Discipline stats ──
         if(!S.hunter.focusStat)S.hunter.focusStat=50;
         if(!S.hunter.disciplineStat)S.hunter.disciplineStat=50;
         const targetFocus=(ratingStars/5)*100;
@@ -3407,7 +3342,6 @@ function submitRating(save_it){
         updateHeader();
       }
       save();
-      // ── Post-rating confidence nudge for 4★ / 5★ sessions ──
       if(ratingStars>=4&&sess.sub&&sess.sub!=='other'){
         const _sub=sess.sub;const _stars=ratingStars;
         setTimeout(function(){_showPostRatingNudge(_sub,_stars);},600);
@@ -3421,7 +3355,6 @@ function submitRating(save_it){
   if(typeof renderDash==='function')renderDash();
 }
 
-// ── Post-rating topic confidence nudge ──
 function _showPostRatingNudge(sub,stars){
   var topics=[].concat(S.topics[sub+'11']||[],S.topics[sub+'12']||[]);
   if(!topics.length)return;
@@ -3461,7 +3394,6 @@ function _applyPostRatingNudge(amount){
   }
 }
 
-// ── TAB TITLE TIMER ──
 const ORIG_TITLE='Shadow System';
 function updateTabTitle(){
   if(!tRunning){document.title=ORIG_TITLE;return;}
@@ -3470,13 +3402,11 @@ function updateTabTitle(){
   document.title=icon+' '+String(m).padStart(2,'0')+':'+String(s).padStart(2,'0')+' | Shadow';
 }
 
-// ── FIRE ALL ALERTS ──
 function fireAlert(title,body,isBreak,sessInfo){
   vibrate(isBreak?[200,80,200,80,200]:[400,100,400,100,800,100,800]);
   playChime(isBreak);
   sendNotification(title,body,isBreak);
   showDoneBanner(title,body,isBreak);
-  // Show session end card for focus sessions (not break transitions)
   if(sessInfo&&!isBreak){
     setTimeout(()=>showSecModal(sessInfo),700);
   } else if(sessInfo&&isBreak){
@@ -3484,8 +3414,6 @@ function fireAlert(title,body,isBreak,sessInfo){
   }
 }
 
-// ── TIMER CORE ──
-// Use Date.now()-based timing — works even when tab is backgrounded
 let _timerStartWall=null;   // wall-clock ms when the current run started
 let _timerStartSecs=null;   // tSecs value when the current run started
 let _pomoStudyMins=25;      // custom pomodoro study duration (minutes)
@@ -3507,7 +3435,6 @@ function applyPomoCustom(){
   const b=parseInt(document.getElementById('pomo-break-m').value)||5;
   _pomoStudyMins=Math.max(1,Math.min(120,s));
   _pomoBreakMins=Math.max(1,Math.min(60,b));
-  // Persist preference
   try{localStorage.setItem('ss_pomoStudy',_pomoStudyMins);localStorage.setItem('ss_pomoBreak',_pomoBreakMins);}catch(e){}
   if(!tRunning){tSecs=_pomoStudyMins*60;tTotal=_pomoStudyMins*60;pomoPhase='focus';pomoCount=0;updateTimerUI();}
   showToast('Pomodoro set: '+_pomoStudyMins+'m study / '+_pomoBreakMins+'m break ⚡');
@@ -3535,7 +3462,6 @@ function applyCd(){
 }
 function toggleTimer(){
   if(tRunning){
-    // Pause: capture how many seconds remain before clearing
     if(_timerStartWall!==null&&tMode!=='stopwatch'){
       const elapsed_ms=Date.now()-_timerStartWall;
       tSecs=Math.max(0,_timerStartSecs-Math.floor(elapsed_ms/1000));
@@ -3549,15 +3475,12 @@ function toggleTimer(){
     pauseMusic();
     document.title=ORIG_TITLE;
   } else {
-    // Check session count for the day to pick correct start modal
     const t=today();
     const todaySess=S.sessions.filter(s=>s.date===t&&!s.paused);
     if(todaySess.length===0&&!S.dailyMana[t]){
-      // First session of the day — show energy + study type (mana modal)
       showManaModal();
       return;
     } else if(todaySess.length>0){
-      // Subsequent session — ask break recap + study type
       showNextSessModal();
       return;
     }
@@ -3660,15 +3583,12 @@ function autoLog(mins,sub,mode,sid){
 
   let xp=0,starterBonus=0;
   if(!paused){
-    // Base XP: 0.5/min × efficiency × mana modifier
     const manaMod=getManaXPMod();
     xp=Math.max(1,Math.round(mins*(eff/100)*0.5*manaMod));
-    // Daily XP cap: 500 XP from timer sessions/day (prevent farming)
     if(!S.dailyXPCap)S.dailyXPCap={};
     const capSoFar=S.dailyXPCap[t]||0;
     xp=Math.min(xp,Math.max(0,500-capSoFar));
     S.dailyXPCap[t]=(capSoFar+xp);
-    // ── Starter Trigger: first session ≥15 min → +10 XP ──
     if(!S.starterXPDates)S.starterXPDates={};
     const todaySessCount=S.sessions.filter(s=>s.date===t&&!s.paused).length;
     if(todaySessCount===0&&mins>=15&&!S.starterXPDates[t]){
@@ -3688,11 +3608,9 @@ function autoLog(mins,sub,mode,sid){
     time:new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'}),
     paused:paused||undefined,
     rating:null,
-    // Resource context — captured from check-in modal
     resourceType:_sessionResource.type||undefined,
     chapter:_sessionResource.chapter||undefined,
   };
-  // Reset resource after capturing
   _sessionResource={type:'',chapter:''};
   S.sessions.push(sessObj);
   if(!paused){
@@ -3701,11 +3619,6 @@ function autoLog(mins,sub,mode,sid){
     setTimeout(()=>checkRankUp(),400);
   }
 
-  // ── MANA DRAIN — time-scaled, clamped, one-time per session ──
-  // Step 1: Base drain by study type
-  // Step 2: Scale by session duration (timeFactor = mins/60)
-  // Step 3: Clamp to [5, 40]
-  // Examples: 30m Hard→~12, 60m Hard→25, 120m Hard→40 (capped)
   if(!paused&&!sessObj.manaApplied){
     const drainMap={hard:25,practice:15,revision:10,theory:10};
     const baseDrain=drainMap[_sessionTaskType]||15;
@@ -3723,7 +3636,6 @@ function autoLog(mins,sub,mode,sid){
   if(typeof renderTodaysMission==='function')renderTodaysMission();
   if(typeof renderPenalty==='function')renderPenalty();
 
-  // Quest auto-completion (only if not paused)
   if(!paused){
     const comp=S.questComp[t]||{};
     const tM=S.sessions.filter(s=>s.date===t&&!s.paused).reduce((a,s)=>a+s.min,0);
@@ -3742,7 +3654,6 @@ function restoreMana(){
   else showToast('Mana is already full! 🔥 Start your next session.');
 }
 
-// ── Oracle "What should I study now?" — inline suggestion in Study tab ──
 async function oracleSuggest(){
   if(!_oracleKeys||!_oracleKeys.length){showToast('Add an Oracle API key first → Oracle → Keys');return;}
   const btn=document.getElementById('oracle-suggest-btn');
@@ -3793,9 +3704,6 @@ REASON: [why now, max 8 words]`;
   if(btn){btn.disabled=false;btn.textContent='⚡ What should I study now?';}
 }
 
-// ══════════════════════════════════════════════
-//  V8 FEATURE 3 — MANA / ENERGY MODAL
-// ══════════════════════════════════════════════
 let _manaEnergy='normal',_manaTask='practice';
 let _manaXPMod=1.0;
 let _sessionResource={type:'',chapter:''}; // captures resource picked in modal
@@ -3839,7 +3747,6 @@ function updateManaNote(){
 }
 function confirmManaModal(){
   const t=today();
-  // Calculate XP modifier
   const e=_manaEnergy,task=_manaTask;
   if(e==='fresh'&&task==='hard') _manaXPMod=1.25;
   else if(e==='fresh'&&task!=='hard') _manaXPMod=0.9;
@@ -3847,10 +3754,8 @@ function confirmManaModal(){
   else if(e==='tired'&&task==='revision') _manaXPMod=1.0;
   else _manaXPMod=1.0;
 
-  // Set per-session task type
   _sessionTaskType=task;
 
-  // Capture resource + chapter from modal
   const chInput=document.getElementById('session-chapter-input');
   _sessionResource.chapter=(chInput&&chInput.value.trim())||'';
   if(chInput)chInput.value=''; // reset for next session
@@ -3859,7 +3764,6 @@ function confirmManaModal(){
   save();
   document.getElementById('mana-modal').classList.remove('show');
 
-  // Now actually start the timer
   if(audioCtx&&audioCtx.state==='suspended')audioCtx.resume();
   tRunning=true;el('t-toggle','Pause');
   _timerStartWall=Date.now();_timerStartSecs=tSecs;
@@ -3870,17 +3774,11 @@ function confirmManaModal(){
   else if(_manaXPMod>1) showToast('🔥 Fresh energy locked in — bonus XP active!');
 }
 
-// Apply mana modifier to XP (called from autoLog)
 function getManaXPMod(){
   const t=today();
   return (S.dailyMana&&S.dailyMana[t]&&S.dailyMana[t].mod)||1.0;
 }
 
-// ══════════════════════════════════════════════
-//  V8 FEATURE 4+5+6 — SESSION END CARD
-// ══════════════════════════════════════════════
-// LEARN-THIS POOL — 3 categories, rotated per session
-// ══════════════════════════════════════════════
 const LEARN_VOCAB=[
   {type:'vocab',word:'Ephemeral',meaning:'Lasting a very short time.',example:'"Her motivation was ephemeral — gone by noon."'},
   {type:'vocab',word:'Tenacious',meaning:'Holding firm; refusing to give up.',example:'"A tenacious hunter finishes every session."'},
@@ -3933,10 +3831,8 @@ const LEARN_FACT=[
   {type:'fact',fact:'Looking at a problem from multiple angles (different approaches) strengthens neural pathways for that concept.',tag:'🧩 Thinking'},
 ];
 
-// Track last shown learn-item index per category — persisted to localStorage to survive reloads
 let _learnLastIdx={vocab:-1,jee:-1,fact:-1};
 function getLearnItem(){
-  // Load persisted last-shown indices from localStorage
   let lastIdx;
   try{lastIdx=JSON.parse(localStorage.getItem('_learnLastIdx')||'{}');}
   catch(e){lastIdx={};}
@@ -3946,12 +3842,10 @@ function getLearnItem(){
 
   const cats=['vocab','jee','fact'];
   const pools={vocab:LEARN_VOCAB,jee:LEARN_JEE,fact:LEARN_FACT};
-  // Cycle category by TOTAL non-paused session count → deterministic rotation across reloads
   const totalCount=(S.sessions||[]).filter(s=>!s.paused).length;
   const cat=cats[totalCount%3];
   const pool=pools[cat];
 
-  // Pick a random index that differs from the last shown in this category
   const last=lastIdx[cat];
   let idx=Math.floor(Math.random()*pool.length);
   let attempts=0;
@@ -3959,23 +3853,19 @@ function getLearnItem(){
     idx=Math.floor(Math.random()*pool.length);attempts++;
   }
   lastIdx[cat]=idx;
-  // Persist back to localStorage
   try{localStorage.setItem('_learnLastIdx',JSON.stringify(lastIdx));}catch(e){}
   _learnLastIdx=lastIdx; // keep in-memory copy in sync
   return pool[idx];
 }
 
 let _secSessInfo=null,_breakLen='none',_breakType='';
-// ── PER-SESSION TASK TYPE (set at modal confirm, used by autoLog + feedback) ──
 let _sessionTaskType='practice';
-// ── NEXT-SESSION MODAL STATE ──
 let _nextSessBreakLen='none',_nextSessBreakType='',_nextSessTask='practice';
 
 function showSecModal(sessInfo){
   _secSessInfo=sessInfo;
   const mins=sessInfo.min,sub=sessInfo.sub,mode=sessInfo.mode;
 
-  // ── Performance tier ──
   const todayMins=S.sessions.filter(s=>s.date===today()&&!s.paused).reduce((a,s)=>a+s.min,0);
   let perfLabel,perfClass,perfMsg,isHighPerf=false;
   if(todayMins>=360){perfLabel='🔥 Excellent';perfClass='excellent';perfMsg='You are locked in today. Chase the boss fight.';isHighPerf=true;}
@@ -3984,26 +3874,20 @@ function showSecModal(sessInfo){
   else if(mins>=20){perfLabel='📚 Session done';perfClass='warn';perfMsg='Short but done. Push for a longer next session.';}
   else{perfLabel='⚠ Low focus';perfClass='low';perfMsg='Very short session. Regroup and push harder next time.';}
 
-  // ── Study type ──
   const taskType=_sessionTaskType||'practice';
   const taskLabel=taskType.charAt(0).toUpperCase()+taskType.slice(1);
 
-  // ── Mana info — recalculate using same time-scaled formula as autoLog ──
   const drainMap={hard:25,practice:15,revision:10,theory:10};
   const baseDrainDisplay=drainMap[taskType]||15;
   const drain=Math.round(Math.min(40,Math.max(5,baseDrainDisplay*(mins/60))));
   const manaAfter=S.hunter.mana; // already drained in autoLog
 
-  // ── Advice — context-aware: checks mana level, session length, task type, performance ──
   let advice='';
   if(manaAfter<=20){
-    // Low mana takes priority — recovery is critical
     advice='⚠ Mana critical ('+manaAfter+'). Your focus is burning out. Take a long productive break — eat, sleep, or walk before the next session.';
   } else if(mins>=90&&taskType==='hard'){
-    // Long + hard → explicitly suggest short break
     advice='🔥 Long hard session ('+mins+'m) complete. Your brain needs a short break now — 10–15 min, water and stretch. Come back stronger.';
   } else if(mins<20&&!isHighPerf){
-    // Short + low output → focus improvement advice
     advice='😐 Very short session ('+mins+'m). Identify the distraction — phone, noise, unclear goal? Fix the root cause. Next session: no distractions for 25 min minimum.';
   } else if(isHighPerf){
     advice=taskType==='hard'
@@ -4015,18 +3899,15 @@ function showSecModal(sessInfo){
       : '😐 Short session. Rest properly — a full break resets your mana faster.';
   }
 
-  // ── Next session suggestion ──
   let suggest='';
   if(taskType==='hard')suggest='⚡ Next: 5 PYQs on this topic, or start a timed mock.';
   else if(taskType==='practice')suggest='📝 Next: PYQ module or chapter problems.';
   else if(taskType==='theory')suggest='🔬 Next: Solve 10 problems based on what you just studied.';
   else suggest='📖 Next: Review weak topic notes or update confidence sliders.';
 
-  // ── Info line ──
   const infoEl=document.getElementById('sec-info');
   if(infoEl)infoEl.textContent=`${mins}m · ${sub.charAt(0).toUpperCase()+sub.slice(1)} · ${mode} · ${taskLabel} · Mana −${drain} → ${manaAfter}`;
 
-  // ── Performance badge + mana bar ──
   const manaColor=manaAfter>=60?'var(--green)':manaAfter>=30?'var(--gold)':'var(--red)';
   const perfEl=document.getElementById('sec-performance');
   if(perfEl)perfEl.innerHTML=
@@ -4041,20 +3922,16 @@ function showSecModal(sessInfo){
       `<span style="font-size:10px;color:var(--red)">−${drain}</span>`+
     `</div>`;
 
-  // ── Advice (static first, AI upgrade if Oracle keys loaded) ──
   const advEl=document.getElementById('sec-advice');
   if(advEl)advEl.textContent=advice;
 
-  // ── Suggestion ──
   const sugEl=document.getElementById('sec-suggest');
   if(sugEl)sugEl.textContent=suggest;
 
-  // ── AI Advice upgrade — async Oracle call if keys ready and Oracle not busy ──
   if(_oracleKeys&&_oracleKeys.length>0&&!oracleStreaming){
     _upgradeSecAdviceAI(mins,sub,taskType,manaAfter,advice,suggest);
   }
 
-  // ── Learn This — static fallback, Oracle upgrade if available ──
   const item=getLearnItem();
   const micEl=document.getElementById('sec-micro');
   if(micEl){
@@ -4074,7 +3951,6 @@ function showSecModal(sessInfo){
         `<div class="sec-learn-tag">${item.tag}</div>`+
         `<div class="sec-micro-def" style="margin-top:4px">${item.fact}</div>`;
     }
-    // Oracle upgrade — replace with subject-specific JEE fact if keys available
     if(_oracleKeys&&_oracleKeys.length>0&&sub&&sub!=='other'){
       _upgradeLearnThisAI(sub);
     }
@@ -4083,7 +3959,6 @@ function showSecModal(sessInfo){
   document.getElementById('sec-modal').classList.add('show');
 }
 
-// ── AI-powered session end advice — fires async after modal opens ──
 async function _upgradeSecAdviceAI(mins,sub,taskType,manaAfter,staticAdvice,staticSuggest){
   const advEl=document.getElementById('sec-advice');
   if(!advEl)return;
@@ -4114,7 +3989,6 @@ NEXT: [specific next session suggestion, max 18 words]`;
   }
 }
 
-// ── Oracle-powered "Learn This" — subject-specific JEE fact on session end ──
 async function _upgradeLearnThisAI(sub){
   const micEl=document.getElementById('sec-micro');
   if(!micEl)return;
@@ -4137,32 +4011,6 @@ async function _upgradeLearnThisAI(sub){
   }catch(e){/* silently keep static fallback */}
 }
 
-function selBreakLen(len,btn){
-  _breakLen=len;_breakType='';
-  document.querySelectorAll('#break-length-row .break-chip').forEach(b=>b.classList.remove('sel','sel-waste'));
-  btn.classList.add('sel');
-  const btr=document.getElementById('break-type-row');
-  if(btr)btr.style.display=(len!=='none')?'flex':'none';
-  if(len!=='none'){document.querySelectorAll('#break-type-row .break-chip').forEach(b=>b.classList.remove('sel','sel-waste'));}
-  // Update advice
-  updateSecAdvice();
-}
-function selBreakType(type,btn){
-  _breakType=type;
-  document.querySelectorAll('#break-type-row .break-chip').forEach(b=>b.classList.remove('sel','sel-waste'));
-  btn.classList.add(type==='waste'?'sel-waste':'sel');
-  updateSecAdvice();
-}
-function updateSecAdvice(){
-  const dm=S.dailyMana[today()]||{};
-  const taskType=dm.task||'practice';
-  const advEl=document.getElementById('sec-advice');if(!advEl)return;
-  if(_breakLen==='none'){advEl.textContent='No break — straight back to it. Iron discipline. 🔥';}
-  else if(_breakType==='waste'){advEl.textContent='⚠ Scrolling is a trap. 10 minutes becomes 2 hours. Eat, walk, or sleep instead.';}
-  else if(_breakType==='productive'&&_breakLen==='short'){advEl.textContent='✅ Short productive break — eat, hydrate, stretch. Come back strong.';}
-  else if(_breakType==='productive'&&_breakLen==='long'){advEl.textContent='✅ Long break earned — sleep, workout, or proper meal. Return refreshed.';}
-  else{advEl.textContent=taskType==='hard'?'Hard session done. Hydrate and stretch.':'Good work. Rest your eyes before next session.';}
-}
 function submitSecModal(){
   document.getElementById('sec-modal').classList.remove('show');
   const _info=_secSessInfo; // capture BEFORE nulling — fixes closure bug
@@ -4176,9 +4024,6 @@ function closeSecModal(){
   if(_info){setTimeout(()=>showRatingModal(_info),200);}
 }
 
-// ══════════════════════════════════════════════
-//  NEXT SESSION MODAL — Break + Study Type (2nd+ sessions)
-// ══════════════════════════════════════════════
 function showNextSessModal(){
   _nextSessBreakLen='none';_nextSessBreakType='';_nextSessTask='practice';
   document.querySelectorAll('#next-break-len-pick .pick-btn').forEach(b=>b.classList.remove('sel','sel-waste'));
@@ -4232,15 +4077,11 @@ function updateNextSessNote(){
   note.style.color='var(--text2)';note.textContent='';
 }
 function confirmNextSessModal(){
-  // Validate: if break taken, type must be selected
   if(_nextSessBreakLen!=='none'&&!_nextSessBreakType){
     showToast('Select break type to continue ↑');return;
   }
 
-  // ── MANA RECOVERY — applied before next session starts ──
-  // Base recovery by break length
   const baseManaRecovery={none:0,short:10,long:20}[_nextSessBreakLen]||0;
-  // Waste break = 50% recovery; productive = full
   const manaRecovery=_nextSessBreakType==='waste'
     ? Math.round(baseManaRecovery*0.5)
     : baseManaRecovery;
@@ -4248,7 +4089,6 @@ function confirmNextSessModal(){
     S.hunter.mana=Math.min(100,S.hunter.mana+manaRecovery);
   }
 
-  // ── XP EFFECTS for break quality ──
   let xpToast='';
   if(_nextSessBreakType==='productive'){
     const xpBonus=_nextSessBreakLen==='long'?15:8;
@@ -4263,10 +4103,8 @@ function confirmNextSessModal(){
 
   save();updateHeader();
 
-  // ── TASK TYPE + XP MOD ──
   _sessionTaskType=_nextSessTask;
 
-  // Capture resource + chapter from next session modal
   const nextChInput=document.getElementById('next-chapter-input');
   _sessionResource.chapter=(nextChInput&&nextChInput.value.trim())||'';
   if(nextChInput)nextChInput.value='';
@@ -4283,21 +4121,16 @@ function confirmNextSessModal(){
 
   document.getElementById('next-sess-modal').classList.remove('show');
 
-  // Start timer
   if(audioCtx&&audioCtx.state==='suspended')audioCtx.resume();
   tRunning=true;el('t-toggle','Pause');
   _timerStartWall=Date.now();_timerStartSecs=tSecs;
   tInterval=setInterval(tick,250);
   resumeMusic();
 
-  // Show single consolidated toast
   if(xpToast)setTimeout(()=>showToast(xpToast),250);
   else if(mod>1)setTimeout(()=>showToast('🔥 Fresh energy + hard task — bonus XP active!'),250);
 }
 
-// ══════════════════════════════════════════════
-//  V8 FEATURE 2 — BOARD MARKS SYSTEM
-// ══════════════════════════════════════════════
 let chBoard=null;
 const BOARD_SUBJECTS=['physics','chemistry','maths','english','cs'];
 const BOARD_SUBJ_LABEL={physics:'Physics',chemistry:'Chemistry',maths:'Maths',english:'English',cs:'Comp. Sci'};
@@ -4324,7 +4157,6 @@ function addBoardTest(){
   S.boardTests.push({id:Date.now(),subj,type,marks,total,date,pct:Math.round(marks/total*100),chapters,notes});
   S.boardTests.sort((a,b)=>a.date.localeCompare(b.date));
   save();
-  // Clear inputs
   ['b-marks','b-chapters','b-notes'].forEach(id=>{const el2=document.getElementById(id);if(el2)el2.value='';});
   renderBoardPerformance();
   showToast(`Board test logged: ${BOARD_SUBJ_LABEL[subj]} — ${Math.round(marks/total*100)}%`);
@@ -4364,10 +4196,7 @@ function renderBoardChart(){
   if(!S.boardTests||S.boardTests.length<1){
     canvas.parentElement.innerHTML='<div class="empty">Log board tests to see performance graph.</div>';return;
   }
-  // FIX: Use ALL sorted entries as x-axis points — not unique dates — so every test is shown.
-  // Old code used .find() which only showed the FIRST test per date+subject.
   const allTests=[...S.boardTests].sort((a,b)=>a.date.localeCompare(b.date)||(a.id-b.id));
-  // Build x-axis labels: if multiple entries share a date, suffix with #1 #2 etc.
   const dateCounts={};
   const dateRunning={};
   allTests.forEach(t=>{dateCounts[t.date]=(dateCounts[t.date]||0)+1;});
@@ -4380,7 +4209,6 @@ function renderBoardChart(){
   });
 
   const datasets=BOARD_SUBJECTS.map(subj=>{
-    // Map every entry: score if this entry belongs to subject, else null — no .find()
     const data=allTests.map(t=>t.subj===subj?t.pct:null);
     const hasData=data.some(v=>v!==null);
     if(!hasData)return null;
@@ -4453,8 +4281,6 @@ function renderBoardHist(){
   el2.innerHTML=h;
 }
 
-
-// ── WAKE LOCK API ──
 let wakeLock=null,wakeLockOn=false;
 async function toggleWakeLock(){
   if(!('wakeLock' in navigator)){showToast('Wake Lock not supported on this browser');return;}
@@ -4471,7 +4297,6 @@ async function toggleWakeLock(){
       document.getElementById('wakelock-toggle').style.background='var(--green)';
       document.getElementById('wakelock-knob').style.left='18px';
       showToast('📱 Screen will stay on during sessions');
-      // Re-acquire if released by system (page visibility change)
       wakeLock.addEventListener('release',async()=>{
         if(wakeLockOn&&document.visibilityState==='visible'){
           try{wakeLock=await navigator.wakeLock.request('screen');}catch(e){}
@@ -4480,7 +4305,6 @@ async function toggleWakeLock(){
     }catch(e){showToast('Could not acquire wake lock: '+e.message);}
   }
 }
-// FOCUS STATS SYSTEM
 let focusTab='timer', logPeriod='today', statsPeriod='today';
 
 function setFocusTab(tab, btn){
@@ -4501,7 +4325,6 @@ function setLogPeriod(p, btn){
   if(p!=='week')historyWeekOffset=0; // reset offset when switching away from week
   document.querySelectorAll('#fp-log .tab-btn').forEach(b=>b.classList.remove('active'));
   if(btn)btn.classList.add('active');
-  // Show/hide week nav
   const nav=document.getElementById('log-week-nav');
   if(nav)nav.style.display=p==='week'?'flex':'none';
   if(p==='week')updateHistoryWeekNav();
@@ -4549,14 +4372,11 @@ function updateStatsWeekNav(){
   if(nxt)nxt.style.pointerEvents=statsWeekOffset>=0?'none':'auto';
 }
 
-// ── WEEK NAVIGATION OFFSETS (0 = current week, -1 = last week, etc.) ──
 let historyWeekOffset=0;
 let statsWeekOffset=0;
 
 function getWeekDays(offsetWeeks){
-  // Returns array of 7 date strings for the week at offsetWeeks from current
   const now=new Date();
-  // Find Monday of current week
   const dow=now.getDay(); // 0=Sun
   const diffToMon=dow===0?-6:1-dow;
   const monday=new Date(now);
@@ -4661,7 +4481,6 @@ function renderSessionLog(){
   const subCounts={physics:0,chemistry:0,maths:0,other:0};
   sess.forEach(s=>{subCounts[s.sub]=(subCounts[s.sub]||0)+s.min;});
 
-  // Summary bar
   const sumEl=document.getElementById('log-period-summary');
   if(sumEl&&sess.length>0){
     sumEl.innerHTML=`<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;width:100%">
@@ -4687,7 +4506,6 @@ function renderSessionLog(){
   const lbl2={physics:'Physics',chemistry:'Chemistry',maths:'Maths',other:'Other'};
   const modeLabel={pomodoro:'🍅 Pomo',stopwatch:'⏱ Free',countdown:'⏲ CD'};
 
-  // Group by date for non-today views
   if(logPeriod==='today'){
     let h='';
     sess.forEach(s=>{
@@ -4696,7 +4514,6 @@ function renderSessionLog(){
     });
     logEl.innerHTML=h;
   } else {
-    // Group by date
     const byDate={};
     sess.forEach(s=>{if(!byDate[s.date])byDate[s.date]=[];byDate[s.date].push(s);});
     const sortedDates=Object.keys(byDate).sort((a,b)=>b.localeCompare(a));
@@ -4730,32 +4547,26 @@ function renderFocusStats(){
   const avgEff=Math.round(sess.reduce((a,s)=>a+(s.eff||100),0)/sess.length);
   const longestSess=Math.max(...sess.map(s=>s.min));
 
-  // Subject breakdown totals
   const sub={physics:0,chemistry:0,maths:0,other:0};
   sess.forEach(s=>{sub[s.sub]=(sub[s.sub]||0)+s.min;});
   const subOrder=[['Physics','physics','rgba(91,110,245,.9)'],['Chemistry','chemistry','rgba(0,214,143,.9)'],['Maths','maths','rgba(244,196,48,.9)'],['Other','other','rgba(150,150,200,.8)']];
   const mostStudied=subOrder.reduce((best,cur)=>sub[cur[1]]>sub[best[1]]?cur:best,subOrder[0]);
 
-  // Best/avg day
   const byDate={};
   sess.forEach(s=>{byDate[s.date]=(byDate[s.date]||0)+s.min;});
   const dayMins=Object.values(byDate);
   const bestDay=dayMins.length?Math.max(...dayMins):0;
   const avgDay=dayMins.length?Math.round(dayMins.reduce((a,v)=>a+v,0)/dayMins.length):0;
 
-  // Average star rating
   const ratedSess=sess.filter(s=>s.stars>0);
   const avgStars=ratedSess.length?Math.round(ratedSess.reduce((a,s)=>a+s.stars,0)/ratedSess.length*10)/10:0;
 
-  // Mode breakdown
   const modes={pomodoro:0,stopwatch:0,countdown:0};
   sess.forEach(s=>{modes[s.mode]=(modes[s.mode]||0)+s.min;});
 
-  // ── STACKED BAR CHART (subject-wise, mobile-scrollable) ──
   let stackedChart='';
   if(statsPeriod==='week'||statsPeriod==='month'){
     const days=statsPeriod==='week'?7:30;
-    // For week: use offset-aware days; for month: current calendar month days
     let dayArr=[];
     if(statsPeriod==='week'){
       dayArr=getWeekDays(statsWeekOffset);
@@ -4810,7 +4621,6 @@ function renderFocusStats(){
       </div>
     </div>`;
   } else {
-    // Today view: subject bars
     stackedChart=`<div class="card" style="margin-bottom:12px">
       <div class="card-hdr"><span class="hl">📊 Today's Subject Split</span></div>
       ${subOrder.filter(([,k])=>sub[k]>0).map(([name,key,color])=>{
@@ -4905,8 +4715,6 @@ function renderSessLog(){
   renderFocusStatsBar();
 }
 
-
-// TESTS
 function setTTab(t,btn){
   ['weekly','topics','marks','board'].forEach(x=>{const el2=document.getElementById('tt-'+x);if(el2)el2.style.display=x===t?'block':'none';});
   document.querySelectorAll('#s-tests .tab-btn').forEach(b=>b.classList.remove('active'));if(btn)btn.classList.add('active');
@@ -4926,10 +4734,8 @@ function updateTestFormForType(){
   var phyCb=document.getElementById('ts-phy');
   var cheCb=document.getElementById('ts-che');
   var matCb=document.getElementById('ts-mat');
-  // Reset checkboxes
   if(phyCb)phyCb.checked=true;if(cheCb)cheCb.checked=true;if(matCb)matCb.checked=true;
   if(type==='chapter'){
-    // Chapter test: let user choose which subject(s)
     if(maxEl)maxEl.value='100';
   } else if(type==='board'){
     if(cheCb)cheCb.checked=false;if(matCb)matCb.checked=false;
@@ -4995,7 +4801,6 @@ function saveTestEdit(id){
   document.getElementById('test-edit-modal').style.display='none';
   renderTests();showToast('Test updated ✓');
 }
-// ── Test weak topic chips — tap to mark where you lost marks ──
 function renderTestWeakChips(){
   const cont=document.getElementById('test-weak-chips');if(!cont)return;
   const defs=[
@@ -5038,7 +4843,6 @@ function addTest(){
   const type=document.getElementById('t-type').value;
   const chapters=(document.getElementById('t-chapters').value||'').trim();
   const notes=(document.getElementById('t-notes').value||'').trim();
-  // Which subjects are in this test
   const subjects=[];
   if(!document.getElementById('ts-phy')||document.getElementById('ts-phy').checked)subjects.push('physics');
   if(!document.getElementById('ts-che')||document.getElementById('ts-che').checked)subjects.push('chemistry');
@@ -5047,12 +4851,10 @@ function addTest(){
   const cheF=subjects.indexOf('chemistry')>-1?che:0;
   const matF=subjects.indexOf('maths')>-1?mat:0;
   const total=phyF+cheF+matF;
-  // ── Collect weak topic chips ──
   const weakChipEls=[...document.querySelectorAll('.twc.twc-on')];
   const weakTopics=weakChipEls.map(el=>({name:el.dataset.topic,subject:el.dataset.subject}));
   S.tests.push({id:Date.now(),date,phy:phyF,che:cheF,mat:matF,total,max,type,chapters,notes,weakTopics,subjects});
   S.tests.sort((a,b)=>new Date(a.date)-new Date(b.date));
-  // ── Apply confidence drop for weak topics ──
   if(weakTopics.length){
     weakTopics.forEach(wt=>{
       ['11','12'].forEach(yr=>{
@@ -5064,7 +4866,6 @@ function addTest(){
     setTimeout(()=>showToast('⚠ Confidence -10% for '+weakTopics.length+' weak topic'+(weakTopics.length>1?'s':'')),800);
   }
   const xp=Math.round((total/max)*40);S.hunter.xp+=xp;
-  // ── WEEKLY BOSS: mock/chapter test = +200 XP (once per week) ──
   let bossXP=0;
   if(type==='mock'||type==='chapter'){
     const wk=getWeekKey(date);
@@ -5074,7 +4875,6 @@ function addTest(){
       setTimeout(()=>showToast('⚔ Weekly Boss Defeated! +200 XP 🏆🔥'),700);
     } else if(S.weeklyBoss[wk]){showToast('Boss already defeated this week. +'+xp+' XP');}
   }
-  // Clear inputs + chips
   ['t-phy','t-che','t-mat','t-chapters','t-notes'].forEach(id=>{const el2=document.getElementById(id);if(el2)el2.value='';});
   document.querySelectorAll('.twc.twc-on').forEach(el=>{
     el.classList.remove('twc-on');el.style.background='transparent';
@@ -5118,7 +4918,6 @@ function renderTests(){
 function renderTopics(){
   const col={physics:'var(--accent)',chemistry:'var(--green)',maths:'var(--gold)'};
 
-  // Overview strip
   const allT=[...(S.topics.physics11||[]),...(S.topics.physics12||[]),...(S.topics.chemistry11||[]),...(S.topics.chemistry12||[]),...(S.topics.maths11||[]),...(S.topics.maths12||[])];
   const danger=allT.filter(t=>t.conf>0&&t.conf<50).length;
   const learning=allT.filter(t=>t.conf>=50&&t.conf<70).length;
@@ -5233,7 +5032,6 @@ function upConf(s,i,v,sl){
   const c=val>=90?'#c35ff5':val>=70?'var(--green)':val>=50?'var(--gold)':'var(--red)';
   sl.style.background=`linear-gradient(to right,${c} ${val}%,rgba(255,255,255,.07) ${val}%)`;
   const e=document.getElementById('tp-'+s+'-'+i);if(e){e.textContent=val+'%';e.style.color=c;}
-  // Badge: Mastered ≥90, Strong ≥70, OK ≥50, Danger <50
   const badge=val>=90?'★':val>=70?'✓':val>=50?'~':'!';
   const bEl=sl.previousElementSibling?.querySelector('span:first-child');
   if(bEl&&bEl.style){bEl.textContent=badge;bEl.style.color=c;bEl.style.background=c+'22';}
@@ -5261,7 +5059,6 @@ function renderJeeMks(){
 }
 function saveJeeTgt(){const v=parseInt(document.getElementById('jee-tgt').value);if(v>0){S.jeeTarget=v;save();renderJeeMks();showToast('Target set: '+v+' marks');}}
 
-// WORKOUT
 let selDay=DAYS_ORDER[new Date().getDay()===0?6:new Date().getDay()-1];
 let editMode=false;
 let chStrength=null;
@@ -5289,7 +5086,6 @@ function renderDayView(){
   const comp=(log&&log.comp)||{};
   let h=`<div style="border-top:1px solid var(--border);padding-top:14px;margin-top:8px"><div id="day-title-display" style="font-size:15px;font-weight:700;margin-bottom:12px">${plan.name}</div>`;
   if(editMode){
-    // ── Edit mode: name field + exercise list + add button ──
     h+=`<div style="margin-bottom:14px">
       <div style="font-size:10px;color:var(--text2);text-transform:uppercase;letter-spacing:.6px;margin-bottom:5px;font-weight:700">Day Name</div>
       <input class="fi" style="font-size:14px;font-weight:700;padding:9px 12px" 
@@ -5323,7 +5119,6 @@ function renderDayView(){
     h+='<div style="color:var(--text2);font-size:14px;padding:12px 0">Rest day. Recover and recharge 🌙</div>';
     h+=`<div style="margin-top:8px"><button onclick="toggleEditFromDay()" style="background:rgba(91,110,245,.07);border:1px solid var(--border2);border-radius:var(--radius-sm);color:var(--accent);font-size:12px;font-weight:700;padding:8px 14px;cursor:pointer;font-family:var(--font)">✏ Edit this day</button></div>`;
   }else{
-    // ── View mode: exercise checklist ──
     plan.exercises.forEach((ex,i)=>{
       const d=!!comp[i];
       h+=`<div class="ex-item"><div class="ex-chk${d?' done':''}" onclick="togEx(${i})">${d?'<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>':''}</div><span class="ex-name" style="${d?'text-decoration:line-through;color:var(--text3)':''}">${ex.name}</span><span class="ex-sets">${ex.sets}×${ex.reps}</span></div>`;
@@ -5355,15 +5150,12 @@ function togEx(i){
   const plan=S.workout.plan[selDay];
   const dc=Object.values(log.comp).filter(Boolean).length;
 
-  // ── XP per exercise: 5 XP each, deduped via xpRewarded ──
-  // Guard: only grant XP if today's workout XP hasn't been already fully rewarded
   const targetXP=dc*5;
   const delta=targetXP-log.xpRewarded;
   if(delta>0){S.hunter.xp+=delta;log.xpRewarded=targetXP;}
   else if(delta<0){S.hunter.xp=Math.max(0,S.hunter.xp+delta);log.xpRewarded=targetXP;}
   log.xp=targetXP;
 
-  // ── Completion bonus: +30 XP quest when ALL done (once per day, per quest guard) ──
   const isFullyDone=plan.exercises.length>0&&dc===plan.exercises.length;
   if(isFullyDone){
     const qc=S.questComp[t]||{};
@@ -5371,12 +5163,10 @@ function togEx(i){
       qc.q3=true;S.questComp[t]=qc;
       S.hunter.xp+=30;log.xpRewarded+=30;log.xp+=30;
 
-      // ── Workout streak update ──
       const lastWo=S.workout.woLastDate;
       const yesterday=new Date();yesterday.setDate(yesterday.getDate()-1);
       const yStr=yesterday.toISOString().split('T')[0];
       if(lastWo===t){
-        // already counted today — no change
       } else if(lastWo===yStr){
         S.workout.woStreak=(S.workout.woStreak||0)+1;
       } else {
@@ -5384,9 +5174,7 @@ function togEx(i){
       }
       S.workout.woLastDate=t;
 
-      // ── Strength stat update (cumulative: each full workout = +2 strength, cap 100) ──
       S.workout.strengthStat=Math.min(100,(S.workout.strengthStat||0)+2);
-      // Log strength history snapshot (one per day)
       const histArr=S.workout.strengthHistory||[];
       const lastSnap=histArr[histArr.length-1];
       if(!lastSnap||lastSnap.date!==t){
@@ -5396,10 +5184,8 @@ function togEx(i){
         lastSnap.value=S.workout.strengthStat;
       }
 
-      // ── Endurance stat: increases with consecutive workout days ──
       S.workout.enduranceStat=Math.min(100,Math.round((S.workout.woStreak||1)/30*100));
 
-      // ── Glow effect on card ──
       const card=document.querySelector('#s-workout .card');
       if(card){card.classList.add('wo-complete-glow');setTimeout(()=>card.classList.remove('wo-complete-glow'),900);}
 
@@ -5445,26 +5231,21 @@ function renderWoLog(){
   el2.innerHTML=h;
 }
 
-// ── WORKOUT SUMMARY CARDS ──
 function renderWorkoutSummary(){
   const el2=document.getElementById('wo-summary-cards');if(!el2)return;
   const t=today();
 
-  // Workouts this week (any log with at least 1 exercise done, within Mon-Sun of current week)
   const monday=new Date();monday.setDate(monday.getDate()-((monday.getDay()+6)%7));monday.setHours(0,0,0,0);
   const weekStart=monday.toISOString().split('T')[0];
   const workoutsThisWeek=S.workout.logs.filter(l=>{
     if(l.date<weekStart)return false;
     return Object.values(l.comp||{}).some(Boolean);
   });
-  // Deduplicate by date
   const uniqueDates=new Set(workoutsThisWeek.map(l=>l.date));
   const weekCount=uniqueDates.size;
 
-  // Workout streak
   const streak=S.workout.woStreak||0;
 
-  // Strength stat
   const strength=S.workout.strengthStat||0;
 
   el2.innerHTML=`
@@ -5482,7 +5263,6 @@ function renderWorkoutSummary(){
     </div>`;
 }
 
-// ── WORKOUT FEEDBACK BANNER ──
 function renderWorkoutFeedback(){
   const el2=document.getElementById('wo-feedback');if(!el2)return;
   const t=today();
@@ -5519,7 +5299,6 @@ function renderWorkoutFeedback(){
   }
 }
 
-// ── WORKOUT GRAPHS ──
 function renderWorkoutGraphs(){
   renderWorkoutConsistencyGraph();
   renderStrengthProgressionGraph();
@@ -5533,7 +5312,6 @@ function renderWorkoutConsistencyGraph(){
     last7.push(d.toISOString().split('T')[0]);
   }
   const t=today();
-  // For each of last 7 days, count exercises done
   const barData=last7.map(date=>{
     const dayLogs=S.workout.logs.filter(l=>l.date===date);
     const totalDone=dayLogs.reduce((a,l)=>a+Object.values(l.comp||{}).filter(Boolean).length,0);
@@ -5558,7 +5336,6 @@ function renderWorkoutConsistencyGraph(){
       <div class="wo-bar-lbl">${lbl}<br><span style="font-size:8px">${dateStr}</span></div>
     </div>`;
   }).join('');
-  // Legend
   h+=`<div style="position:absolute;bottom:-4px;right:0;display:flex;gap:10px;font-size:9px;color:var(--text3)">
     <span><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:var(--green);margin-right:3px"></span>Full</span>
     <span><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:var(--gold);margin-right:3px"></span>Partial</span>
@@ -5575,7 +5352,6 @@ function renderStrengthProgressionGraph(){
     canvas.parentElement.innerHTML=`<div class="empty" style="font-size:12px">Complete workouts to build your Strength graph.<br><span style="color:var(--green)">Current strength: ${S.workout.strengthStat||0}/100</span></div>`;
     return;
   }
-  // Show last 20 data points
   const pts=hist.slice(-20);
   const labels=pts.map(p=>{const dt=new Date(p.date);return dt.getDate()+'/'+(dt.getMonth()+1);});
   const values=pts.map(p=>p.value);
@@ -5622,10 +5398,8 @@ function renderStrengthProgressionGraph(){
   });
 }
 
-// ANALYTICS
 let chS=null,chT=null,chProd=null,chCum=null,chSplit=null;
 
-// ── SHARED PREMIUM CHART CONFIG ──
 const SL_TOOLTIP={
   backgroundColor:'rgba(8,8,20,.96)',
   borderColor:'rgba(91,110,245,.5)',
@@ -5657,7 +5431,6 @@ function renderCharts(){
   el('an-qr',qT>0?Math.round(qD/qT*100)+'%':'0%');
   el('an-streak',S.hunter.streak);
 
-  // ── 1. PRODUCTIVITY LINE — neon green glow ──
   const last14=[];for(let i=13;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);last14.push(d.toISOString().split('T')[0]);}
   const prodScores=last14.map(d=>{
     const dayMins=S.sessions.filter(s=>s.date===d).reduce((a,s)=>a+s.min,0);
@@ -5706,7 +5479,6 @@ function renderCharts(){
     });
   }
 
-  // ── 2. STUDY HOURS — Premium Chart.js bar with gradient per bar ──
   (()=>{
     const cont=document.getElementById('ch-study-custom');if(!cont)return;
     const data=last7.map(d=>{
@@ -5732,7 +5504,6 @@ function renderCharts(){
     ];
     const totalWeek=data.reduce((a,d)=>a+d.total,0);
     const avgDay=totalWeek/7;
-    // Color based on % of goal: red→orange→green
     function barColor(total){
       const p=total/goalH;
       if(p<=0)return 'rgba(255,255,255,.06)';
@@ -5792,7 +5563,6 @@ function renderCharts(){
       </div>`;
   })();
 
-  // ── 3. CUMULATIVE STUDY — neon emerald ──
   if(chCum)chCum.destroy();
   const sortedSess=[...S.sessions].sort((a,b)=>a.date.localeCompare(b.date));
   const cumDates=[],cumHrs=[];let running=0;
@@ -5833,7 +5603,6 @@ function renderCharts(){
     }
   }else{const ce=document.getElementById('ch-cumulative');if(ce)ce.parentElement.innerHTML='<div class="empty">Log sessions to see cumulative progress.</div>';}
 
-  // ── 4. SUBJECT SPLIT — neon doughnut ──
   const subMins={physics:0,chemistry:0,maths:0,other:0};
   S.sessions.forEach(s=>{if(subMins[s.sub]!==undefined)subMins[s.sub]+=s.min;else subMins.other+=s.min;});
   if(chSplit)chSplit.destroy();
@@ -5866,7 +5635,6 @@ function renderCharts(){
     }
   }else{const sp=document.getElementById('ch-split');if(sp)sp.parentElement.innerHTML='<div class="empty">No sessions logged yet.</div>';}
 
-  // ── 5. TEST SCORE TREND — only full 3-subject tests (not chapter/board single-subject) ──
   if(chT)chT.destroy();
   const fullTests=S.tests.filter(function(t){
     if(!t.subjects)return true; // legacy tests assumed full
@@ -5931,9 +5699,7 @@ function renderCharts(){
     }
   }else{const ce=document.getElementById('ch-tests');if(ce)ce.parentElement.innerHTML='<div class="empty">Log at least 2 full JEE mock tests (all 3 subjects) to see the trend.</div>';}
 
-  // ── 6. RADAR — RPG stats ──
   renderRadarChart();
-  // ── 7. HEATMAP ──
   renderHeatmap();
   renderChronicle();
 }
@@ -5952,7 +5718,6 @@ function renderHeatmap(){
     const isFuture=ds>todayStr;
     let lvl=0;
     if(!isFuture&&hrs>0)lvl=hrs<1?1:hrs<2?2:hrs<4?3:hrs<6?4:5;
-    // Neon green scale like SL
     const colors=['rgba(255,255,255,.03)','rgba(0,255,150,.12)','rgba(0,255,150,.28)','rgba(0,255,150,.5)','rgba(0,255,150,.75)','rgba(0,255,150,1)'];
     const glows=['','','box-shadow:0 0 4px rgba(0,255,150,.3)','box-shadow:0 0 6px rgba(0,255,150,.5)','box-shadow:0 0 8px rgba(0,255,150,.7)','box-shadow:0 0 12px rgba(0,255,150,1)'];
     const todayBorder=isToday?'2px solid var(--gold)':'1px solid rgba(0,255,150,.08)';
@@ -6041,9 +5806,7 @@ function renderChronicle(){
   document.getElementById('chronicle').innerHTML=lines.map(l=>`<div class="report-line">${l}</div>`).join('');
 }
 
-// SETTINGS
 function renderSettings(){
-  // Exam fields
   const ed=document.getElementById('s-exam-date');if(ed)ed.value=S.examDate||'2026-05-18';
   const et=document.getElementById('s-exam-type');
   if(et){
@@ -6060,7 +5823,10 @@ function renderSettings(){
   const spEl=document.getElementById('sr-school-phy');if(spEl)spEl.value=srSchool.physics||'';
   const scEl=document.getElementById('sr-school-che');if(scEl)scEl.value=srSchool.chemistry||'';
   const smEl=document.getElementById('sr-school-mat');if(smEl)smEl.value=srSchool.maths||'';
+  const clDate=document.getElementById('cl-date');if(clDate&&!clDate.value)clDate.value=today();
   renderStudyResourcesList();
+  populateChapterLogResourceSel();
+  renderChapterLog();
   const gsh=document.getElementById('s-goal-study');if(gsh)gsh.value=S.goals&&S.goals.studyHours?S.goals.studyHours:6;
   const gqh=document.getElementById('s-goal-quest');if(gqh)gqh.value=S.goals&&S.goals.questStudyHours?S.goals.questStudyHours:2;
   const hn=document.getElementById('s-hunter-name');if(hn)hn.value=S.hunter.name||'Gautam';
@@ -6119,9 +5885,7 @@ const DAY_NAMES_FULL=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 
 function getActiveQuests(){
   const todayDow=new Date().getDay(); // 0=Sun,1=Mon...6=Sat
-  // Map JS getDay() → DAYS_ORDER index: Mon=0...Sun=6
   const todayDayName=DAYS_ORDER[todayDow===0?6:todayDow-1];
-  // Is today an active workout day? (plan exists, active:true, has exercises)
   const todayPlan=S.workout?.plan?.[todayDayName];
   const isWorkoutDay=!!(todayPlan&&todayPlan.active&&todayPlan.exercises&&todayPlan.exercises.length>0);
 
@@ -6135,9 +5899,7 @@ function getActiveQuests(){
   ];
 
   return allQ.filter(q=>{
-    // Filter by day schedule
     if(q.days&&q.days.length>0&&!q.days.includes(todayDow))return false;
-    // q3 (workout): only show on active workout days
     if(q.id==='q3'&&!isWorkoutDay)return false;
     return true;
   });
@@ -6167,7 +5929,6 @@ function renderQuestEditor(){
   if(!h)h='<div class="empty">No quests. Add some below.</div>';
   qe.innerHTML=h;
 
-  // Schedule editor
   const qs=document.getElementById('s-quest-schedule');
   if(!qs)return;
   let sh='';
@@ -6201,7 +5962,6 @@ function toggleQuestDay(questIdx,dow,btn){
 }
 
 function saveQuestSchedule(){
-  // Schedule is already stored in S.customQuests via toggleQuestDay
   save();
   showToast('Quest schedule saved! ✅ Days updated.');
   renderDash();
@@ -6273,7 +6033,6 @@ function confirmReset(type){
   else if(type==='all'){if(!confirm('RESET EVERYTHING? XP, sessions, tests, confidence — all gone.'))return;const nm=S.hunter.name;S=defState();S.hunter.name=nm;save();initApp();showToast('Full reset done. Starting fresh ⚔');goTo('dashboard',null);}
 }
 
-// PWA
 function makeIcon(size){
   const c=document.createElement('canvas');c.width=c.height=size;
   const ctx=c.getContext('2d');
@@ -6288,16 +6047,13 @@ function setupPWA(){
   const mf={name:'Shadow System',short_name:'Shadow',start_url:location.pathname,display:'standalone',background_color:'#080810',theme_color:'#080810',icons:[{src:icon192,sizes:'192x192',type:'image/png'},{src:icon512,sizes:'512x512',type:'image/png'}]};
   const blob=new Blob([JSON.stringify(mf)],{type:'application/manifest+json'});
   document.getElementById('pwa-manifest').href=URL.createObjectURL(blob);
-  // Use inline SW (works without separate sw.js file)
   setupInlineSW();
   if(!window.matchMedia('(display-mode: standalone)').matches){
     const ib=document.getElementById('ins-banner');if(ib)ib.style.display='flex';
   }
-  // Init notification card UI
   setTimeout(updateNotifCard,200);
 }
 
-// STATUS WINDOW STATS
 function calcStats(){
   const sessions=S.sessions||[];
   const workoutLogs=S.workout?.logs||[];
@@ -6306,28 +6062,23 @@ function calcStats(){
   const last30=[];for(let i=29;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);last30.push(d.toISOString().split('T')[0]);}
   const last7=last30.slice(-7);
 
-  // INTELLIGENCE — based on total study hours + avg test score
   const totalHrs=sessions.reduce((a,s)=>a+s.min,0)/60;
   const avgTest=tests.length?tests.reduce((a,t)=>a+(t.total/(t.max||300)*100),0)/tests.length:0;
   const intelligence=Math.min(99,Math.round(Math.min(totalHrs/200,1)*60 + (avgTest/100)*40));
 
-  // FOCUS — blend of session efficiency, pomodoro usage, AND stored focusStat from star ratings
   const effSessions=sessions.filter(s=>s.eff!==undefined);
   const avgEff=effSessions.length?effSessions.reduce((a,s)=>a+s.eff,0)/effSessions.length:50;
   const pomoCount=sessions.filter(s=>s.mode==='pomodoro').length;
   const storedFocus=S.hunter.focusStat!==undefined?S.hunter.focusStat:50;
   const focus=Math.min(99,Math.max(0,Math.round((avgEff*0.35)+(Math.min(pomoCount/50,1)*20)+(storedFocus*0.45))));
 
-  // STRENGTH — from workout strengthStat (updated on each full workout completion)
   const strength=Math.min(99,S.workout?.strengthStat||Math.round((new Set(workoutLogs.map(l=>l.date)).size/30)*100));
 
-  // ENDURANCE — based on workout streak + study streak
   const studyDays=new Set(sessions.map(s=>s.date)).size;
   const studyStreak=S.hunter?.streak||0;
   const woStreak=S.workout?.woStreak||0;
   const endurance=Math.min(99,Math.round((Math.min(studyStreak/30,1)*35)+(Math.min(woStreak/30,1)*35)+(Math.min(studyDays/100,1)*30)));
 
-  // DISCIPLINE — blend of quest completion rate AND stored disciplineStat from ratings
   const last14=last30.slice(-14);
   let qTotal=0,qDone=0;
   last14.forEach(d=>{const c=questComp[d]||{};qTotal+=5;qDone+=Object.values(c).filter(Boolean).length;});
@@ -6335,7 +6086,6 @@ function calcStats(){
   const storedDiscipline=S.hunter.disciplineStat!==undefined?S.hunter.disciplineStat:50;
   const discipline=Math.min(99,Math.round(questDiscipline*0.5+storedDiscipline*0.5));
 
-  // PERCEPTION — based on topic confidence average
   const allTopics=Object.values(S.topics||{}).flat();
   const avgConf=allTopics.length?allTopics.reduce((a,t)=>a+(t.conf||0),0)/allTopics.length:0;
   const perception=Math.min(99,Math.round(avgConf));
@@ -6350,7 +6100,6 @@ function renderStatusWindow(){
   const name=S.hunter?.name||'Gautam';
   const cls=getClass(rk.r);
 
-  // Identity
   const sb=document.getElementById('sw-rank');
   if(sb){sb.textContent=rk.r;sb.className='sw-rank-badge rank-'+rk.r;}
   const sn=document.getElementById('sw-name');if(sn)sn.textContent='Hunter '+name;
@@ -6358,13 +6107,11 @@ function renderStatusWindow(){
   const sx=document.getElementById('sw-xp');if(sx)sx.textContent=S.hunter.xp.toLocaleString();
   const ss=document.getElementById('sw-streak');if(ss)ss.textContent=S.hunter.streak||0;
 
-  // JEE days
   const jeeDate=new Date(S.examDate||'2026-05-18');
   const dLeft=Math.max(0,Math.ceil((jeeDate-new Date())/86400000));
   const jd=document.getElementById('sw-jee-days');
   if(jd)jd.textContent=dLeft+' days to exam';
 
-  // ── PREMIUM STAT BARS ──
   const statDefs=[
     {key:'intelligence',label:'INT',color:'#5b7ef5',icon:'📘'},
     {key:'focus',       label:'FOC',color:'#00c9ff',icon:'🎯'},
@@ -6379,7 +6126,6 @@ function renderStatusWindow(){
       const v=stats[d.key]||0;
       const segsTotal=10;
       const segsOn=Math.round(v/10);
-      // Build segmented bar
       const segsHtml=Array.from({length:segsTotal},(_,i)=>`<div style="flex:1;height:100%;background:${i<segsOn?d.color:'rgba(255,255,255,.05)'};${i===segsOn-1?'box-shadow:0 0 6px '+d.color+'90':''};border-radius:${i===0?'3px 0 0 3px':i===segsTotal-1?'0 3px 3px 0':'0'}"></div>`).join('');
       return `<div class="sw-stat">
         <div class="sw-stat-hdr">
@@ -6393,7 +6139,6 @@ function renderStatusWindow(){
     }).join('');
   }
 
-  // ── RANK PROGRESS BAR (correct calculation) ──
   const reqEl=document.getElementById('sw-rank-req');
   const progFill=document.getElementById('sw-rank-prog-fill');
   const progLbl=document.getElementById('sw-rank-prog-label');
@@ -6415,7 +6160,6 @@ function renderStatusWindow(){
     if(progPct){progPct.textContent='👑';progPct.style.color='var(--gold)';}
     if(progFill)progFill.style.width='100%';
   } else if(reqEl){
-    // Pure XP-based for SS/SSS
     const cur=RANKS.find(r=>r.r===curRank)||RANKS[0];
     const next=RANKS[Math.min(RANKS.length-1,RANKS.indexOf(cur)+1)];
     const xpPct=cur&&next&&next.max!==Infinity?Math.min(100,Math.round((xp-cur.min)/(cur.max-cur.min)*100)):100;
@@ -6424,7 +6168,6 @@ function renderStatusWindow(){
     setTimeout(()=>{ if(progFill)progFill.style.width=xpPct+'%'; },150);
   }
 
-  // ── 7-DAY MINI CONSISTENCY GRAPH ──
   const miniGraph=document.getElementById('sw-mini-graph');
   if(miniGraph){
     const days=[];
@@ -6463,13 +6206,10 @@ let musicCollapsed=false;
 
 function getYTId(input){
   input=input.trim();
-  // Full URL
   let m=input.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/);
   if(m)return m[1];
-  // Playlist
   m=input.match(/[?&]list=([a-zA-Z0-9_-]+)/);
   if(m)return null; // handled separately
-  // Plain ID
   if(/^[a-zA-Z0-9_-]{11}$/.test(input))return input;
   return null;
 }
@@ -6482,7 +6222,6 @@ function getYTPlaylist(input){
 let currentMusicState=null;
 function loadYT(videoId, playlistId, title){
   let src='https://www.youtube.com/embed/';
-  // enablejsapi=1 allows pause/play via postMessage
   if(playlistId){
     src+=(videoId||'videoseries')+'?list='+playlistId+'&autoplay=1&loop=1&enablejsapi=1';
   } else {
@@ -6543,8 +6282,6 @@ function resumeMusic(){
 
 function setYTVol(v){
   document.getElementById('yt-vol-val').textContent=v+'%';
-  // YouTube iframe API volume not directly controllable without API key
-  // Show user tip on first drag
   if(v<100)showToast('Use YouTube player controls inside for volume 🎵');
 }
 
@@ -6558,14 +6295,11 @@ function restoreLastMusic(){
   if(S&&S.lastMusic&&S.lastMusic.videoId){
     const lm=S.lastMusic;
     document.getElementById('yt-url-input').value=lm.videoId;
-    // Don't autoplay on load — just restore the URL so user can tap play
   }
 }
 
-// INIT
 function initApp(){
   checkStreak();setupPWA();
-  // XP ceiling: cap XP to current rank's max, then apply inactivity decay
   if(!S.hunter.lastDecayDate)S.hunter.lastDecayDate=today();
   capXPToRank();
   applyXPDecay();
@@ -6574,19 +6308,15 @@ function initApp(){
   updateTimerUI();renderDash();renderFocusStatsBar();renderTests();renderWorkout();
   document.getElementById('t-date').value=today();
   restoreLastMusic();
-  // Prompt for notifications if not yet decided, after a short delay
   setTimeout(()=>{
     if('Notification' in window&&Notification.permission==='default'&&S.sessions.length===0){
-      // First time — show after a few seconds
     } else if('Notification' in window&&Notification.permission==='default'&&S.sessions.length>0){
-      // Has sessions but never allowed — offer once more
       updateNotifCard();
     } else {
       updateNotifCard();
     }
   },1000);
 
-  // Premium: initial renders
   setTimeout(renderMiniConsistencyGraph, 200);
   setTimeout(renderNextRankProgress, 200);
 }
@@ -6601,10 +6331,6 @@ function initApp(){
   PREMIUM VISUAL LAYER
   ═══════════════════════════════════════════════════════ */
 
-// ══════════════════════════════════════════
-//  SOLO LEVELING SOUND ENGINE
-//  Synthesised SL-vibe sounds via Web Audio
-// ══════════════════════════════════════════
 let soundFXEnabled=true;
 let _audioCtxSL=null;
 
@@ -6623,7 +6349,6 @@ function toggleSoundFX(){
   if(soundFXEnabled)playSLSound('click');
 }
 
-// Core tone builder
 function _slTone(ctx,type,freq,start,dur,peakVol,fadeIn,fadeOut){
   const osc=ctx.createOscillator();
   const env=ctx.createGain();
@@ -6641,54 +6366,44 @@ function playSLSound(type){
   try{
     const ctx=getSLAudio();
     if(type==='xp'){
-      // Rising ding — SL power gain
       _slTone(ctx,'sine',660,0,.28,.13,.01,.06);
       _slTone(ctx,'sine',880,.06,.22,.07,.01,.06);
       _slTone(ctx,'triangle',1100,.12,.18,.04,.01,.05);
     }
     else if(type==='rankup'){
-      // Triumphant 4-note arpeggio — SL awakening
       [[261.6,0,.5,.28],[329.6,.12,.44,.22],[392,.26,.4,.18],[523.2,.42,.6,.22]].forEach(([f,s,d,v])=>{
         _slTone(ctx,'triangle',f,s,d,v,.03,.1);
         _slTone(ctx,'sine',f*2,s,d,v*.4,.03,.1);
       });
-      // Low impact thud
       _slTone(ctx,'sawtooth',55,.38,.35,.18,.01,.15);
     }
     else if(type==='quest'){
-      // Clean accept sound
       _slTone(ctx,'sine',523,.0,.15,.12,.02,.05);
       _slTone(ctx,'sine',659,.08,.12,.09,.01,.05);
       _slTone(ctx,'sine',784,.14,.14,.06,.01,.08);
     }
     else if(type==='fail'){
-      // Heavy low thud + dissonant buzz
       _slTone(ctx,'sawtooth',80,.0,.4,.2,.005,.15);
       _slTone(ctx,'square',90,.0,.25,.08,.005,.15);
       _slTone(ctx,'sine',55,.1,.35,.12,.005,.15);
     }
     else if(type==='click'){
-      // Subtle synthetic click
       _slTone(ctx,'square',1200,.0,.04,.06,.002,.03);
       _slTone(ctx,'sine',800,.0,.06,.03,.001,.04);
     }
     else if(type==='penalty'){
-      // Alert system sound
       _slTone(ctx,'sawtooth',220,.0,.18,.22,.01,.08);
       _slTone(ctx,'sawtooth',220,.2,.18,.18,.01,.08);
     }
   }catch(e){}
 }
 
-// ── alias for backward compat ──
 function playPremiumSound(type){ playSLSound(type); }
 
-// ── FLOATING XP TEXT ──
 function showXPFloat(xp, sourceEl){
   const el = document.createElement('div');
   el.className = 'xp-float';
   el.textContent = '+' + xp + ' XP';
-  // Position near source element or center screen
   let x = window.innerWidth / 2 - 30;
   let y = window.innerHeight / 2;
   if(sourceEl){
@@ -6703,27 +6418,23 @@ function showXPFloat(xp, sourceEl){
   playPremiumSound('xp');
 }
 
-// ── RANK UP FLASH ──
 function triggerRankUpFlash(){
   playPremiumSound('rankup');
   const flash = document.createElement('div');
   flash.className = 'rankup-flash';
   document.body.appendChild(flash);
   setTimeout(() => flash.remove(), 1000);
-  // Glow rank badges
   document.querySelectorAll('.sw-rank-badge,.rp-rank-badge,.tb-rank').forEach(b=>{
     b.classList.add('rankup-text-glow');
     setTimeout(()=>b.classList.remove('rankup-text-glow'),3000);
   });
 }
 
-// ── FAILURE PULSE ──
 function triggerFailureAnim(el){
   playPremiumSound('fail');
   if(el){ el.classList.add('fail-pulse','fail-shake'); setTimeout(()=>{ el.classList.remove('fail-pulse','fail-shake'); },600); }
 }
 
-// ── QUEST TICK ──
 function triggerQuestTick(checkEl){
   if(!checkEl) return;
   checkEl.classList.add('quest-tick-anim');
@@ -6731,7 +6442,6 @@ function triggerQuestTick(checkEl){
   playPremiumSound('quest');
 }
 
-// ── DYNAMIC FEEDBACK BANNER ──
 function renderFeedbackBanner(){
   const banner = document.getElementById('feedback-banner');
   const msgEl = document.getElementById('feedback-msg');
@@ -6750,7 +6460,6 @@ function renderFeedbackBanner(){
   const activeQ = getActiveQuests();
   const questTotal = activeQ.length;
 
-  // Determine message type
   let type='neutral', msg='⚡ System online', sub='Begin your session, Hunter.';
   const hour = new Date().getHours();
 
@@ -6777,7 +6486,6 @@ function renderFeedbackBanner(){
   msgEl.textContent = msg;
   subEl.textContent = sub;
 
-  // Daily Star Rating (based on sessions, focus, completion)
   const stars = calcDailyRating(todayMins, goal, questsDone, questTotal, todaySess);
   let starHtml = '';
   for(let i=1;i<=5;i++) starHtml += `<span class="daily-star${i<=stars?' lit':''}">⭐</span>`;
@@ -6794,10 +6502,8 @@ function calcDailyRating(mins, goalMins, questsDone, questTotal, sessions){
   return Math.min(5, Math.round(score));
 }
 
-// ── PROGRESS SUMMARY — removed (data now in status window + dash-stats only) ──
 function renderProgressSummary(){ /* no-op: duplicate panel removed */ }
 
-// ── NEXT RANK PROGRESS BAR ──
 function renderNextRankProgress(){
   const wrap = document.getElementById('sw-rank-progress');
   const fill = document.getElementById('sw-rank-prog-fill');
@@ -6824,7 +6530,6 @@ function renderNextRankProgress(){
   setTimeout(()=>{ fill.style.width = pct+'%'; }, 100);
 }
 
-// ── MINI 7-DAY CONSISTENCY GRAPH ──
 function renderMiniConsistencyGraph(){
   const cont = document.getElementById('mini-consistency-graph');
   if(!cont) return;
@@ -6853,30 +6558,24 @@ function renderMiniConsistencyGraph(){
   }).join('');
 }
 
-// ── HOOK INTO EXISTING FUNCTIONS (non-destructive patches) ──
 
-// Patch showToast to detect XP gains and trigger float
 const _origShowToast = showToast;
 showToast = function(msg){
   _origShowToast(msg);
-  // Extract XP value from common toast patterns
   const xpMatch = msg.match(/\+(\d+)\s*XP/i);
   if(xpMatch){
     const xpVal = parseInt(xpMatch[1]);
     if(xpVal>0) showXPFloat(xpVal);
   }
-  // Detect failure/penalty messages
   if(msg.includes('-') && msg.includes('XP')){
     const penEl = document.getElementById('penalty-zone');
     if(penEl) triggerFailureAnim(penEl);
   }
-  // Quest complete sound
   if(msg.toLowerCase().includes('quest done')||msg.toLowerCase().includes('quest')){
     playPremiumSound('quest');
   }
 };
 
-// Patch checkRankUp to trigger flash
 const _origCheckRankUp = typeof checkRankUp==='function'?checkRankUp:null;
 if(_origCheckRankUp){
   checkRankUp = function(){
@@ -6887,7 +6586,6 @@ if(_origCheckRankUp){
   };
 }
 
-// Patch renderDash to also render premium components
 const _origRenderDash = typeof renderDash==='function'?renderDash:null;
 if(_origRenderDash){
   renderDash = function(){
@@ -6899,28 +6597,23 @@ if(_origRenderDash){
   };
 }
 
-// Intercept quest checkbox clicks to add tick animation
 document.addEventListener('click', function(e){
   if(e.target && (e.target.classList.contains('qchk')||e.target.classList.contains('rp-qchk'))){
     if(!e.target.classList.contains('done')){
       setTimeout(()=>triggerQuestTick(e.target), 10);
     }
   }
-  // Click sound on buttons
   if(e.target && (e.target.classList.contains('btn')||e.target.classList.contains('nav-btn')||e.target.classList.contains('bnav-btn'))){
     playPremiumSound('click');
   }
 }, true);
 
-// ── PREMIUM CHART UPGRADES ──
 let chRadar=null;
 
-// Override renderCharts with premium version
 const _origRenderCharts = typeof renderCharts==='function'?renderCharts:null;
 if(_origRenderCharts){
   renderCharts = function(){
     _origRenderCharts();
-    // After base charts render, apply premium upgrades
     setTimeout(upgradeProdChart, 50);
     setTimeout(upgradeCumChart, 80);
     setTimeout(renderRadarChart, 120);
@@ -6928,7 +6621,6 @@ if(_origRenderCharts){
 }
 
 function upgradeProdChart(){
-  // Destroy and recreate productivity chart with neon glow + gradient
   if(window.chProd){ window.chProd.destroy(); window.chProd=null; }
   const canvas=document.getElementById('ch-productivity');
   if(!canvas)return;
@@ -6946,13 +6638,11 @@ function upgradeProdChart(){
     return Math.min(100,studyScore+questScore);
   });
 
-  // Gradient fill
   const grad=ctx.createLinearGradient(0,0,0,180);
   grad.addColorStop(0,'rgba(168,85,247,0.4)');
   grad.addColorStop(0.5,'rgba(91,110,245,0.15)');
   grad.addColorStop(1,'rgba(91,110,245,0)');
 
-  // Animated moving dot data: draw full line, then a pulsing dot on the last real value
   const lastIdx=prodScores.reduce((li,v,i)=>v>0?i:li,-1);
 
   window.chProd=new Chart(ctx,{
@@ -7084,42 +6774,34 @@ function renderRadarChart(){
   const canvas=document.getElementById('ch-radar');
   if(!canvas)return;
 
-  // Calculate RPG stats from real data
   const last7=[];for(let i=6;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);last7.push(d.toISOString().split('T')[0]);}
   const totalMins=S.sessions.reduce((a,s)=>a+s.min,0);
   const last7mins=last7.map(d=>S.sessions.filter(s=>s.date===d).reduce((a,s)=>a+s.min,0));
   const goalMins=(S.goals&&S.goals.studyHours||6)*60;
 
-  // ENDURANCE: avg daily hours vs goal (0-100)
   const avgDaily=last7mins.reduce((a,v)=>a+v,0)/7;
   const endurance=Math.min(100,Math.round(avgDaily/goalMins*100));
 
-  // CONSISTENCY: days with any study in last 7
   const activeDays=last7mins.filter(v=>v>0).length;
   const consistency=Math.round(activeDays/7*100);
 
-  // FOCUS: average session rating (stars 1-5 mapped to 0-100)
   const ratedSess=S.sessions.filter(s=>s.stars);
   const avgRating=ratedSess.length?ratedSess.reduce((a,s)=>a+(s.stars||0),0)/ratedSess.length:3;
   const focus=Math.round((avgRating/5)*100);
 
-  // KNOWLEDGE: overall topic confidence
   const allT=[...(S.topics.physics11||[]),...(S.topics.physics12||[]),...(S.topics.chemistry11||[]),...(S.topics.chemistry12||[]),...(S.topics.maths11||[]),...(S.topics.maths12||[])];
   const knowledge=allT.length?Math.round(allT.reduce((a,t)=>a+t.conf,0)/allT.length):0;
 
-  // QUEST RATE: last 7 days
   const QUESTS=getActiveQuests();
   let qD=0,qT=0;
   last7.forEach(d=>{const c=S.questComp[d]||{};qT+=QUESTS.length;qD+=Object.values(c).filter(Boolean).length;});
   const questRate=qT>0?Math.round(qD/qT*100):0;
 
-  // STREAK POWER: streak mapped 0-100 (max 30 days = 100)
   const streakPower=Math.min(100,Math.round((S.hunter.streak||0)/30*100));
 
   const data=[endurance,consistency,focus,knowledge,questRate,streakPower];
   const ctx=canvas.getContext('2d');
 
-  // Neon glow background fill gradient
   const grad=ctx.createRadialGradient(canvas.width/2,canvas.height/2,0,canvas.width/2,canvas.height/2,120);
   grad.addColorStop(0,'rgba(91,110,245,0.18)');
   grad.addColorStop(0.6,'rgba(124,94,245,0.08)');
@@ -7175,9 +6857,6 @@ function renderRadarChart(){
     }
   });
 }
-// ══════════════════════════════════════════════════════════════════
-//  ORACLE AI ENGINE — Multi-key · Persistent Memory · Full Context
-// ══════════════════════════════════════════════════════════════════
 let oracleTab='advisor';
 let doubtHistory=[];
 let doubtSubject='physics';
@@ -7190,7 +6869,6 @@ function initOracleSection(){
   if(!S.oracleDoubtHistory)S.oracleDoubtHistory={};
   const saved=S.oracleDoubtHistory[doubtSubject]||[];
   if(!doubtHistory.length&&saved.length)doubtHistory=saved;
-  // Restore saved model selection
   ORACLE_MODEL=localStorage.getItem('oracle_model')||'llama-3.3-70b-versatile';
   const modelSel=document.getElementById('oracle-model-select');
   if(modelSel)modelSel.value=ORACLE_MODEL;
@@ -7269,9 +6947,6 @@ function renderKeyList(){
     ?`<span style="color:var(--green)">✓ Active: ${active.label}</span> · ${groqKeys.length} Groq${orKeys.length?' · '+orKeys.length+' OpenRouter (fallback)':''} · Auto-rotation ON`
     :'<span style="color:var(--red)">⚠ No active key — click Use</span>';
 }
-// Groq API — free, browser-compatible, no credit card needed
-// Models: llama-3.3-70b-versatile (best), mixtral-8x7b-32768, llama3-8b-8192 (fastest)
-// OpenRouter fallback — free tier available at openrouter.ai
 let ORACLE_MODEL=localStorage.getItem('oracle_model')||'llama-3.3-70b-versatile';
 
 function changeOracleModel(val){
@@ -7285,10 +6960,8 @@ async function oracleCall(messages,systemMsg,maxTokens){
   if(!_oracleKeys.length){
     throw new Error('No API key found. Go to Oracle → Keys tab, add your free Groq key from console.groq.com');
   }
-  // Separate Groq and OpenRouter keys
   const groqKeys=_oracleKeys.filter(k=>k.provider!=='openrouter');
   const orKeys=_oracleKeys.filter(k=>k.provider==='openrouter');
-  // Try all Groq keys first
   let groqAllFailed=true;
   for(let attempt=0;attempt<_oracleKeys.length+1;attempt++){
     const idx=_oracleKeyIdx%_oracleKeys.length;
@@ -7307,7 +6980,6 @@ async function oracleCall(messages,systemMsg,maxTokens){
       throw e;
     }
   }
-  // All Groq keys failed — try OpenRouter fallback
   if(orKeys.length>0){
     showToast('⚡ Groq rate limited — switching to OpenRouter backup');
     for(const k of orKeys){
@@ -7324,17 +6996,14 @@ async function oracleCall(messages,systemMsg,maxTokens){
 }
 
 async function _oracleRaw(apiKey,messages,systemMsg,maxTokens,provider){
-  // Build messages array (both Groq and OpenRouter use OpenAI-compatible format)
   const oaiMessages=[];
   if(systemMsg)oaiMessages.push({role:'system',content:systemMsg});
   messages.forEach(m=>oaiMessages.push({role:m.role,content:m.content}));
 
-  // Route to correct endpoint and model
   const isOR=provider==='openrouter';
   const endpoint=isOR
     ?'https://openrouter.ai/api/v1/chat/completions'
     :'https://api.groq.com/openai/v1/chat/completions';
-  // OpenRouter free model: google/gemma-3-12b-it:free or meta-llama/llama-3.1-8b-instruct:free
   const model=isOR?'meta-llama/llama-3.1-8b-instruct:free':ORACLE_MODEL;
 
   const headers={'Content-Type':'application/json','Authorization':'Bearer '+apiKey};
@@ -7441,8 +7110,11 @@ function checkPatternStaleness(){
     if(status)status.textContent='Last extraction: '+daysSince+(daysSince===1?' day':' days')+' ago ('+last+')';
   }
 }
-// ── Study Resources CRUD ──
-function _initSR(){if(!S.studyResources)S.studyResources={refBooks:[],coaching:[],pyqs:[],schoolChapters:{physics:'',chemistry:'',maths:''}};}
+function _initSR(){
+  if(!S.studyResources)S.studyResources={refBooks:[],ncert:[],coaching:[],pyqs:[],schoolChapters:{physics:'',chemistry:'',maths:''},chapterLog:[]};
+  if(!S.studyResources.ncert)S.studyResources.ncert=[];
+  if(!S.studyResources.chapterLog)S.studyResources.chapterLog=[];
+}
 function addStudyResource(){
   _initSR();
   var type=document.getElementById('sr-type').value;
@@ -7451,27 +7123,37 @@ function addStudyResource(){
   var pct=parseInt(document.getElementById('sr-pct').value)||0;
   if(!name){showToast('Enter resource name');return;}
   var entry={id:Date.now(),subject:subject,name:name,pct:pct};
-  if(type==='refBook')S.studyResources.refBooks.push(entry);
+  if(type==='ncert')S.studyResources.ncert.push(entry);
+  else if(type==='refBook')S.studyResources.refBooks.push(entry);
   else if(type==='coaching')S.studyResources.coaching.push(entry);
   else S.studyResources.pyqs.push(entry);
   save();
   document.getElementById('sr-name').value='';
   document.getElementById('sr-pct').value='0';
   var pv=document.getElementById('sr-pct-val');if(pv)pv.textContent='0%';
-  renderStudyResourcesList();showToast(name+' added ⚡');
+  renderStudyResourcesList();
+  populateChapterLogResourceSel();
+  showToast(name+' added ⚡');
 }
 function removeStudyResource(type,id){
   _initSR();
-  if(type==='refBook')S.studyResources.refBooks=S.studyResources.refBooks.filter(function(r){return r.id!==id;});
-  else if(type==='coaching')S.studyResources.coaching=S.studyResources.coaching.filter(function(r){return r.id!==id;});
-  else S.studyResources.pyqs=S.studyResources.pyqs.filter(function(r){return r.id!==id;});
-  save();renderStudyResourcesList();
+  var key=type==='ncert'?'ncert':type==='refBook'?'refBooks':type==='coaching'?'coaching':'pyqs';
+  S.studyResources[key]=(S.studyResources[key]||[]).filter(function(r){return r.id!==id;});
+  save();renderStudyResourcesList();populateChapterLogResourceSel();
 }
-function updateResourcePct(type,id,pct){
+function updateResourcePct(type,id,pct,displayEl){
   _initSR();
-  var arr=type==='refBook'?S.studyResources.refBooks:type==='coaching'?S.studyResources.coaching:S.studyResources.pyqs;
-  var r=arr.find(function(x){return x.id===id;});
-  if(r){r.pct=parseInt(pct)||0;save();}
+  var key=type==='ncert'?'ncert':type==='refBook'?'refBooks':type==='coaching'?'coaching':'pyqs';
+  var r=(S.studyResources[key]||[]).find(function(x){return x.id===id;});
+  if(r){
+    r.pct=parseInt(pct)||0;
+    save();
+    if(displayEl){
+      displayEl.textContent=r.pct+'%';
+      var bar=document.getElementById('sr-bar-'+id);
+      if(bar)bar.style.width=r.pct+'%';
+    }
+  }
 }
 function saveSchoolChapters(){
   _initSR();
@@ -7486,23 +7168,174 @@ function renderStudyResourcesList(){
   var el2=document.getElementById('study-resources-list');if(!el2)return;
   _initSR();
   var sr=S.studyResources;
-  var all=[];
-  (sr.refBooks||[]).forEach(function(r){all.push(Object.assign({type:'refBook',label:'📚 Ref Book',col:'var(--accent)'},r));});
-  (sr.coaching||[]).forEach(function(r){all.push(Object.assign({type:'coaching',label:'🎓 Coaching',col:'var(--mana)'},r));});
-  (sr.pyqs||[]).forEach(function(r){all.push(Object.assign({type:'pyqs',label:'📋 PYQs',col:'var(--gold)'},r));});
-  if(!all.length){el2.innerHTML='<div style="font-size:12px;color:var(--text3);padding:6px 0">No resources added yet.</div>';return;}
-  el2.innerHTML=all.map(function(r){
-    return '<div style="display:flex;align-items:center;gap:8px;padding:9px 0;border-bottom:1px solid var(--border);flex-wrap:wrap">'
-      +'<div style="flex:1;min-width:120px"><span style="font-size:10px;color:'+r.col+';font-weight:700">'+r.label+'</span> '
-      +'<span style="font-size:13px;font-weight:700;color:var(--text)">'+escHtml(r.name)+'</span>'
-      +(r.subject&&r.subject!=='all'?' <span style="font-size:10px;color:var(--text3)">('+r.subject+')</span>':'')+'</div>'
-      +'<input type="range" min="0" max="100" value="'+r.pct+'" style="width:80px;accent-color:'+r.col+'" '
-      +'onchange="updateResourcePct(\''+r.type+'\','+r.id+',this.value)" '
-      +'oninput="this.nextElementSibling.textContent=this.value+\'%\'">'
-      +'<span style="font-size:12px;font-weight:700;color:'+r.col+';min-width:36px">'+r.pct+'%</span>'
-      +'<button onclick="removeStudyResource(\''+r.type+'\','+r.id+')" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:14px;padding:0 4px">✕</button>'
+  var groups=[
+    {key:'ncert',   label:'NCERT',             emoji:'📗',col:'rgba(0,214,143,1)',  bg:'rgba(0,214,143,.08)', border:'rgba(0,214,143,.2)', arr:sr.ncert||[]},
+    {key:'coaching',label:'Coaching Material',  emoji:'🎓',col:'rgba(0,180,216,1)',  bg:'rgba(0,180,216,.08)', border:'rgba(0,180,216,.2)', arr:sr.coaching||[]},
+    {key:'refBook', label:'Reference Books',    emoji:'📚',col:'rgba(91,110,245,1)', bg:'rgba(91,110,245,.08)',border:'rgba(91,110,245,.2)', arr:sr.refBooks||[]},
+    {key:'pyqs',    label:'PYQs / Test Series', emoji:'📋',col:'rgba(244,196,48,1)', bg:'rgba(244,196,48,.08)', border:'rgba(244,196,48,.2)',arr:sr.pyqs||[]},
+  ];
+  var html='';
+  groups.forEach(function(g){
+    if(!g.arr.length)return;
+    var avg=Math.round(g.arr.reduce(function(a,r){return a+r.pct;},0)/g.arr.length);
+    html+='<div style="margin-bottom:16px">'
+      +'<div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">'
+      +'<span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:'+g.col+'">'+g.emoji+' '+g.label+'</span>'
+      +'<span style="font-size:10px;color:var(--text3);margin-left:auto">Avg: '+avg+'%</span>'
       +'</div>';
-  }).join('');
+    g.arr.forEach(function(r){
+      var subTag=r.subject&&r.subject!=='all'?'<span style="font-size:10px;color:var(--text3);background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:3px;padding:1px 5px;margin-left:4px">'+r.subject+'</span>':'';
+      html+='<div style="background:'+g.bg+';border:1px solid '+g.border+';border-radius:8px;padding:10px 12px;margin-bottom:7px">'
+        +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:7px">'
+        +'<span style="font-size:13px;font-weight:700;color:var(--text);flex:1">'+escHtml(r.name)+'</span>'
+        +subTag
+        +'<span id="sr-pct-disp-'+r.id+'" style="font-size:14px;font-weight:700;color:'+g.col+';min-width:38px;text-align:right">'+r.pct+'%</span>'
+        +'<button onclick="removeStudyResource(\''+g.key+'\','+r.id+')" style="background:none;border:none;color:rgba(255,255,255,.25);cursor:pointer;font-size:13px;padding:0 2px">✕</button>'
+        +'</div>'
+        +'<div style="height:6px;background:rgba(255,255,255,.07);border-radius:3px;overflow:hidden;margin-bottom:6px">'
+        +'<div id="sr-bar-'+r.id+'" style="height:100%;width:'+r.pct+'%;background:'+g.col+';border-radius:3px;transition:width .3s"></div>'
+        +'</div>'
+        +'<div style="display:flex;align-items:center;gap:8px">'
+        +'<input type="range" min="0" max="100" value="'+r.pct+'" style="flex:1;accent-color:'+g.col+';height:3px" '
+        +'oninput="updateResourcePct(\''+g.key+'\','+r.id+',this.value,document.getElementById(\'sr-pct-disp-'+r.id+'\'))">'
+        +'<span style="font-size:10px;color:var(--text3)">'+(r.pct===100?'✓ Done':r.pct===0?'Not started':r.pct+'% done')+'</span>'
+        +'</div>'
+        +'</div>';
+    });
+    html+='</div>';
+  });
+  if(!html){
+    html='<div style="font-size:12px;color:var(--text3);padding:6px 0 14px">No resources added yet. Add your books, coaching materials, and PYQ sources above.</div>';
+  }
+  el2.innerHTML=html;
+}
+
+function populateChapterLogResourceSel(){
+  var sel=document.getElementById('cl-resource-sel');if(!sel)return;
+  _initSR();
+  var sr=S.studyResources;
+  var all=[];
+  (sr.ncert||[]).forEach(function(r){all.push({id:r.id,label:'[NCERT] '+r.name,subject:r.subject});});
+  (sr.coaching||[]).forEach(function(r){all.push({id:r.id,label:'[Coaching] '+r.name,subject:r.subject});});
+  (sr.refBooks||[]).forEach(function(r){all.push({id:r.id,label:'[Ref Book] '+r.name,subject:r.subject});});
+  (sr.pyqs||[]).forEach(function(r){all.push({id:r.id,label:'[PYQs] '+r.name,subject:r.subject});});
+  sel.innerHTML='<option value="">— pick resource —</option>'
+    +all.map(function(r){return '<option value="'+r.id+'">'+escHtml(r.label)+'</option>';}).join('');
+}
+function addChapterLog(){
+  _initSR();
+  var resId=parseInt(document.getElementById('cl-resource-sel').value)||0;
+  var chapter=(document.getElementById('cl-chapter').value||'').trim();
+  var status=document.getElementById('cl-status').value;
+  var date=document.getElementById('cl-date').value||today();
+  if(!chapter){showToast('Enter chapter or topic name');return;}
+  var sr=S.studyResources;
+  var allRes=[].concat(sr.ncert||[],sr.refBooks||[],sr.coaching||[],sr.pyqs||[]);
+  var res=allRes.find(function(r){return r.id===resId;});
+  var entry={
+    id:Date.now(),
+    resourceId:resId||null,
+    resourceName:res?res.name:'',
+    subject:res?res.subject:'',
+    chapter:chapter,
+    status:status,
+    date:date
+  };
+  S.studyResources.chapterLog.unshift(entry); // newest first, no cap — remember everything
+  save();
+  document.getElementById('cl-chapter').value='';
+  renderChapterLog();
+  showToast('Chapter logged ✓');
+}
+function removeChapterLog(id){
+  _initSR();
+  S.studyResources.chapterLog=S.studyResources.chapterLog.filter(function(e){return e.id!==id;});
+  save();renderChapterLog();
+}
+function renderChapterLog(showAll){
+  var el2=document.getElementById('chapter-log-list');if(!el2)return;
+  _initSR();
+  var log=S.studyResources.chapterLog||[];
+  if(!log.length){el2.innerHTML='<div style="font-size:12px;color:var(--text3);padding:6px 0">No chapters logged yet.</div>';return;}
+  var pageSize=50;
+  var showing=showAll?log.length:Math.min(pageSize,log.length);
+  var statusIcon={started:'🔄',completed:'✅',revised:'📖'};
+  var statusCol={started:'var(--mana)',completed:'var(--green)',revised:'var(--gold)'};
+  var byDate={};
+  log.slice(0,showing).forEach(function(e){
+    if(!byDate[e.date])byDate[e.date]=[];
+    byDate[e.date].push(e);
+  });
+  var html='';
+  Object.keys(byDate).sort().reverse().forEach(function(date){
+    html+='<div style="font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.7px;margin:10px 0 5px;padding-top:6px;border-top:1px solid var(--border)">'+fmtDate(date)+'</div>';
+    byDate[date].forEach(function(e){
+      html+='<div style="display:flex;align-items:flex-start;gap:8px;padding:5px 0">'
+        +'<span style="font-size:14px;flex-shrink:0;margin-top:1px">'+(statusIcon[e.status]||'📌')+'</span>'
+        +'<div style="flex:1;min-width:0">'
+        +'<div style="font-size:12px;font-weight:600;color:var(--text)">'+escHtml(e.chapter)+'</div>'
+        +(e.resourceName?'<div style="font-size:11px;color:var(--text3)">'+escHtml(e.resourceName)+(e.subject&&e.subject!=='all'?' · '+e.subject:'')+'</div>':'')
+        +'</div>'
+        +'<span style="font-size:10px;font-weight:700;color:'+(statusCol[e.status]||'var(--text2)')+'">'+e.status+'</span>'
+        +'<button onclick="removeChapterLog('+e.id+')" style="background:none;border:none;color:rgba(255,255,255,.2);cursor:pointer;font-size:12px;padding:0 2px;flex-shrink:0">✕</button>'
+        +'</div>';
+    });
+  });
+  if(!showAll&&log.length>pageSize){
+    html+='<div style="padding:10px 0;text-align:center">'
+      +'<button onclick="renderChapterLog(true)" style="background:none;border:1px solid var(--border2);border-radius:6px;color:var(--text2);font-family:var(--font);font-size:12px;padding:6px 16px;cursor:pointer">'
+      +'Show all '+(log.length)+' entries</button></div>';
+  } else if(log.length>pageSize){
+    html+='<div style="font-size:11px;color:var(--text3);padding:8px 0;text-align:center">All '+log.length+' entries shown</div>';
+  }
+  el2.innerHTML=html;
+}
+
+async function oracleResourceAnalysis(){
+  if(!_oracleKeys||!_oracleKeys.length){showToast('Add an Oracle API key first → Oracle → Keys');return;}
+  var btn=document.getElementById('sr-oracle-btn');
+  var out=document.getElementById('sr-oracle-out');
+  if(btn){btn.disabled=true;btn.textContent='⏳ Analyzing...';}
+  if(out){out.style.display='block';out.innerHTML='<span style="opacity:.45;font-size:11px;font-style:italic">Oracle is reading your resources and exam timeline...</span>';}
+  _initSR();
+  var sr=S.studyResources;
+  var daysLeft=Math.max(0,Math.ceil((new Date(S.examDate||'2026-05-18')-new Date())/86400000));
+  var now2=new Date();
+  var futureExams=(S.upcomingExams||[]).filter(function(e){return new Date(e.date)>=now2;})
+    .map(function(e){var d=Math.max(0,Math.ceil((new Date(e.date)-now2)/86400000));return e.name+' in '+d+' days'+(e.chapters?' ('+e.chapters+')':'');});
+  var allRes=[];
+  (sr.ncert||[]).forEach(function(r){allRes.push('NCERT: '+r.name+(r.subject&&r.subject!=='all'?' ('+r.subject+')':'')+' — '+r.pct+'%');});
+  (sr.coaching||[]).forEach(function(r){allRes.push('Coaching: '+r.name+(r.subject&&r.subject!=='all'?' ('+r.subject+')':'')+' — '+r.pct+'%');});
+  (sr.refBooks||[]).forEach(function(r){allRes.push('Ref Book: '+r.name+(r.subject&&r.subject!=='all'?' ('+r.subject+')':'')+' — '+r.pct+'%');});
+  (sr.pyqs||[]).forEach(function(r){allRes.push('PYQs: '+r.name+' — '+r.pct+'%');});
+  var allT=[].concat(S.topics.physics11||[],S.topics.physics12||[],S.topics.chemistry11||[],S.topics.chemistry12||[],S.topics.maths11||[],S.topics.maths12||[]);
+  var weakT=allT.filter(function(t){return t.conf>0&&t.conf<40;}).sort(function(a,b){return a.conf-b.conf;}).slice(0,5);
+  var sc=sr.schoolChapters||{};
+  var recentLog=(sr.chapterLog||[]).slice(0,30).map(function(e){return e.date+': '+e.chapter+(e.resourceName?' ('+e.resourceName+')':'')+' — '+e.status;});
+  var prompt='JEE + 12th Board student profile:\n'
+    +'Days to main exam: '+daysLeft+'\n'
+    +'Upcoming: '+(futureExams.length?futureExams.join(' | '):'none set')+'\n'
+    +'Class 12 student, needs to balance JEE Advanced + JEE Mains + Board exams.\n'
+    +'Current school chapters — Physics: '+(sc.physics||'?')+' Chemistry: '+(sc.chemistry||'?')+' Maths: '+(sc.maths||'?')+'\n\n'
+    +'Study resources:\n'+(allRes.length?allRes.join('\n'):'Not configured yet')+'\n\n'
+    +'Weak topics (confidence <40%): '+(weakT.length?weakT.map(function(t){return t.name+' '+t.conf+'%';}).join(', '):'none set')+'\n\n'
+    +'Recent chapter activity:\n'+(recentLog.length?recentLog.join('\n'):'No chapter log yet')+'\n\n'
+    +'Give a SPECIFIC resource management analysis for this student:\n'
+    +'PRIORITY ORDER: [rank their resources 1-5 by importance given exam timeline]\n'
+    +'DROP OR REDUCE: [which resource to spend less time on and why]\n'
+    +'NCERT ALERT: [specific NCERT guidance for boards + JEE Chemistry]\n'
+    +'THIS WEEK: [3 specific chapter targets given their current progress]\n'
+    +'PACE CHECK: [are they on track? what chapter speed do they need?]\n'
+    +'Use their actual resource names and percentages. Be direct, specific, max 220 words.';
+  try{
+    var text=await oracleCall([{role:'user',content:prompt}],null,400);
+    if(out){
+      out.innerHTML='<div style="font-size:9px;color:var(--mana);text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-bottom:8px">⚡ Oracle Resource Analysis</div>'+formatOracleMD(text);
+    }
+  }catch(e){
+    if(out)out.innerHTML='<span style="color:var(--red);font-size:12px">⚠ '+(e.message||'Oracle offline')+'</span>';
+  }
+  if(btn){btn.disabled=false;btn.textContent='⚡ Oracle Analysis';}
 }
 function buildFullContext(){
   const t=today();
@@ -7542,7 +7375,6 @@ function buildFullContext(){
       if(tests.length)boardAvg[subj]=Math.round(tests.reduce((a,bt)=>a+bt.pct,0)/tests.length);
     });
   }
-  // ── Workout context for Oracle ──
   const woDays=['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
   const todayDN=woDays[new Date().getDay()];
   const tomorrowDN=woDays[(new Date().getDay()+1)%7];
@@ -7562,7 +7394,6 @@ function buildFullContext(){
   const woRate=woPlannedDays.length?Math.round(woDoneDays.length/woPlannedDays.length*100):0;
   const woStreak=S.workout&&S.workout.woStreak||0;
   const woStrength=S.workout&&S.workout.strengthStat||0;
-  // Upcoming exams for Oracle context
   const now2=new Date();
   const futureExams=(S.upcomingExams||[]).filter(function(e){return new Date(e.date)>=now2;})
     .map(function(e){
@@ -7573,21 +7404,22 @@ function buildFullContext(){
     });
   const examLine=futureExams.length?'\nUpcoming exams: '+futureExams.join(' | '):'';
 
-  // Study resources context
   _initSR();
   const sr=S.studyResources;
   const srLines=[];
-  (sr.refBooks||[]).forEach(function(r){srLines.push('Ref Book: '+r.name+(r.subject&&r.subject!=='all'?' ('+r.subject+')':'')+' — '+r.pct+'% complete');});
+  (sr.ncert||[]).forEach(function(r){srLines.push('NCERT: '+r.name+(r.subject&&r.subject!=='all'?' ('+r.subject+')':'')+' — '+r.pct+'% complete');});
   (sr.coaching||[]).forEach(function(r){srLines.push('Coaching: '+r.name+(r.subject&&r.subject!=='all'?' ('+r.subject+')':'')+' — '+r.pct+'% complete');});
+  (sr.refBooks||[]).forEach(function(r){srLines.push('Ref Book: '+r.name+(r.subject&&r.subject!=='all'?' ('+r.subject+')':'')+' — '+r.pct+'% complete');});
   (sr.pyqs||[]).forEach(function(r){srLines.push('PYQs: '+r.name+' — '+r.pct+'% complete');});
   const sc2=sr.schoolChapters||{};
   if(sc2.physics||sc2.chemistry||sc2.maths){
-    srLines.push('Current school chapters — Physics: '+(sc2.physics||'?')+' | Chemistry: '+(sc2.chemistry||'?')+' | Maths: '+(sc2.maths||'?'));
+    srLines.push('School now: Physics='+(sc2.physics||'?')+' Chemistry='+(sc2.chemistry||'?')+' Maths='+(sc2.maths||'?'));
   }
 
-  // Recent session resource context (last 5 sessions with chapter data)
-  const recentChapters=S.sessions.filter(function(s){return !s.paused&&s.chapter;}).slice(-5)
-    .map(function(s){return s.date+' '+s.sub+' ('+s.resourceType+') — '+s.chapter;});
+  const recentChapterLog=(sr.chapterLog||[]).slice(0,20).map(function(e){return e.date+': '+e.chapter+(e.resourceName?' ['+e.resourceName+']':'')+' — '+e.status;});
+  const recentSessCh=S.sessions.filter(function(s){return !s.paused&&s.chapter;}).slice(-3)
+    .map(function(s){return s.date+' '+s.sub+(s.resourceType?' ('+s.resourceType+')':'')+' — '+s.chapter;});
+  const recentChapters=[...recentChapterLog,...recentSessCh];
 
   return `=== SHADOW SYSTEM — FULL HUNTER PROFILE ===
 Hunter: ${name} | Rank: ${rank} | XP: ${xp} | Streak: ${streak}d | Mana: ${mana}/100
@@ -7810,7 +7642,6 @@ function togglePinnedItem(idx){
   const item=S.pinnedPlan[t].items[idx];
   if(!item)return;
   item.done=!item.done;
-  // Award XP for completing a pinned task
   if(item.done){
     S.hunter.xp=Math.max(0,S.hunter.xp+5);
     capXPToRank();
@@ -7827,15 +7658,12 @@ function clearPinnedPlan(){
 function pinBattlePlan(){
   const text=S._lastPlanText;
   if(!text){showToast('Generate a plan first');return;}
-  // Extract - [ ] checkpoint lines AND - Subject: ... block lines
   const lines=text.split('\n');
   const items=[];
   lines.forEach(function(line){
     const trimmed=line.trim();
-    // Checkpoints: - [ ] task text
     const cbMatch=trimmed.match(/^-\s+\[\s*\]\s+(.+)$/);
     if(cbMatch){items.push({text:cbMatch[1].trim(),done:false,type:'checkpoint'});return;}
-    // Time block tasks: - Subject: topic — task — duration
     const blockMatch=trimmed.match(/^-\s+(.+?:\s*.+—.+)$/);
     if(blockMatch&&!trimmed.startsWith('-  ')){items.push({text:blockMatch[1].trim(),done:false,type:'task'});return;}
   });
@@ -7913,7 +7741,6 @@ function togglePlanCheck(el){
   } else {
     el.classList.add('o-checked');
     el.innerHTML='✓';
-    // Track completion count on parent container for XP
     const container=el.closest('.oracle-out')||el.closest('[id^="oracle"]');
     if(container){
       const total=container.querySelectorAll('.o-check-box').length;
