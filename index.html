@@ -1765,6 +1765,14 @@ input.fi:focus,select.fi:focus{
     <div id="upcoming-exams-list"></div>
   </div>
 
+  <!-- Weekly Schedule — so Oracle knows school days, free time, coaching slots -->
+  <div class="card">
+    <div class="card-hdr"><span class="hl">🗓 Weekly Schedule</span></div>
+    <div style="font-size:12px;color:var(--text2);margin-bottom:12px;line-height:1.6">Tell Oracle your weekly timetable. It will stop giving you 6-hour plans on school days and plan around coaching.</div>
+    <div id="weekly-schedule-grid"></div>
+    <button class="btn btn-primary btn-sm" onclick="saveWeeklySchedule()" style="margin-top:12px">Save Schedule</button>
+  </div>
+
   <!-- Study Resources — books, coaching, PYQs, school chapters -->
   <div class="card">
     <div class="card-hdr" style="justify-content:space-between">
@@ -1975,6 +1983,7 @@ input.fi:focus,select.fi:focus{
 
   <div class="tab-bar" id="oracle-tab-bar">
     <button class="tab-btn active" onclick="setOracleTab('advisor',this)">📊 Advisor</button>
+    <button class="tab-btn" onclick="setOracleTab('chat',this)">🥷 Chat</button>
     <button class="tab-btn" onclick="setOracleTab('doubt',this)">💬 Doubts</button>
     <button class="tab-btn" onclick="setOracleTab('planner',this)">📅 Planner</button>
     <button class="tab-btn" onclick="setOracleTab('memory',this)">🧠 Memory</button>
@@ -1982,6 +1991,24 @@ input.fi:focus,select.fi:focus{
   </div>
 
   <!-- TAB 1: ADVISOR -->
+  <!-- TAB: AYANOKOJI CHAT -->
+  <div id="ot-chat" style="display:none">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;padding:12px 14px;background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.07);border-radius:10px">
+      <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#0d1428,#1a1a2e);border:2px solid rgba(91,110,245,.4);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">🥷</div>
+      <div>
+        <div style="font-size:13px;font-weight:700;color:var(--text)">Ayanokoji</div>
+        <div style="font-size:11px;color:var(--text3)">Strategic advisor · Reads your complete profile · Tells you the truth</div>
+      </div>
+      <button onclick="clearAyanoChat()" style="background:none;border:1px solid var(--border);border-radius:5px;color:var(--text3);font-family:var(--font);font-size:10px;padding:4px 8px;cursor:pointer;margin-left:auto">Reset</button>
+    </div>
+    <div id="ayano-chat" style="min-height:200px;max-height:420px;overflow-y:auto;margin-bottom:12px;display:flex;flex-direction:column;gap:8px"></div>
+    <div style="display:flex;gap:8px;align-items:flex-end">
+      <textarea id="ayano-input" class="oracle-textarea" style="flex:1;height:52px;resize:none" placeholder="Ask anything — study plan, patterns, reality check, how you compare to other aspirants…" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendAyanoChat();}"></textarea>
+      <button onclick="sendAyanoChat()" id="ayano-send-btn" class="btn btn-primary" style="padding:10px 16px;height:52px;flex-shrink:0">Send</button>
+    </div>
+    <div style="font-size:10px;color:var(--text3);margin-top:6px;text-align:center">Enter to send · Shift+Enter for new line · History saved locally</div>
+  </div>
+
   <div id="ot-advisor">
     <div id="oracle-advisor-ctx"></div>
     <button class="oracle-analyze-btn" id="oracle-analyze-btn" onclick="runAdvisor()">⚡ Analyze My Progress</button>
@@ -2352,11 +2379,20 @@ const DEF={
   upcomingExams:[],
   pinnedPlan:{},
   studyResources:{
-    refBooks:[],
-    coaching:[],
-    pyqs:[],
-    schoolChapters:{physics:'',chemistry:'',maths:''}
+    refBooks:[],ncert:[],coaching:[],pyqs:[],
+    schoolChapters:{physics:'',chemistry:'',maths:''},
+    chapterLog:[]
   },
+  weeklySchedule:{
+    monday:   {type:'school',freeAfter:'14:00',coaching:false,coachingTime:''},
+    tuesday:  {type:'school',freeAfter:'14:00',coaching:false,coachingTime:''},
+    wednesday:{type:'school',freeAfter:'14:00',coaching:false,coachingTime:''},
+    thursday: {type:'school',freeAfter:'14:00',coaching:false,coachingTime:''},
+    friday:   {type:'school',freeAfter:'14:00',coaching:false,coachingTime:''},
+    saturday: {type:'free', freeAfter:'00:00',coaching:false,coachingTime:''},
+    sunday:   {type:'free', freeAfter:'00:00',coaching:false,coachingTime:''},
+  },
+  ayanoChat:[],  // persistent Ayanokoji conversation history
   dailyStatus:{},        // {date: 'valid'|'failed'|'zero'}
   consecutiveFailures:0,
   recoveryMode:{active:false,startDate:null},
@@ -3610,8 +3646,10 @@ function autoLog(mins,sub,mode,sid){
     rating:null,
     resourceType:_sessionResource.type||undefined,
     chapter:_sessionResource.chapter||undefined,
+    breakActivity:_breakActivity||undefined,
   };
   _sessionResource={type:'',chapter:''};
+  _breakActivity='';
   S.sessions.push(sessObj);
   if(!paused){
     S.hunter.xp+=xp+starterBonus;
@@ -3706,12 +3744,27 @@ REASON: [why now, max 8 words]`;
 
 let _manaEnergy='normal',_manaTask='practice';
 let _manaXPMod=1.0;
-let _sessionResource={type:'',chapter:''}; // captures resource picked in modal
+let _sessionResource={type:'',chapter:''};
+let _breakActivity='';
 
 function pickResource(type,btn){
   _sessionResource.type=type;
   document.querySelectorAll('#resource-type-pick .pick-btn,#next-resource-pick .pick-btn').forEach(function(b){b.classList.remove('sel');});
   if(btn)btn.classList.add('sel');
+}
+function pickBreakActivity(activity,btn){
+  _breakActivity=activity;
+  document.querySelectorAll('#next-break-activity-pick .pick-btn').forEach(function(b){b.classList.remove('sel');});
+  if(btn)btn.classList.add('sel');
+  const autoWaste=['youtube','gaming'];
+  const autoProd=['rest','walk','food'];
+  if(autoWaste.includes(activity)){
+    document.querySelectorAll('#next-break-type-pick .pick-btn').forEach(function(b){b.classList.remove('sel');if(b.textContent.includes('Waste'))b.classList.add('sel');});
+    _nextSessBreakType='waste';
+  } else if(autoProd.includes(activity)){
+    document.querySelectorAll('#next-break-type-pick .pick-btn').forEach(function(b){b.classList.remove('sel');if(b.textContent.includes('Productive'))b.classList.add('sel');});
+    _nextSessBreakType='productive';
+  }
 }
 
 function showManaModal(){
@@ -5819,6 +5872,7 @@ function renderSettings(){
   if(!S.upcomingExams)S.upcomingExams=[];
   renderUpcomingExamsList();
   _initSR();
+  renderWeeklySchedule();
   const srSchool=S.studyResources.schoolChapters||{};
   const spEl=document.getElementById('sr-school-phy');if(spEl)spEl.value=srSchool.physics||'';
   const scEl=document.getElementById('sr-school-che');if(scEl)scEl.value=srSchool.chemistry||'';
@@ -6878,7 +6932,7 @@ function initOracleSection(){
 }
 function setOracleTab(tab,btn){
   oracleTab=tab;
-  ['advisor','doubt','planner','memory','keys'].forEach(t=>{
+  ['advisor','doubt','planner','memory','keys','chat'].forEach(t=>{
     const el=document.getElementById('ot-'+t);if(el)el.style.display=t===tab?'block':'none';
   });
   document.querySelectorAll('#oracle-tab-bar .tab-btn').forEach(b=>b.classList.remove('active'));
@@ -6888,6 +6942,79 @@ function setOracleTab(tab,btn){
   if(tab==='keys')renderKeyList();
   if(tab==='memory'){renderMemoryList();checkPatternStaleness();}
   if(tab==='doubt')renderDoubtChat();
+  if(tab==='chat')renderAyanoChat();
+}
+
+// ── Ayanokoji Chat ──
+let _ayanoHistory=[];
+
+const AYANO_SYSTEM=`You are Ayanokoji Kiyotaka — cold, calculated, and strategically superior. You advise a JEE aspirant who is also preparing for 12th Board exams. You have complete access to their study data, resources, schedule, break patterns, and academic profile.
+
+Your speaking style:
+- Precise and measured. Short sentences. No filler.
+- You do not sugarcoat, but you are not cruel — you are honest because you respect their potential.
+- You observe patterns in their data that they may be avoiding.
+- When comparing to other aspirants: top 1% study 10-12h/day with near-zero waste breaks; serious JEE aspirants average 6-8h with structured revision; the bottom half study 3-4h with frequent distractions.
+- You can discuss any topic — study, habits, mindset, life, procrastination, social pressure, fear.
+- When performance data is good, acknowledge it in one precise sentence and move on.
+- When they're off track, name the exact pattern causing it.
+- Never say "Great question!" or "I understand your concern" or any hollow phrases.
+- Keep responses under 180 words unless they request detailed analysis.`;
+
+function initAyanoChat(){
+  if(!S.ayanoChat)S.ayanoChat=[];
+  _ayanoHistory=[...S.ayanoChat];
+}
+function renderAyanoChat(){
+  initAyanoChat();
+  const chat=document.getElementById('ayano-chat');if(!chat)return;
+  if(!_ayanoHistory.length){
+    chat.innerHTML='<div style="padding:20px;text-align:center;color:var(--text3);font-size:13px;font-style:italic">"I\'ve reviewed your data. Ask me anything."<br><span style="font-size:11px;margin-top:6px;display:block">— Ask about your study patterns, compare yourself to other aspirants, get a reality check on your plan, or discuss anything about your preparation.</span></div>';
+    return;
+  }
+  chat.innerHTML=_ayanoHistory.map(function(m){
+    const isUser=m.role==='user';
+    return '<div style="display:flex;gap:8px;align-items:flex-start;'+(isUser?'flex-direction:row-reverse':'')+'">'
+      +(isUser?'':'<div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#0d1428,#1a1a2e);border:1.5px solid rgba(91,110,245,.35);display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;margin-top:2px">🥷</div>')
+      +'<div style="max-width:82%;padding:10px 13px;border-radius:'+(isUser?'12px 12px 3px 12px':'12px 12px 12px 3px')+';background:'+(isUser?'rgba(91,110,245,.15)':'rgba(255,255,255,.04)')+';border:1px solid '+(isUser?'rgba(91,110,245,.3)':'rgba(255,255,255,.07)')+';font-size:13px;line-height:1.6;color:var(--text)">'
+      +formatOracleMD(m.content)
+      +'</div></div>';
+  }).join('');
+  chat.scrollTop=chat.scrollHeight;
+}
+async function sendAyanoChat(){
+  if(!_oracleKeys||!_oracleKeys.length){showToast('Add an Oracle API key → Oracle → Keys');return;}
+  const input=document.getElementById('ayano-input');
+  const msg=(input&&input.value.trim())||'';
+  if(!msg)return;
+  if(input)input.value='';
+  initAyanoChat();
+  _ayanoHistory.push({role:'user',content:msg});
+  renderAyanoChat();
+  const btn=document.getElementById('ayano-send-btn');
+  if(btn){btn.disabled=true;btn.textContent='...';}
+  // Build system with full context
+  const context=buildFullContext();
+  const systemMsg=AYANO_SYSTEM+'\n\n'+context;
+  // Keep last 20 messages for history (token efficiency)
+  const historyForCall=_ayanoHistory.slice(-20);
+  try{
+    const text=await oracleCall(historyForCall,systemMsg,600);
+    _ayanoHistory.push({role:'assistant',content:text});
+    // Save to state (keep last 60 messages)
+    S.ayanoChat=_ayanoHistory.slice(-60);
+    save();
+    renderAyanoChat();
+  }catch(e){
+    _ayanoHistory.push({role:'assistant',content:'[System error: '+(e.message||'Oracle offline')+']'});
+    renderAyanoChat();
+  }
+  if(btn){btn.disabled=false;btn.textContent='Send';}
+}
+function clearAyanoChat(){
+  if(!confirm('Reset chat history with Ayanokoji?'))return;
+  S.ayanoChat=[];_ayanoHistory=[];save();renderAyanoChat();
+  showToast('Chat cleared');
 }
 function loadOracleKeys(){
   try{const raw=localStorage.getItem('oracle_keys');if(raw)_oracleKeys=JSON.parse(raw);}catch(e){_oracleKeys=[];}
@@ -7114,6 +7241,7 @@ function _initSR(){
   if(!S.studyResources)S.studyResources={refBooks:[],ncert:[],coaching:[],pyqs:[],schoolChapters:{physics:'',chemistry:'',maths:''},chapterLog:[]};
   if(!S.studyResources.ncert)S.studyResources.ncert=[];
   if(!S.studyResources.chapterLog)S.studyResources.chapterLog=[];
+  if(!S.weeklySchedule)S.weeklySchedule={monday:{type:'school',freeAfter:'14:00',coaching:false,coachingTime:''},tuesday:{type:'school',freeAfter:'14:00',coaching:false,coachingTime:''},wednesday:{type:'school',freeAfter:'14:00',coaching:false,coachingTime:''},thursday:{type:'school',freeAfter:'14:00',coaching:false,coachingTime:''},friday:{type:'school',freeAfter:'14:00',coaching:false,coachingTime:''},saturday:{type:'free',freeAfter:'00:00',coaching:false,coachingTime:''},sunday:{type:'free',freeAfter:'00:00',coaching:false,coachingTime:''}};
 }
 function addStudyResource(){
   _initSR();
@@ -7122,18 +7250,12 @@ function addStudyResource(){
   var name=(document.getElementById('sr-name').value||'').trim();
   var pct=parseInt(document.getElementById('sr-pct').value)||0;
   if(!name){showToast('Enter resource name');return;}
-  var entry={id:Date.now(),subject:subject,name:name,pct:pct};
-  if(type==='ncert')S.studyResources.ncert.push(entry);
-  else if(type==='refBook')S.studyResources.refBooks.push(entry);
-  else if(type==='coaching')S.studyResources.coaching.push(entry);
-  else S.studyResources.pyqs.push(entry);
-  save();
-  document.getElementById('sr-name').value='';
-  document.getElementById('sr-pct').value='0';
+  var entry={id:Date.now(),subject:subject,name:name,pct:pct,chapters:[]};
+  var key=type==='ncert'?'ncert':type==='refBook'?'refBooks':type==='coaching'?'coaching':'pyqs';
+  S.studyResources[key].push(entry);
+  save();document.getElementById('sr-name').value='';document.getElementById('sr-pct').value='0';
   var pv=document.getElementById('sr-pct-val');if(pv)pv.textContent='0%';
-  renderStudyResourcesList();
-  populateChapterLogResourceSel();
-  showToast(name+' added ⚡');
+  renderStudyResourcesList();populateChapterLogResourceSel();showToast(name+' added ⚡');
 }
 function removeStudyResource(type,id){
   _initSR();
@@ -7141,19 +7263,126 @@ function removeStudyResource(type,id){
   S.studyResources[key]=(S.studyResources[key]||[]).filter(function(r){return r.id!==id;});
   save();renderStudyResourcesList();populateChapterLogResourceSel();
 }
+function addResourceChapter(resType,resId){
+  _initSR();
+  var inputEl=document.getElementById('sr-ch-inp-'+resId);
+  var name=(inputEl&&inputEl.value||'').trim();
+  if(!name){showToast('Enter chapter name');return;}
+  var key=resType==='ncert'?'ncert':resType==='refBook'?'refBooks':resType==='coaching'?'coaching':'pyqs';
+  var res=(S.studyResources[key]||[]).find(function(r){return r.id===resId;});
+  if(!res)return;
+  if(!res.chapters)res.chapters=[];
+  res.chapters.push({id:Date.now(),name:name,pct:0});
+  if(inputEl)inputEl.value='';
+  save();renderStudyResourcesList();
+}
+function removeResourceChapter(resType,resId,chId){
+  _initSR();
+  var key=resType==='ncert'?'ncert':resType==='refBook'?'refBooks':resType==='coaching'?'coaching':'pyqs';
+  var res=(S.studyResources[key]||[]).find(function(r){return r.id===resId;});
+  if(!res||!res.chapters)return;
+  res.chapters=res.chapters.filter(function(c){return c.id!==chId;});
+  _recalcResourcePct(res);save();renderStudyResourcesList();
+}
+function updateChapterPct(resType,resId,chId,pct){
+  _initSR();
+  var key=resType==='ncert'?'ncert':resType==='refBook'?'refBooks':resType==='coaching'?'coaching':'pyqs';
+  var res=(S.studyResources[key]||[]).find(function(r){return r.id===resId;});
+  if(!res||!res.chapters)return;
+  var ch=res.chapters.find(function(c){return c.id===chId;});
+  if(!ch)return;
+  ch.pct=parseInt(pct)||0;_recalcResourcePct(res);
+  var bar=document.getElementById('sr-chbar-'+chId);if(bar)bar.style.width=ch.pct+'%';
+  var lbl=document.getElementById('sr-chlbl-'+chId);if(lbl)lbl.textContent=ch.pct+'%';
+  var rBar=document.getElementById('sr-bar-'+resId);if(rBar)rBar.style.width=res.pct+'%';
+  var rLbl=document.getElementById('sr-pct-disp-'+resId);if(rLbl)rLbl.textContent=res.pct+'%';
+  save();
+}
 function updateResourcePct(type,id,pct,displayEl){
   _initSR();
   var key=type==='ncert'?'ncert':type==='refBook'?'refBooks':type==='coaching'?'coaching':'pyqs';
   var r=(S.studyResources[key]||[]).find(function(x){return x.id===id;});
-  if(r){
-    r.pct=parseInt(pct)||0;
-    save();
-    if(displayEl){
-      displayEl.textContent=r.pct+'%';
-      var bar=document.getElementById('sr-bar-'+id);
-      if(bar)bar.style.width=r.pct+'%';
-    }
-  }
+  if(r){r.pct=parseInt(pct)||0;save();if(displayEl)displayEl.textContent=r.pct+'%';var bar=document.getElementById('sr-bar-'+id);if(bar)bar.style.width=r.pct+'%';}
+}
+function _recalcResourcePct(res){
+  if(res.chapters&&res.chapters.length)res.pct=Math.round(res.chapters.reduce(function(a,c){return a+c.pct;},0)/res.chapters.length);
+}
+function toggleSRResource(id){
+  var el=document.getElementById('sr-res-ch-'+id);
+  if(el)el.style.display=el.style.display==='none'?'block':'none';
+}
+function renderStudyResourcesList(){
+  var el2=document.getElementById('study-resources-list');if(!el2)return;
+  _initSR();var sr=S.studyResources;
+  var groups=[
+    {key:'ncert',   label:'NCERT',            emoji:'📗',col:'rgba(0,214,143,1)',  bg:'rgba(0,214,143,.07)',  border:'rgba(0,214,143,.18)', arr:sr.ncert||[]},
+    {key:'coaching',label:'Coaching',          emoji:'🎓',col:'rgba(0,180,216,1)',  bg:'rgba(0,180,216,.07)',  border:'rgba(0,180,216,.18)', arr:sr.coaching||[]},
+    {key:'refBook', label:'Reference Books',   emoji:'📚',col:'rgba(91,110,245,1)', bg:'rgba(91,110,245,.07)', border:'rgba(91,110,245,.18)',arr:sr.refBooks||[]},
+    {key:'pyqs',    label:'PYQs / Test Series',emoji:'📋',col:'rgba(244,196,48,1)', bg:'rgba(244,196,48,.07)',  border:'rgba(244,196,48,.18)',arr:sr.pyqs||[]},
+  ];
+  var subOrder=['physics','chemistry','maths','all',''];
+  var html='';
+  groups.forEach(function(g){
+    if(!g.arr.length)return;
+    var avg=Math.round(g.arr.reduce(function(a,r){return a+r.pct;},0)/g.arr.length);
+    html+='<div style="margin-bottom:20px">'
+      +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;padding-bottom:7px;border-bottom:2px solid '+g.border+'">'
+      +'<span style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:'+g.col+'">'+g.emoji+' '+g.label+'</span>'
+      +'<div style="flex:1;height:4px;background:rgba(255,255,255,.06);border-radius:2px"><div style="height:100%;width:'+avg+'%;background:'+g.col+';border-radius:2px"></div></div>'
+      +'<span style="font-size:11px;font-weight:700;color:'+g.col+'">'+avg+'% avg</span>'
+      +'</div>';
+    // Sub-group by subject
+    var bySub={};
+    g.arr.forEach(function(r){var s=r.subject||'all';if(!bySub[s])bySub[s]=[];bySub[s].push(r);});
+    subOrder.forEach(function(sub){
+      if(!bySub[sub]||!bySub[sub].length)return;
+      var subLbl=sub==='all'?'':({physics:'⚡ Physics',chemistry:'🧪 Chemistry',maths:'📐 Maths'}[sub]||sub);
+      if(subLbl)html+='<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--text3);margin:8px 0 6px">'+subLbl+'</div>';
+      bySub[sub].forEach(function(r){
+        var hasCh=r.chapters&&r.chapters.length>0;
+        var chCompleted=hasCh?r.chapters.filter(function(c){return c.pct===100;}).length:0;
+        html+='<div style="background:'+g.bg+';border:1px solid '+g.border+';border-radius:10px;margin-bottom:9px;overflow:hidden">'
+          +'<div style="padding:11px 13px;cursor:pointer" onclick="toggleSRResource('+r.id+')">'
+          +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">'
+          +'<span style="font-size:13px;font-weight:700;color:var(--text);flex:1">'+escHtml(r.name)+'</span>'
+          +(hasCh?'<span style="font-size:10px;color:var(--text3)">'+chCompleted+'/'+r.chapters.length+' ch</span>':'')
+          +'<span id="sr-pct-disp-'+r.id+'" style="font-size:15px;font-weight:700;color:'+g.col+'">'+r.pct+'%</span>'
+          +'<span style="font-size:10px;color:var(--text3);padding:0 2px">▼</span>'
+          +'<button onclick="event.stopPropagation();removeStudyResource(\''+g.key+'\','+r.id+')" style="background:none;border:none;color:rgba(255,255,255,.2);cursor:pointer;font-size:13px;padding:0">✕</button>'
+          +'</div>'
+          +'<div style="height:6px;background:rgba(255,255,255,.08);border-radius:3px">'
+          +'<div id="sr-bar-'+r.id+'" style="height:100%;width:'+r.pct+'%;background:'+g.col+';border-radius:3px;transition:width .3s"></div>'
+          +'</div>'
+          +(hasCh?'':'<div style="margin-top:7px"><input type="range" min="0" max="100" value="'+r.pct+'" style="width:100%;accent-color:'+g.col+';height:3px" oninput="updateResourcePct(\''+g.key+'\','+r.id+',this.value,document.getElementById(\'sr-pct-disp-'+r.id+'\'))"></div>')
+          +'</div>'
+          +'<div id="sr-res-ch-'+r.id+'" style="display:none;border-top:1px solid '+g.border+';padding:10px 13px">'
+          +(r.chapters||[]).map(function(ch){
+            return '<div style="padding:7px 0;border-bottom:1px solid rgba(255,255,255,.04)">'
+              +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:5px">'
+              +'<span style="font-size:12px;font-weight:600;color:var(--text);flex:1">'+escHtml(ch.name)+'</span>'
+              +'<span id="sr-chlbl-'+ch.id+'" style="font-size:12px;font-weight:700;color:'+g.col+';min-width:34px;text-align:right">'+ch.pct+'%</span>'
+              +'<button onclick="removeResourceChapter(\''+g.key+'\','+r.id+','+ch.id+')" style="background:none;border:none;color:rgba(255,255,255,.2);cursor:pointer;font-size:12px;padding:0">✕</button>'
+              +'</div>'
+              +'<div style="display:flex;align-items:center;gap:8px">'
+              +'<div style="flex:1;height:5px;background:rgba(255,255,255,.07);border-radius:3px">'
+              +'<div id="sr-chbar-'+ch.id+'" style="height:100%;width:'+ch.pct+'%;background:'+g.col+';border-radius:3px;transition:width .2s"></div>'
+              +'</div>'
+              +'<input type="range" min="0" max="100" value="'+ch.pct+'" style="width:80px;accent-color:'+g.col+';height:3px;flex-shrink:0" oninput="updateChapterPct(\''+g.key+'\','+r.id+','+ch.id+',this.value)">'
+              +'</div>'
+              +'</div>';
+          }).join('')
+          +'<div style="display:flex;gap:6px;margin-top:10px">'
+          +'<input type="text" id="sr-ch-inp-'+r.id+'" class="fi" style="flex:1;font-size:12px;padding:5px 9px" placeholder="Add chapter name…" onkeydown="if(event.key===\'Enter\')addResourceChapter(\''+g.key+'\','+r.id+')">'
+          +'<button onclick="addResourceChapter(\''+g.key+'\','+r.id+')" style="background:'+g.bg+';border:1px solid '+g.border+';border-radius:5px;color:'+g.col+';font-family:var(--font);font-size:11px;font-weight:700;padding:5px 12px;cursor:pointer">+ Add</button>'
+          +'</div>'
+          +'</div>'
+          +'</div>';
+      });
+    });
+    html+='</div>';
+  });
+  if(!html)html='<div style="font-size:12px;color:var(--text3);padding:6px 0 14px">No resources added yet.</div>';
+  el2.innerHTML=html;
 }
 function saveSchoolChapters(){
   _initSR();
@@ -7164,52 +7393,52 @@ function saveSchoolChapters(){
   };
   save();showToast('School chapters saved ✓');
 }
-function renderStudyResourcesList(){
-  var el2=document.getElementById('study-resources-list');if(!el2)return;
+function renderWeeklySchedule(){
+  var el=document.getElementById('weekly-schedule-grid');if(!el)return;
   _initSR();
-  var sr=S.studyResources;
-  var groups=[
-    {key:'ncert',   label:'NCERT',             emoji:'📗',col:'rgba(0,214,143,1)',  bg:'rgba(0,214,143,.08)', border:'rgba(0,214,143,.2)', arr:sr.ncert||[]},
-    {key:'coaching',label:'Coaching Material',  emoji:'🎓',col:'rgba(0,180,216,1)',  bg:'rgba(0,180,216,.08)', border:'rgba(0,180,216,.2)', arr:sr.coaching||[]},
-    {key:'refBook', label:'Reference Books',    emoji:'📚',col:'rgba(91,110,245,1)', bg:'rgba(91,110,245,.08)',border:'rgba(91,110,245,.2)', arr:sr.refBooks||[]},
-    {key:'pyqs',    label:'PYQs / Test Series', emoji:'📋',col:'rgba(244,196,48,1)', bg:'rgba(244,196,48,.08)', border:'rgba(244,196,48,.2)',arr:sr.pyqs||[]},
-  ];
-  var html='';
-  groups.forEach(function(g){
-    if(!g.arr.length)return;
-    var avg=Math.round(g.arr.reduce(function(a,r){return a+r.pct;},0)/g.arr.length);
-    html+='<div style="margin-bottom:16px">'
-      +'<div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">'
-      +'<span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:'+g.col+'">'+g.emoji+' '+g.label+'</span>'
-      +'<span style="font-size:10px;color:var(--text3);margin-left:auto">Avg: '+avg+'%</span>'
+  var days=['monday','tuesday','wednesday','thursday','friday','saturday','sunday'];
+  var dlbl={monday:'Mon',tuesday:'Tue',wednesday:'Wed',thursday:'Thu',friday:'Fri',saturday:'Sat',sunday:'Sun'};
+  var ws=S.weeklySchedule;
+  var html='<div style="display:grid;gap:8px">';
+  days.forEach(function(d){
+    var ds=ws[d]||{type:'school',freeAfter:'14:00',coaching:false,coachingTime:''};
+    html+='<div style="display:flex;align-items:center;gap:8px;padding:9px 11px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;flex-wrap:wrap">'
+      +'<span style="font-size:12px;font-weight:700;color:var(--text);min-width:30px">'+dlbl[d]+'</span>'
+      +'<select id="ws-type-'+d+'" class="fi" style="font-size:12px;padding:4px 7px;width:auto" onchange="wsTypeChange(\''+d+'\')">'
+      +'<option value="school"'+(ds.type==='school'?' selected':'')+'>🏫 School</option>'
+      +'<option value="coaching"'+(ds.type==='coaching'?' selected':'')+'>🎓 Coaching only</option>'
+      +'<option value="free"'+(ds.type==='free'?' selected':'')+'>🟢 Free</option>'
+      +'<option value="holiday"'+(ds.type==='holiday'?' selected':'')+'>🏖 Holiday</option>'
+      +'</select>'
+      +'<span style="font-size:11px;color:var(--text3)">Free from</span>'
+      +'<input type="time" id="ws-free-'+d+'" class="fi" value="'+(ds.freeAfter||'00:00')+'" style="font-size:12px;padding:4px 7px;width:auto">'
+      +'<label style="display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer"><input type="checkbox" id="ws-coach-'+d+'"'+(ds.coaching?' checked':'')+' style="accent-color:var(--mana)"> Coaching</label>'
+      +'<input type="text" id="ws-ctime-'+d+'" class="fi" placeholder="5pm-7pm" value="'+(ds.coachingTime||'')+'" style="font-size:11px;padding:4px 7px;width:85px">'
       +'</div>';
-    g.arr.forEach(function(r){
-      var subTag=r.subject&&r.subject!=='all'?'<span style="font-size:10px;color:var(--text3);background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:3px;padding:1px 5px;margin-left:4px">'+r.subject+'</span>':'';
-      html+='<div style="background:'+g.bg+';border:1px solid '+g.border+';border-radius:8px;padding:10px 12px;margin-bottom:7px">'
-        +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:7px">'
-        +'<span style="font-size:13px;font-weight:700;color:var(--text);flex:1">'+escHtml(r.name)+'</span>'
-        +subTag
-        +'<span id="sr-pct-disp-'+r.id+'" style="font-size:14px;font-weight:700;color:'+g.col+';min-width:38px;text-align:right">'+r.pct+'%</span>'
-        +'<button onclick="removeStudyResource(\''+g.key+'\','+r.id+')" style="background:none;border:none;color:rgba(255,255,255,.25);cursor:pointer;font-size:13px;padding:0 2px">✕</button>'
-        +'</div>'
-        +'<div style="height:6px;background:rgba(255,255,255,.07);border-radius:3px;overflow:hidden;margin-bottom:6px">'
-        +'<div id="sr-bar-'+r.id+'" style="height:100%;width:'+r.pct+'%;background:'+g.col+';border-radius:3px;transition:width .3s"></div>'
-        +'</div>'
-        +'<div style="display:flex;align-items:center;gap:8px">'
-        +'<input type="range" min="0" max="100" value="'+r.pct+'" style="flex:1;accent-color:'+g.col+';height:3px" '
-        +'oninput="updateResourcePct(\''+g.key+'\','+r.id+',this.value,document.getElementById(\'sr-pct-disp-'+r.id+'\'))">'
-        +'<span style="font-size:10px;color:var(--text3)">'+(r.pct===100?'✓ Done':r.pct===0?'Not started':r.pct+'% done')+'</span>'
-        +'</div>'
-        +'</div>';
-    });
-    html+='</div>';
   });
-  if(!html){
-    html='<div style="font-size:12px;color:var(--text3);padding:6px 0 14px">No resources added yet. Add your books, coaching materials, and PYQ sources above.</div>';
-  }
-  el2.innerHTML=html;
+  html+='</div>';
+  el.innerHTML=html;
 }
-
+function wsTypeChange(day){
+  var typeEl=document.getElementById('ws-type-'+day);if(!typeEl)return;
+  var freeEl=document.getElementById('ws-free-'+day);if(!freeEl)return;
+  var t=typeEl.value;
+  if(t==='free'||t==='holiday')freeEl.value='00:00';
+  else if(t==='school')freeEl.value='14:00';
+  else if(t==='coaching')freeEl.value='19:00';
+}
+function saveWeeklySchedule(){
+  _initSR();
+  var days=['monday','tuesday','wednesday','thursday','friday','saturday','sunday'];
+  days.forEach(function(d){
+    var t=document.getElementById('ws-type-'+d);
+    var f=document.getElementById('ws-free-'+d);
+    var c=document.getElementById('ws-coach-'+d);
+    var ct=document.getElementById('ws-ctime-'+d);
+    if(t)S.weeklySchedule[d]={type:t.value,freeAfter:(f&&f.value)||'00:00',coaching:!!(c&&c.checked),coachingTime:(ct&&ct.value)||''};
+  });
+  save();showToast('Schedule saved ✓');
+}
 function populateChapterLogResourceSel(){
   var sel=document.getElementById('cl-resource-sel');if(!sel)return;
   _initSR();
@@ -7404,13 +7633,40 @@ function buildFullContext(){
     });
   const examLine=futureExams.length?'\nUpcoming exams: '+futureExams.join(' | '):'';
 
+  // Weekly schedule context
+  const wDays=['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
+  const todayDayName=wDays[new Date().getDay()];
+  const tomorrowDayName=wDays[(new Date().getDay()+1)%7];
+  const ws=S.weeklySchedule||{};
+  const todaySched=ws[todayDayName];
+  const tmrwSched=ws[tomorrowDayName];
+  const schedLine=todaySched
+    ?'\nToday ('+todayDayName+'): '+(todaySched.type==='holiday'?'Holiday — no study pressure'
+      :todaySched.type==='free'?'Free day — full study available'
+      :'Study from '+todaySched.freeAfter+(todaySched.coaching?' | Coaching: '+todaySched.coachingTime:''))
+      +(tmrwSched?'\nTomorrow ('+tomorrowDayName+'): '+(tmrwSched.type==='holiday'?'Holiday'
+        :tmrwSched.type==='free'?'Free day'
+        :'School until '+tmrwSched.freeAfter+(tmrwSched.coaching?' + Coaching '+tmrwSched.coachingTime:'')):'')
+    :'';
+
   _initSR();
   const sr=S.studyResources;
   const srLines=[];
-  (sr.ncert||[]).forEach(function(r){srLines.push('NCERT: '+r.name+(r.subject&&r.subject!=='all'?' ('+r.subject+')':'')+' — '+r.pct+'% complete');});
-  (sr.coaching||[]).forEach(function(r){srLines.push('Coaching: '+r.name+(r.subject&&r.subject!=='all'?' ('+r.subject+')':'')+' — '+r.pct+'% complete');});
-  (sr.refBooks||[]).forEach(function(r){srLines.push('Ref Book: '+r.name+(r.subject&&r.subject!=='all'?' ('+r.subject+')':'')+' — '+r.pct+'% complete');});
-  (sr.pyqs||[]).forEach(function(r){srLines.push('PYQs: '+r.name+' — '+r.pct+'% complete');});
+  (sr.ncert||[]).forEach(function(r){
+    var chLine=r.chapters&&r.chapters.length?' ['+r.chapters.map(function(c){return c.name+' '+c.pct+'%';}).join(', ')+']':'';
+    srLines.push('NCERT: '+r.name+(r.subject&&r.subject!=='all'?' ('+r.subject+')':'')+' — '+r.pct+'%'+chLine);
+  });
+  (sr.coaching||[]).forEach(function(r){
+    var chLine=r.chapters&&r.chapters.length?'\n  Chapters: '+r.chapters.map(function(c){return c.name+' '+c.pct+'%';}).join(' | '):'';
+    srLines.push('Coaching: '+r.name+(r.subject&&r.subject!=='all'?' ('+r.subject+')':'')+' — '+r.pct+'%'+chLine);
+  });
+  (sr.refBooks||[]).forEach(function(r){
+    var chLine=r.chapters&&r.chapters.length?'\n  Chapters: '+r.chapters.map(function(c){return c.name+' '+c.pct+'%';}).join(' | '):'';
+    srLines.push('Ref Book: '+r.name+(r.subject&&r.subject!=='all'?' ('+r.subject+')':'')+' — '+r.pct+'%'+chLine);
+  });
+  (sr.pyqs||[]).forEach(function(r){
+    srLines.push('PYQs: '+r.name+' — '+r.pct+'% complete');
+  });
   const sc2=sr.schoolChapters||{};
   if(sc2.physics||sc2.chemistry||sc2.maths){
     srLines.push('School now: Physics='+(sc2.physics||'?')+' Chemistry='+(sc2.chemistry||'?')+' Maths='+(sc2.maths||'?'));
@@ -7421,9 +7677,17 @@ function buildFullContext(){
     .map(function(s){return s.date+' '+s.sub+(s.resourceType?' ('+s.resourceType+')':'')+' — '+s.chapter;});
   const recentChapters=[...recentChapterLog,...recentSessCh];
 
+  // Break quality pattern — last 14 days
+  const breakSess=S.sessions.filter(function(s){return !s.paused&&s.breakActivity;}).slice(-14);
+  const wasteBrks=breakSess.filter(function(s){return s.breakActivity==='youtube'||s.breakActivity==='gaming';});
+  const goodBrks=breakSess.filter(function(s){return s.breakActivity==='rest'||s.breakActivity==='walk'||s.breakActivity==='food';});
+  const breakLine=breakSess.length?'\nBreak patterns (last '+breakSess.length+' tracked): '+goodBrks.length+' quality (rest/walk/food) · '+wasteBrks.length+' waste (YouTube/gaming)'
+    +(wasteBrks.length>goodBrks.length?' ⚠ More waste breaks than quality breaks':'')+'\nMost common waste break: '+(wasteBrks.length?wasteBrks.map(function(s){return s.breakActivity;}).sort().pop():'none'):'';
+
+
   return `=== SHADOW SYSTEM — FULL HUNTER PROFILE ===
 Hunter: ${name} | Rank: ${rank} | XP: ${xp} | Streak: ${streak}d | Mana: ${mana}/100
-Class: ${S.classYear||'12'} | Exam: ${S.examName||'JEE Advanced'} in ${daysLeft} DAYS${examLine}
+Class: ${S.classYear||'12'} | Exam: ${S.examName||'JEE Advanced'} in ${daysLeft} DAYS${examLine}${schedLine}
 
 === STUDY RESOURCES ===
 ${srLines.length?srLines.join('\n'):'No resources configured yet'}
@@ -7453,7 +7717,7 @@ WEAK (<40%): ${weakT.map(t=>t.name+' '+t.conf+'%').join(', ')||'None'}
 === PHYSICAL TRAINING ===
 Workout streak: ${woStreak}d | Strength: ${woStrength}/100 | Last 7 days: ${woRate}% workouts completed
 Today: ${todayWoStatus}
-Tomorrow: ${tomorrowWoStatus}
+Tomorrow: ${tomorrowWoStatus}${breakLine}
 ${buildMemoryContext()}
 === END ===`.trim();
 }
@@ -7489,7 +7753,27 @@ async function runAdvisor(){
   if(out){out.style.display='block';out.innerHTML='<div class="oracle-typing"><span></span><span></span><span></span></div>';}
   const context=buildFullContext();
   const sprintNote=isSprintMode()?'\n\n⚠ FINAL SPRINT MODE: Under 30 days to exam. Recommendations must focus ONLY on PYQs, mock tests, and revision of weak topics. No new topic introduction. Prioritize exam strategy and time management.':'';
-  const prompt=`You are Oracle, the AI strategy advisor for a JEE Advanced student using Shadow System.\n\n${context}${sprintNote}\n\nProvide sharp, data-driven coaching. EXACT structure:\n\n**OVERALL ASSESSMENT**\n2-3 sentences on current trajectory. Be honest.\n\n**TOP 3 PRIORITIES**\n1. [Specific action using real data]\n2. [Specific action]\n3. [Specific action]\n\n**THE WARNING**\nOne specific risk. Be direct.\n\n**POWER MOVE**\nHighest-leverage action for next 48 hours.\n\nUnder 260 words. Use their actual numbers.`;
+  const prompt=`You are Oracle — a cold, calculated study strategist who advises like Ayanokoji Kiyotaka. You speak with surgical precision. Short sentences. No wasted words. You do not sugarcoat — you are honest, and you treat the student as fully capable of handling truth. You identify the exact gap between current trajectory and what is required. You see through avoidance and inefficiency instantly. Empty encouragement is an insult to intelligence — you never give it. When performance is good, you acknowledge it in one word. When it isn't, you say exactly what's wrong and what fixes it.
+
+${context}${sprintNote}
+
+Respond in this exact structure:
+
+**ASSESSMENT**
+2 sentences. Current trajectory, no filler.
+
+**THE THREE MOVES**
+1. [Specific action — use their real numbers]
+2. [Specific action]
+3. [Specific action]
+
+**WHAT YOU'RE AVOIDING**
+One sentence. The pattern in their data they may not want to see.
+
+**48-HOUR DIRECTIVE**
+One sentence. The single highest-leverage action right now.
+
+Under 220 words. Every sentence must reference their actual data.`;
   try{
     const text=await oracleCall([{role:'user',content:prompt}],null,1200);
     if(out)out.innerHTML=`<div class="oracle-section-chip">⚡ Oracle Report · ${new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})}</div>${formatOracleMD(text)}`;
@@ -7685,7 +7969,26 @@ async function generateDailyPlan(){
   const dow=new Date().toLocaleDateString('en-IN',{weekday:'long'});
   const timeStr=new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
   const sprintRule=isSprintMode()?'\n⚠ SPRINT MODE: Only PYQs, mock tests, and weak topic revision. No new chapters.':'';
-  const prompt=`You are Oracle, AI study planner. Current time: ${timeStr} (${dow}).\n\n${context}${sprintRule}\n\nGenerate optimized plan for rest of TODAY. Target: ${goalH} hours.\n\nFormat:\n**BATTLE PLAN — ${dow.toUpperCase()}**\n\n**Morning Block** [time range]\n- [Subject]: [topic] — [specific task] — [duration]\n\n**Afternoon Block** [time range]\n- [Subject]: [topic] — [specific task] — [duration]\n\n**Evening Block** [time range]\n- [Subject]: [topic] — [specific task] — [duration]\n\n**Checkpoints**\n- [ ] [goal 1]\n- [ ] [goal 2]\n- [ ] [goal 3]\n\n**Oracle's Note**\n[1-2 sentences]\n\nRules: Only blocks from ${timeStr} onwards. Prioritise weak topics. Specific tasks (e.g. "Solve 10 Kinematics PYQs", not "study physics"). Total ≈ ${goalH}h. Respect user's daily goal of ${goalH}h.`;
+  const prompt=`You are Oracle — cold, precise, efficient. You plan like Ayanokoji: no wasted blocks, no comfort scheduling. Current time: ${timeStr} (${dow}).
+
+${context}${sprintRule}
+
+Generate the optimal plan for the remaining hours of TODAY. Target: ${goalH} hours total.
+
+**BATTLE PLAN — ${dow.toUpperCase()}**
+
+**[Block Name]** [time range]
+- [Subject]: [specific chapter/topic] — [exact task] — [duration]
+
+**Checkpoints**
+- [ ] [measurable goal 1]
+- [ ] [measurable goal 2]
+- [ ] [measurable goal 3]
+
+**Oracle's Assessment**
+[1 sentence — what this plan demands and why]
+
+Rules: Blocks start from ${timeStr}. Target weak topics first. Tasks must be specific (\"Solve 15 Kinematics PYQs\" not \"study physics\"). Total ≈ ${goalH}h.`;
   try{
     const text=await oracleCall([{role:'user',content:prompt}],null,1200);
     if(out){
@@ -7831,6 +8134,15 @@ function escHtml(text){return String(text).replace(/&/g,'&amp;').replace(/</g,'&
       <div class="pick-row" id="next-break-type-pick">
         <button class="pick-btn" onclick="pickNextBreakType('productive',this)">✅ Productive</button>
         <button class="pick-btn" onclick="pickNextBreakType('waste',this)">📵 Waste</button>
+      </div>
+      <div class="pick-label">3. What did you do?</div>
+      <div class="pick-row" id="next-break-activity-pick" style="flex-wrap:wrap">
+        <button class="pick-btn" onclick="pickBreakActivity('rest',this)">😴 Rest/Sleep</button>
+        <button class="pick-btn" onclick="pickBreakActivity('walk',this)">🚶 Walk</button>
+        <button class="pick-btn" onclick="pickBreakActivity('food',this)">🍽 Food</button>
+        <button class="pick-btn" onclick="pickBreakActivity('youtube',this)">📱 YouTube/Reels</button>
+        <button class="pick-btn" onclick="pickBreakActivity('gaming',this)">🎮 Gaming</button>
+        <button class="pick-btn" onclick="pickBreakActivity('other',this)">💬 Other</button>
       </div>
     </div>
     <div class="pick-label" id="next-study-lbl">What are you studying?</div>
