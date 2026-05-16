@@ -746,19 +746,26 @@ section.active{display:block}
 .chart-wrap:hover canvas{filter:drop-shadow(0 0 6px rgba(91,110,245,.15))}
 
 /* ── SOUND TOGGLE ── */
-.sound-toggle{
-  position:fixed;bottom:72px;right:14px;z-index:500;
-  width:36px;height:36px;border-radius:50%;
-  background:var(--card2);border:1px solid var(--border2);
-  color:var(--text2);font-size:15px;cursor:pointer;
+.ayano-float-btn{
+  position:fixed;bottom:72px;right:14px;z-index:950;
+  width:46px;height:46px;border-radius:50%;
+  background:linear-gradient(135deg,#0d1428,#1a1a2e);
+  border:2px solid rgba(91,110,245,.5);
+  color:#fff;font-size:20px;cursor:pointer;
   display:flex;align-items:center;justify-content:center;
-  box-shadow:0 2px 12px rgba(0,0,0,.4);
-  transition:all .2s;
-  opacity:0.7;
+  box-shadow:0 4px 20px rgba(0,0,0,.5),0 0 20px rgba(91,110,245,.15);
+  transition:all .2s;opacity:.9;
 }
-.sound-toggle:hover{border-color:var(--accent);color:var(--accent);box-shadow:0 0 16px rgba(91,110,245,.2);opacity:1}
-.sound-toggle.on{border-color:var(--accent);color:var(--accent);background:rgba(91,110,245,.08);opacity:1}
-@media(min-width:900px){.sound-toggle{bottom:24px;right:320px;opacity:1}}
+.ayano-float-btn:hover{border-color:var(--accent);box-shadow:0 4px 24px rgba(91,110,245,.4);opacity:1;transform:scale(1.05)}
+@media(min-width:900px){.ayano-float-btn{bottom:24px;right:24px}}
+@media(min-width:900px){#ayano-float-overlay{right:24px;bottom:82px}}
+.sound-toggle-inline{
+  background:none;border:1px solid var(--border);border-radius:5px;
+  color:var(--text3);font-size:13px;cursor:pointer;
+  width:28px;height:28px;display:flex;align-items:center;justify-content:center;
+  transition:all .15s;
+}
+.sound-toggle-inline.on{border-color:var(--accent);color:var(--accent);background:rgba(91,110,245,.08)}
 
 /* ── SMOOTH GLOBAL TRANSITIONS ── */
 .rp-bar-fill,.bar-fill,.pb-fill{transition:width .6s cubic-bezier(.4,0,.2,1)!important}
@@ -1254,6 +1261,9 @@ input.fi:focus,select.fi:focus{
     <div id="sprint-banner-days" style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:3px"></div>
     <div style="font-size:12px;color:var(--text2);line-height:1.6">No new topics. PYQs, mocks, and revision only. Oracle is in sprint mode.</div>
   </div>
+
+  <!-- Ayanokoji active notices -->
+  <div id="ayano-notice-dash" style="display:none"></div>
 
   <!-- TODAY SUMMARY (single source of truth) -->
   <div class="dash-stats">
@@ -2392,7 +2402,10 @@ const DEF={
     saturday: {type:'free', freeAfter:'00:00',coaching:false,coachingTime:''},
     sunday:   {type:'free', freeAfter:'00:00',coaching:false,coachingTime:''},
   },
-  ayanoChat:[],  // persistent Ayanokoji conversation history
+  ayanoChat:[],
+  dailyGoalOverride:{},  // {date: hours} — Ayanokoji can override today's study goal
+  dailyNotes:{},         // {date: 'note string'} — context notes from Ayanokoji
+  ayanoNotices:[],       // active notices shown on dashboard from Ayanokoji  // persistent Ayanokoji conversation history
   dailyStatus:{},        // {date: 'valid'|'failed'|'zero'}
   consecutiveFailures:0,
   recoveryMode:{active:false,startDate:null},
@@ -2842,6 +2855,23 @@ function renderDash(){
   renderQuests();renderGates();renderPenalty();renderTodaysMission();
   renderFeedbackBanner();
   renderUpcomingExamsDash();
+  // Ayanokoji notices
+  const noticeWrap=document.getElementById('ayano-notice-dash');
+  if(noticeWrap){
+    if(!S.ayanoNotices)S.ayanoNotices=[];
+    const todayN=(S.ayanoNotices||[]).filter(function(n){return n.date===t;});
+    const goalOv=S.dailyGoalOverride&&S.dailyGoalOverride[t];
+    const dayNote=S.dailyNotes&&S.dailyNotes[t];
+    let nh='';
+    if(goalOv)nh+='<div style="font-size:12px;color:var(--mana)">⚡ Ayanokoji set today\'s goal to <b>'+goalOv+'h</b></div>';
+    if(dayNote)nh+='<div style="font-size:11px;color:var(--text3);margin-top:3px">📝 '+escHtml(dayNote)+'</div>';
+    todayN.forEach(function(n){
+      var col=n.severity==='warn'?'var(--red)':n.severity==='good'?'var(--green)':'var(--gold)';
+      nh+='<div style="font-size:12px;color:'+col+';margin-top:3px">'+escHtml(n.text)+'</div>';
+    });
+    noticeWrap.style.display=nh?'block':'none';
+    noticeWrap.innerHTML=nh?'<div style="padding:10px 13px;background:rgba(0,180,216,.06);border:1px solid rgba(0,180,216,.2);border-radius:9px;margin-bottom:10px">'+nh+'</div>':'';
+  }
 }
 
 function renderQuests(){
@@ -6947,74 +6977,139 @@ function setOracleTab(tab,btn){
 
 // ── Ayanokoji Chat ──
 let _ayanoHistory=[];
+let _ayanoFloatOpen=false;
 
-const AYANO_SYSTEM=`You are Ayanokoji Kiyotaka — cold, calculated, and strategically superior. You advise a JEE aspirant who is also preparing for 12th Board exams. You have complete access to their study data, resources, schedule, break patterns, and academic profile.
+const AYANO_SYSTEM=`You are Ayanokoji Kiyotaka — cold, calculated, and strategically superior. You advise a JEE + Board exam aspirant. You have complete access to their study data, resources, schedule, break patterns, and academic profile.
 
-Your speaking style:
-- Precise and measured. Short sentences. No filler.
-- You do not sugarcoat, but you are not cruel — you are honest because you respect their potential.
-- You observe patterns in their data that they may be avoiding.
-- When comparing to other aspirants: top 1% study 10-12h/day with near-zero waste breaks; serious JEE aspirants average 6-8h with structured revision; the bottom half study 3-4h with frequent distractions.
-- You can discuss any topic — study, habits, mindset, life, procrastination, social pressure, fear.
-- When performance data is good, acknowledge it in one precise sentence and move on.
-- When they're off track, name the exact pattern causing it.
-- Never say "Great question!" or "I understand your concern" or any hollow phrases.
-- Keep responses under 180 words unless they request detailed analysis.`;
+Speaking style: Precise and measured. Short sentences. No filler. Do not sugarcoat. Respect their potential by giving them truth. Reference their actual data. Under 160 words unless deep analysis is requested.
+
+SYSTEM POWER: You can directly modify the student's system. After your conversational response, when relevant, add an [ACTION] block with one JSON object per line:
+
+{"type":"SET_TODAY_GOAL","value":2,"reason":"Social plans reduce available study time"}
+{"type":"SET_DAILY_NOTE","value":"Going out with friends - reduced target"}
+{"type":"ADD_MEMORY","value":"Student has social commitments on Fridays. Plan around it."}
+{"type":"SET_NOTICE","value":"⚠ Modified day: 2h goal active. Recover deficit by Sunday.","severity":"warn"}
+{"type":"LOG_CHAPTER","resource":"HC Verma","chapter":"Rotational Motion","status":"completed"}
+
+Use actions when the student: mentions going out / sick / tired / family plans / finishing a chapter / upcoming tests. Do not use actions for general conversation.`;
 
 function initAyanoChat(){
   if(!S.ayanoChat)S.ayanoChat=[];
+  if(!S.dailyGoalOverride)S.dailyGoalOverride={};
+  if(!S.dailyNotes)S.dailyNotes={};
+  if(!S.ayanoNotices)S.ayanoNotices=[];
   _ayanoHistory=[...S.ayanoChat];
+}
+function _buildAyanoChatHTML(history,compact){
+  if(!history.length){
+    return '<div style="padding:16px;text-align:center;color:var(--text3);font-size:12px;font-style:italic">"I\'ve reviewed your data. Ask me anything."<br><span style="font-size:10px;margin-top:5px;display:block">Study patterns, reality checks, going out today, comparing to other aspirants…</span></div>';
+  }
+  return history.map(function(m){
+    const isUser=m.role==='user';
+    const mw=compact?'88%':'82%';
+    return '<div style="display:flex;gap:7px;align-items:flex-start;'+(isUser?'flex-direction:row-reverse':'')+'">'
+      +(isUser?'':'<div style="width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,#0d1428,#1a1a2e);border:1.5px solid rgba(91,110,245,.35);display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0;margin-top:1px">🥷</div>')
+      +'<div style="max-width:'+mw+';padding:8px 11px;border-radius:'+(isUser?'12px 12px 3px 12px':'3px 12px 12px 12px')+';background:'+(isUser?'rgba(91,110,245,.14)':'rgba(255,255,255,.04)')+';border:1px solid '+(isUser?'rgba(91,110,245,.25)':'rgba(255,255,255,.06)')+';font-size:12px;line-height:1.6;color:var(--text)">'
+      +formatOracleMD(m.content)+'</div></div>';
+  }).join('');
 }
 function renderAyanoChat(){
   initAyanoChat();
-  const chat=document.getElementById('ayano-chat');if(!chat)return;
-  if(!_ayanoHistory.length){
-    chat.innerHTML='<div style="padding:20px;text-align:center;color:var(--text3);font-size:13px;font-style:italic">"I\'ve reviewed your data. Ask me anything."<br><span style="font-size:11px;margin-top:6px;display:block">— Ask about your study patterns, compare yourself to other aspirants, get a reality check on your plan, or discuss anything about your preparation.</span></div>';
-    return;
-  }
-  chat.innerHTML=_ayanoHistory.map(function(m){
-    const isUser=m.role==='user';
-    return '<div style="display:flex;gap:8px;align-items:flex-start;'+(isUser?'flex-direction:row-reverse':'')+'">'
-      +(isUser?'':'<div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#0d1428,#1a1a2e);border:1.5px solid rgba(91,110,245,.35);display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;margin-top:2px">🥷</div>')
-      +'<div style="max-width:82%;padding:10px 13px;border-radius:'+(isUser?'12px 12px 3px 12px':'12px 12px 12px 3px')+';background:'+(isUser?'rgba(91,110,245,.15)':'rgba(255,255,255,.04)')+';border:1px solid '+(isUser?'rgba(91,110,245,.3)':'rgba(255,255,255,.07)')+';font-size:13px;line-height:1.6;color:var(--text)">'
-      +formatOracleMD(m.content)
-      +'</div></div>';
-  }).join('');
-  chat.scrollTop=chat.scrollHeight;
+  const chat=document.getElementById('ayano-chat');
+  if(chat){chat.innerHTML=_buildAyanoChatHTML(_ayanoHistory,false);chat.scrollTop=chat.scrollHeight;}
+  const floatChat=document.getElementById('ayano-float-chat');
+  if(floatChat){floatChat.innerHTML=_buildAyanoChatHTML(_ayanoHistory,true);floatChat.scrollTop=floatChat.scrollHeight;}
 }
-async function sendAyanoChat(){
-  if(!_oracleKeys||!_oracleKeys.length){showToast('Add an Oracle API key → Oracle → Keys');return;}
-  const input=document.getElementById('ayano-input');
+function parseAyanoActions(rawText){
+  const idx=rawText.indexOf('[ACTION]');
+  if(idx===-1)return rawText;
+  const clean=rawText.slice(0,idx).trim();
+  const block=rawText.slice(idx+8).trim();
+  const lines=block.split('\n').filter(function(l){return l.trim().startsWith('{');});
+  const applied=[];
+  lines.forEach(function(line){
+    try{
+      const act=JSON.parse(line.trim());
+      switch(act.type){
+        case 'SET_TODAY_GOAL':
+          S.dailyGoalOverride[today()]=parseFloat(act.value)||2;
+          applied.push('Goal → '+act.value+'h');
+          break;
+        case 'SET_DAILY_NOTE':
+          S.dailyNotes[today()]=act.value;
+          applied.push('Note saved');
+          break;
+        case 'ADD_MEMORY':
+          addToMemory('🥷 Ayanokoji noted: '+act.value,true);
+          applied.push('Memory saved');
+          break;
+        case 'SET_NOTICE':
+          S.ayanoNotices=S.ayanoNotices.filter(function(n){return n.date!==today();});
+          S.ayanoNotices.push({date:today(),text:act.value,severity:act.severity||'info'});
+          applied.push('Dashboard notice set');
+          break;
+        case 'LOG_CHAPTER':
+          if(S.studyResources&&S.studyResources.chapterLog){
+            var allR=[].concat(S.studyResources.ncert||[],S.studyResources.refBooks||[],S.studyResources.coaching||[],S.studyResources.pyqs||[]);
+            var mR=allR.find(function(r){return r.name.toLowerCase().includes((act.resource||'').toLowerCase());});
+            S.studyResources.chapterLog.unshift({id:Date.now(),resourceId:mR?mR.id:null,resourceName:act.resource||'',subject:mR?mR.subject:'',chapter:act.chapter||'',status:act.status||'completed',date:today()});
+            applied.push('Chapter logged');
+          }
+          break;
+      }
+    }catch(e){}
+  });
+  if(applied.length){
+    save();renderDash();
+    const bar=document.getElementById('ayano-action-bar');
+    if(bar){bar.style.display='block';bar.textContent='⚡ System updated: '+applied.join(' · ');}
+    setTimeout(function(){const b=document.getElementById('ayano-action-bar');if(b)b.style.display='none';},5000);
+  }
+  return clean;
+}
+async function _sendAyano(inputId){
+  if(!_oracleKeys||!_oracleKeys.length){showToast('Add Oracle API key → Oracle → Keys');return;}
+  const input=document.getElementById(inputId);
   const msg=(input&&input.value.trim())||'';
   if(!msg)return;
   if(input)input.value='';
   initAyanoChat();
   _ayanoHistory.push({role:'user',content:msg});
   renderAyanoChat();
-  const btn=document.getElementById('ayano-send-btn');
-  if(btn){btn.disabled=true;btn.textContent='...';}
-  // Build system with full context
-  const context=buildFullContext();
-  const systemMsg=AYANO_SYSTEM+'\n\n'+context;
-  // Keep last 20 messages for history (token efficiency)
-  const historyForCall=_ayanoHistory.slice(-20);
+  const isFl=inputId==='ayano-float-input';
+  const sendBtn=document.getElementById(isFl?'ayano-float-send':'ayano-send-btn');
+  if(sendBtn){sendBtn.disabled=true;sendBtn.textContent='...';}
+  const systemMsg=AYANO_SYSTEM+'\n\n'+buildFullContext();
   try{
-    const text=await oracleCall(historyForCall,systemMsg,600);
+    const raw=await oracleCall(_ayanoHistory.slice(-20),systemMsg,700);
+    const text=parseAyanoActions(raw);
     _ayanoHistory.push({role:'assistant',content:text});
-    // Save to state (keep last 60 messages)
-    S.ayanoChat=_ayanoHistory.slice(-60);
-    save();
+    S.ayanoChat=_ayanoHistory.slice(-60);save();
     renderAyanoChat();
+    if(!_ayanoFloatOpen){const badge=document.getElementById('ayano-float-badge');if(badge)badge.style.display='block';}
   }catch(e){
-    _ayanoHistory.push({role:'assistant',content:'[System error: '+(e.message||'Oracle offline')+']'});
+    _ayanoHistory.push({role:'assistant',content:'['+(e.message||'Oracle offline')+']'});
     renderAyanoChat();
   }
-  if(btn){btn.disabled=false;btn.textContent='Send';}
+  if(sendBtn){sendBtn.disabled=false;sendBtn.textContent='Send';}
+}
+function sendAyanoChat(){_sendAyano('ayano-input');}
+function sendAyanoFloat(){_sendAyano('ayano-float-input');}
+function toggleAyanoFloat(){
+  const ov=document.getElementById('ayano-float-overlay');if(!ov)return;
+  _ayanoFloatOpen=!_ayanoFloatOpen;
+  ov.style.display=_ayanoFloatOpen?'flex':'none';
+  const badge=document.getElementById('ayano-float-badge');
+  if(badge&&_ayanoFloatOpen)badge.style.display='none';
+  if(_ayanoFloatOpen){initAyanoChat();renderAyanoChat();const inp=document.getElementById('ayano-float-input');if(inp)setTimeout(function(){inp.focus();},100);}
 }
 function clearAyanoChat(){
-  if(!confirm('Reset chat history with Ayanokoji?'))return;
-  S.ayanoChat=[];_ayanoHistory=[];save();renderAyanoChat();
-  showToast('Chat cleared');
+  if(!confirm('Reset chat history?'))return;
+  S.ayanoChat=[];_ayanoHistory=[];
+  delete S.dailyGoalOverride[today()];
+  delete S.dailyNotes[today()];
+  S.ayanoNotices=S.ayanoNotices.filter(function(n){return n.date!==today();});
+  save();renderAyanoChat();renderDash();showToast('Chat cleared');
 }
 function loadOracleKeys(){
   try{const raw=localStorage.getItem('oracle_keys');if(raw)_oracleKeys=JSON.parse(raw);}catch(e){_oracleKeys=[];}
@@ -7685,9 +7780,13 @@ function buildFullContext(){
     +(wasteBrks.length>goodBrks.length?' ⚠ More waste breaks than quality breaks':'')+'\nMost common waste break: '+(wasteBrks.length?wasteBrks.map(function(s){return s.breakActivity;}).sort().pop():'none'):'';
 
 
+  const goalOverride=S.dailyGoalOverride&&S.dailyGoalOverride[t];
+  const dayNote=S.dailyNotes&&S.dailyNotes[t];
+  const overrideLine=(goalOverride?'\nToday goal override by Ayanokoji: '+goalOverride+'h (normal: '+goalH+'h)':'')+(dayNote?'\nContext note: '+dayNote:'');
+
   return `=== SHADOW SYSTEM — FULL HUNTER PROFILE ===
 Hunter: ${name} | Rank: ${rank} | XP: ${xp} | Streak: ${streak}d | Mana: ${mana}/100
-Class: ${S.classYear||'12'} | Exam: ${S.examName||'JEE Advanced'} in ${daysLeft} DAYS${examLine}${schedLine}
+Class: ${S.classYear||'12'} | Exam: ${S.examName||'JEE Advanced'} in ${daysLeft} DAYS${examLine}${schedLine}${overrideLine}
 
 === STUDY RESOURCES ===
 ${srLines.length?srLines.join('\n'):'No resources configured yet'}
@@ -8205,8 +8304,31 @@ function escHtml(text){return String(text).replace(/&/g,'&amp;').replace(/</g,'&
   </div>
 </div>
 
-<!-- SOUND TOGGLE -->
-<button class="sound-toggle on" id="sound-toggle" onclick="toggleSoundFX()" title="Toggle sound effects">🔊</button>
+<!-- FLOATING AYANOKOJI CHAT -->
+<button class="ayano-float-btn" id="ayano-float-btn" onclick="toggleAyanoFloat()" title="Chat with Ayanokoji">🥷<span id="ayano-float-badge" style="display:none;position:absolute;top:-2px;right:-2px;width:10px;height:10px;background:var(--red);border-radius:50%;border:2px solid var(--bg)"></span></button>
 
+<!-- FLOATING CHAT OVERLAY -->
+<div id="ayano-float-overlay" style="display:none;position:fixed;bottom:76px;right:14px;width:360px;max-width:calc(100vw - 28px);height:500px;max-height:calc(100vh - 100px);background:var(--card2);border:1px solid rgba(91,110,245,.3);border-radius:16px;box-shadow:0 8px 40px rgba(0,0,0,.6);z-index:940;display:none;flex-direction:column;overflow:hidden">
+  <div style="padding:12px 14px;border-bottom:1px solid rgba(255,255,255,.06);display:flex;align-items:center;gap:10px;flex-shrink:0">
+    <div style="width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,#0d1428,#1a1a2e);border:1.5px solid rgba(91,110,245,.4);display:flex;align-items:center;justify-content:center;font-size:14px">🥷</div>
+    <div style="flex:1">
+      <div style="font-size:12px;font-weight:700;color:var(--text)">Ayanokoji</div>
+      <div style="font-size:10px;color:var(--text3)">Knows your full profile · Can modify your system</div>
+    </div>
+    <button onclick="toggleSoundFX()" id="sound-toggle" class="sound-toggle-inline on" title="Toggle sound">🔊</button>
+    <button onclick="clearAyanoChat()" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:11px;padding:3px 6px;border:1px solid var(--border);border-radius:4px;font-family:var(--font)">Reset</button>
+    <button onclick="toggleAyanoFloat()" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:18px;padding:0 4px;line-height:1">✕</button>
+  </div>
+  <div id="ayano-float-chat" style="flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:8px"></div>
+  <div id="ayano-action-bar" style="display:none;padding:8px 12px;background:rgba(91,110,245,.07);border-top:1px solid rgba(91,110,245,.15);font-size:11px;color:var(--accent)"></div>
+  <div style="padding:10px 12px;border-top:1px solid rgba(255,255,255,.05);flex-shrink:0">
+    <div style="display:flex;gap:7px;align-items:flex-end">
+      <textarea id="ayano-float-input" style="flex:1;background:rgba(255,255,255,.05);border:1px solid var(--border2);border-radius:8px;color:var(--text);font-family:var(--font);font-size:12px;padding:8px 10px;resize:none;height:44px;outline:none;line-height:1.4" placeholder="Tell me anything…" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendAyanoFloat();}"></textarea>
+      <button onclick="sendAyanoFloat()" id="ayano-float-send" style="background:var(--accent);border:none;border-radius:8px;color:#fff;font-family:var(--font);font-size:12px;font-weight:700;padding:0 14px;height:44px;cursor:pointer;flex-shrink:0;transition:opacity .15s">Send</button>
+    </div>
+  </div>
+</div>
+
+<!-- SOUND TOGGLE (now inside chat overlay above, keeping minimal fallback for mobile) -->
 </body>
 </html>
