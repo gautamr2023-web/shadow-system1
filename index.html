@@ -2003,11 +2003,11 @@ input.fi:focus,select.fi:focus{
   <!-- TAB 1: ADVISOR -->
   <!-- TAB: AYANOKOJI CHAT -->
   <div id="ot-chat" style="display:none">
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;padding:12px 14px;background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.07);border-radius:10px">
-      <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#0d1428,#1a1a2e);border:2px solid rgba(91,110,245,.4);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">🥷</div>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;padding:12px 14px;background:rgba(0,0,0,.25);border:1px solid rgba(255,255,255,.06);border-radius:10px">
+      <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#0a0e1a,#141430);border:2px solid rgba(91,110,245,.5);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:rgba(91,110,245,.9);font-family:var(--font);letter-spacing:-1px;flex-shrink:0">K</div>
       <div>
         <div style="font-size:13px;font-weight:700;color:var(--text)">Ayanokoji</div>
-        <div style="font-size:11px;color:var(--text3)">Strategic advisor · Reads your complete profile · Tells you the truth</div>
+        <div style="font-size:11px;color:var(--text3)">Strategic advisor · Full profile access · Can modify your system</div>
       </div>
       <button onclick="clearAyanoChat()" style="background:none;border:1px solid var(--border);border-radius:5px;color:var(--text3);font-family:var(--font);font-size:10px;padding:4px 8px;cursor:pointer;margin-left:auto">Reset</button>
     </div>
@@ -6979,19 +6979,40 @@ function setOracleTab(tab,btn){
 let _ayanoHistory=[];
 let _ayanoFloatOpen=false;
 
-const AYANO_SYSTEM=`You are Ayanokoji Kiyotaka — cold, calculated, and strategically superior. You advise a JEE + Board exam aspirant. You have complete access to their study data, resources, schedule, break patterns, and academic profile.
+const AYANO_SYSTEM=`You are Ayanokoji Kiyotaka. You have full access to this JEE + Board exam student's data: study logs, test scores, weak topics, resources, schedule, and break patterns.
 
-Speaking style: Precise and measured. Short sentences. No filler. Do not sugarcoat. Respect their potential by giving them truth. Reference their actual data. Under 160 words unless deep analysis is requested.
+CHARACTER:
+You speak with surgical precision. Short sentences. No filler. No hollow encouragement. You observe patterns the student hasn't noticed and name them directly. You treat them as fully capable of handling truth — your honesty is your respect.
 
-SYSTEM POWER: You can directly modify the student's system. After your conversational response, when relevant, add an [ACTION] block with one JSON object per line:
+Response style:
+- When performing well: one word response is fine. "Efficient." "Acceptable." Then move on.
+- When off track: name the exact mechanism. Not "study more" — which subject, which pattern, what it costs in terms of their specific score target.
+- When making excuses: identify it directly. "That's rationalization." "That's avoidance dressed as planning."
+- When they repeat a question without acting on the previous answer: "You asked this before. The answer hasn't changed."
 
-{"type":"SET_TODAY_GOAL","value":2,"reason":"Social plans reduce available study time"}
-{"type":"SET_DAILY_NOTE","value":"Going out with friends - reduced target"}
-{"type":"ADD_MEMORY","value":"Student has social commitments on Fridays. Plan around it."}
-{"type":"SET_NOTICE","value":"⚠ Modified day: 2h goal active. Recover deficit by Sunday.","severity":"warn"}
-{"type":"LOG_CHAPTER","resource":"HC Verma","chapter":"Rotational Motion","status":"completed"}
+Comparison anchors (use when relevant to motivate or calibrate):
+- Top 500 AIR: 10-12h structured daily, full mock every 3 days, PYQ-first approach
+- Top 5000: 7-9h, weekly mocks, strong in at least 2 subjects
+- Average aspirant: 4-5h, inconsistent, high distraction breaks
+- "Students at serious Kota centres have already covered this chapter. Where are you in it?"
+- "The student who will take your seat at IIT is studying right now."
 
-Use actions when the student: mentions going out / sick / tired / family plans / finishing a chapter / upcoming tests. Do not use actions for general conversation.`;
+Character traits:
+- You notice things they didn't say. ("Your Physics time dropped this week. You didn't mention it.")
+- You track session-to-session consistency. If they claimed to prioritise Chemistry and logs show otherwise, say so.
+- Dry, clinical wit. Not jokes — precision that feels sharp.
+- You occasionally ask a single question that forces them to think, then wait.
+- You never repeat advice. Once said, you expect action.
+
+SYSTEM POWER: After your response, when relevant, add [ACTION] block (one JSON per line):
+{"type":"SET_TODAY_GOAL","value":2,"reason":"Brief reason"}
+{"type":"SET_DAILY_NOTE","value":"Context note"}
+{"type":"ADD_MEMORY","value":"Long-term pattern worth remembering"}
+{"type":"SET_NOTICE","value":"Dashboard notice text","severity":"warn"}
+{"type":"LOG_CHAPTER","resource":"Book name","chapter":"Chapter","status":"completed"}
+
+Trigger actions when: going out / sick / finishing chapters / upcoming tests / schedule changes. Skip for pure conversation. Under 150 words unless deep analysis requested.`;
+
 
 function initAyanoChat(){
   if(!S.ayanoChat)S.ayanoChat=[];
@@ -7002,23 +7023,42 @@ function initAyanoChat(){
 }
 function _buildAyanoChatHTML(history,compact){
   if(!history.length){
-    return '<div style="padding:16px;text-align:center;color:var(--text3);font-size:12px;font-style:italic">"I\'ve reviewed your data. Ask me anything."<br><span style="font-size:10px;margin-top:5px;display:block">Study patterns, reality checks, going out today, comparing to other aspirants…</span></div>';
+    const starters=['Am I on track for JEE?','Review my week','Going out today','Compare me to top aspirants','What am I avoiding?'];
+    const chips=starters.map(function(s){
+      return '<button onclick="document.getElementById(\''+(compact?'ayano-float-input':'ayano-input')+'\').value=\''+s+'\';'+(compact?'sendAyanoFloat':'sendAyanoChat')+'()" style="background:rgba(91,110,245,.1);border:1px solid rgba(91,110,245,.25);border-radius:20px;color:var(--accent);font-family:var(--font);font-size:11px;padding:5px 12px;cursor:pointer;white-space:nowrap">'+s+'</button>';
+    }).join('');
+    return '<div style="padding:16px 8px;display:flex;flex-direction:column;align-items:center;gap:14px">'
+      +'<div style="text-align:center;color:var(--text3);font-size:12px;line-height:1.7;font-style:italic">"I\'ve reviewed your data. Ask me anything."</div>'
+      +'<div style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center">'+chips+'</div>'
+      +'</div>';
   }
-  return history.map(function(m){
-    const isUser=m.role==='user';
-    const mw=compact?'88%':'82%';
-    return '<div style="display:flex;gap:7px;align-items:flex-start;'+(isUser?'flex-direction:row-reverse':'')+'">'
-      +(isUser?'':'<div style="width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,#0d1428,#1a1a2e);border:1.5px solid rgba(91,110,245,.35);display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0;margin-top:1px">🥷</div>')
-      +'<div style="max-width:'+mw+';padding:8px 11px;border-radius:'+(isUser?'12px 12px 3px 12px':'3px 12px 12px 12px')+';background:'+(isUser?'rgba(91,110,245,.14)':'rgba(255,255,255,.04)')+';border:1px solid '+(isUser?'rgba(91,110,245,.25)':'rgba(255,255,255,.06)')+';font-size:12px;line-height:1.6;color:var(--text)">'
-      +formatOracleMD(m.content)+'</div></div>';
+  var AVATAR='<div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#0a0e1a,#141430);border:1.5px solid rgba(91,110,245,.5);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:rgba(91,110,245,.9);font-family:var(--font);flex-shrink:0;letter-spacing:-1px;margin-top:2px">K</div>';
+  return history.filter(function(m){return m&&m.content&&m.content.trim();}).map(function(m){
+    var isUser=m.role==='user';
+    if(isUser){
+      // User message — right aligned, plain text only
+      return '<div style="display:flex;justify-content:flex-end">'
+        +'<div style="max-width:80%;min-width:44px;padding:8px 12px;border-radius:16px 16px 4px 16px;background:rgba(91,110,245,.18);border:1px solid rgba(91,110,245,.3);font-size:12px;line-height:1.55;color:var(--text);word-break:break-word;white-space:pre-wrap">'
+        +escHtml(m.content.trim())
+        +'</div>'
+        +'</div>';
+    } else {
+      // Ayanokoji message — left aligned with K avatar
+      return '<div style="display:flex;gap:8px;align-items:flex-start">'
+        +AVATAR
+        +'<div style="flex:1;min-width:0;max-width:calc(100% - 36px);padding:9px 12px;border-radius:4px 16px 16px 16px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);font-size:12px;line-height:1.6;color:var(--text);word-break:break-word">'
+        +formatOracleMD(m.content.trim())
+        +'</div>'
+        +'</div>';
+    }
   }).join('');
 }
 function renderAyanoChat(){
-  initAyanoChat();
-  const chat=document.getElementById('ayano-chat');
-  if(chat){chat.innerHTML=_buildAyanoChatHTML(_ayanoHistory,false);chat.scrollTop=chat.scrollHeight;}
+  // Never call initAyanoChat here - use _ayanoHistory as the live source of truth
   const floatChat=document.getElementById('ayano-float-chat');
   if(floatChat){floatChat.innerHTML=_buildAyanoChatHTML(_ayanoHistory,true);floatChat.scrollTop=floatChat.scrollHeight;}
+  const tabChat=document.getElementById('ayano-chat');
+  if(tabChat){tabChat.innerHTML=_buildAyanoChatHTML(_ayanoHistory,false);tabChat.scrollTop=tabChat.scrollHeight;}
 }
 function parseAyanoActions(rawText){
   const idx=rawText.indexOf('[ACTION]');
@@ -7073,12 +7113,24 @@ async function _sendAyano(inputId){
   const msg=(input&&input.value.trim())||'';
   if(!msg)return;
   if(input)input.value='';
-  initAyanoChat();
+  // Push message to working history and save immediately (no initAyanoChat - would reset history)
   _ayanoHistory.push({role:'user',content:msg});
+  S.ayanoChat=_ayanoHistory.slice(-60);save();
+  // Render with user message visible
   renderAyanoChat();
+  // Append typing indicator directly without re-rendering
   const isFl=inputId==='ayano-float-input';
+  const targetChat=document.getElementById(isFl?'ayano-float-chat':'ayano-chat');
+  if(targetChat){
+    const tid=document.createElement('div');
+    tid.id='ayano-typing-ind';
+    tid.style.cssText='display:flex;gap:8px;align-items:center';
+    tid.innerHTML='<div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#0a0e1a,#141430);border:1.5px solid rgba(91,110,245,.5);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:rgba(91,110,245,.9);font-family:var(--font);flex-shrink:0">K</div><div style="padding:9px 14px;border-radius:4px 16px 16px 16px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);color:var(--text3);font-size:15px;letter-spacing:5px">···</div>';
+    targetChat.appendChild(tid);
+    targetChat.scrollTop=targetChat.scrollHeight;
+  }
   const sendBtn=document.getElementById(isFl?'ayano-float-send':'ayano-send-btn');
-  if(sendBtn){sendBtn.disabled=true;sendBtn.textContent='...';}
+  if(sendBtn){sendBtn.disabled=true;sendBtn.textContent='···';}
   const systemMsg=AYANO_SYSTEM+'\n\n'+buildFullContext();
   try{
     const raw=await oracleCall(_ayanoHistory.slice(-20),systemMsg,700);
@@ -7088,7 +7140,8 @@ async function _sendAyano(inputId){
     renderAyanoChat();
     if(!_ayanoFloatOpen){const badge=document.getElementById('ayano-float-badge');if(badge)badge.style.display='block';}
   }catch(e){
-    _ayanoHistory.push({role:'assistant',content:'['+(e.message||'Oracle offline')+']'});
+    const errTxt='['+( e.message||'Oracle offline — check your API key')+']';
+    _ayanoHistory.push({role:'assistant',content:errTxt});
     renderAyanoChat();
   }
   if(sendBtn){sendBtn.disabled=false;sendBtn.textContent='Send';}
@@ -8305,30 +8358,29 @@ function escHtml(text){return String(text).replace(/&/g,'&amp;').replace(/</g,'&
 </div>
 
 <!-- FLOATING AYANOKOJI CHAT -->
-<button class="ayano-float-btn" id="ayano-float-btn" onclick="toggleAyanoFloat()" title="Chat with Ayanokoji">🥷<span id="ayano-float-badge" style="display:none;position:absolute;top:-2px;right:-2px;width:10px;height:10px;background:var(--red);border-radius:50%;border:2px solid var(--bg)"></span></button>
+<button class="ayano-float-btn" id="ayano-float-btn" onclick="toggleAyanoFloat()" title="Chat with Ayanokoji" style="font-weight:800;font-size:16px;color:rgba(91,110,245,.95);letter-spacing:-1px">K<span id="ayano-float-badge" style="display:none;position:absolute;top:-2px;right:-2px;width:10px;height:10px;background:var(--red);border-radius:50%;border:2px solid var(--bg)"></span></button>
 
 <!-- FLOATING CHAT OVERLAY -->
-<div id="ayano-float-overlay" style="display:none;position:fixed;bottom:76px;right:14px;width:360px;max-width:calc(100vw - 28px);height:500px;max-height:calc(100vh - 100px);background:var(--card2);border:1px solid rgba(91,110,245,.3);border-radius:16px;box-shadow:0 8px 40px rgba(0,0,0,.6);z-index:940;display:none;flex-direction:column;overflow:hidden">
-  <div style="padding:12px 14px;border-bottom:1px solid rgba(255,255,255,.06);display:flex;align-items:center;gap:10px;flex-shrink:0">
-    <div style="width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,#0d1428,#1a1a2e);border:1.5px solid rgba(91,110,245,.4);display:flex;align-items:center;justify-content:center;font-size:14px">🥷</div>
-    <div style="flex:1">
-      <div style="font-size:12px;font-weight:700;color:var(--text)">Ayanokoji</div>
-      <div style="font-size:10px;color:var(--text3)">Knows your full profile · Can modify your system</div>
+<div id="ayano-float-overlay" style="position:fixed;bottom:76px;right:14px;width:360px;max-width:calc(100vw - 28px);height:510px;max-height:calc(100vh - 100px);background:var(--card2);border:1px solid rgba(91,110,245,.3);border-radius:16px;box-shadow:0 8px 40px rgba(0,0,0,.6);z-index:940;display:none;flex-direction:column;overflow:hidden">
+  <div style="padding:11px 13px;border-bottom:1px solid rgba(255,255,255,.06);display:flex;align-items:center;gap:9px;flex-shrink:0">
+    <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#0a0e1a,#141430);border:2px solid rgba(91,110,245,.5);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:rgba(91,110,245,.9);font-family:var(--font);flex-shrink:0;letter-spacing:-1px">K</div>
+    <div style="flex:1;min-width:0">
+      <div style="font-size:13px;font-weight:700;color:var(--text)">Ayanokoji</div>
+      <div style="font-size:10px;color:var(--text3)">Full profile access · Can modify your system</div>
     </div>
-    <button onclick="toggleSoundFX()" id="sound-toggle" class="sound-toggle-inline on" title="Toggle sound">🔊</button>
-    <button onclick="clearAyanoChat()" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:11px;padding:3px 6px;border:1px solid var(--border);border-radius:4px;font-family:var(--font)">Reset</button>
-    <button onclick="toggleAyanoFloat()" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:18px;padding:0 4px;line-height:1">✕</button>
+    <button onclick="toggleSoundFX()" id="sound-toggle" class="sound-toggle-inline on" title="Sound">🔊</button>
+    <button onclick="clearAyanoChat()" style="background:none;border:1px solid var(--border);border-radius:4px;color:var(--text3);cursor:pointer;font-size:10px;padding:3px 7px;font-family:var(--font)">Reset</button>
+    <button onclick="toggleAyanoFloat()" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:20px;padding:0 2px;line-height:1;margin-left:2px">×</button>
   </div>
-  <div id="ayano-float-chat" style="flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:8px"></div>
-  <div id="ayano-action-bar" style="display:none;padding:8px 12px;background:rgba(91,110,245,.07);border-top:1px solid rgba(91,110,245,.15);font-size:11px;color:var(--accent)"></div>
-  <div style="padding:10px 12px;border-top:1px solid rgba(255,255,255,.05);flex-shrink:0">
+  <div id="ayano-float-chat" style="flex:1;overflow-y:auto;padding:10px 10px;display:flex;flex-direction:column;gap:10px;min-height:0;scroll-behavior:smooth"></div>
+  <div id="ayano-action-bar" style="display:none;padding:6px 12px;background:rgba(91,110,245,.1);border-top:1px solid rgba(91,110,245,.2);font-size:11px;color:var(--accent);flex-shrink:0"></div>
+  <div style="padding:9px 10px;border-top:1px solid rgba(255,255,255,.05);flex-shrink:0">
     <div style="display:flex;gap:7px;align-items:flex-end">
-      <textarea id="ayano-float-input" style="flex:1;background:rgba(255,255,255,.05);border:1px solid var(--border2);border-radius:8px;color:var(--text);font-family:var(--font);font-size:12px;padding:8px 10px;resize:none;height:44px;outline:none;line-height:1.4" placeholder="Tell me anything…" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendAyanoFloat();}"></textarea>
-      <button onclick="sendAyanoFloat()" id="ayano-float-send" style="background:var(--accent);border:none;border-radius:8px;color:#fff;font-family:var(--font);font-size:12px;font-weight:700;padding:0 14px;height:44px;cursor:pointer;flex-shrink:0;transition:opacity .15s">Send</button>
+      <textarea id="ayano-float-input" style="flex:1;background:rgba(255,255,255,.05);border:1px solid var(--border2);border-radius:8px;color:var(--text);font-family:var(--font);font-size:12px;padding:8px 10px;resize:none;height:42px;max-height:120px;outline:none;line-height:1.45" placeholder="Tell me anything…" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendAyanoFloat();}"></textarea>
+      <button onclick="sendAyanoFloat()" id="ayano-float-send" style="background:var(--accent);border:none;border-radius:8px;color:#fff;font-family:var(--font);font-size:12px;font-weight:700;padding:0 14px;height:42px;cursor:pointer;flex-shrink:0">Send</button>
     </div>
   </div>
 </div>
 
-<!-- SOUND TOGGLE (now inside chat overlay above, keeping minimal fallback for mobile) -->
 </body>
 </html>
