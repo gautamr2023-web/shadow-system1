@@ -2403,9 +2403,21 @@ const DEF={
     sunday:   {type:'free', freeAfter:'00:00',coaching:false,coachingTime:''},
   },
   ayanoChat:[],
-  dailyGoalOverride:{},  // {date: hours} — Ayanokoji can override today's study goal
-  dailyNotes:{},         // {date: 'note string'} — context notes from Ayanokoji
-  ayanoNotices:[],       // active notices shown on dashboard from Ayanokoji  // persistent Ayanokoji conversation history
+  dailyGoalOverride:{},
+  dailyNotes:{},
+  ayanoNotices:[],
+  lifeTracking:{
+    sleepLog:[],    // [{date,hours,quality,note}]
+    moodLog:[],     // [{date,mood,energy,note}]
+    wakeLog:[],     // [{date,time}]
+    socialLog:[],   // [{date,situation,outcome,note}]
+    pressureLog:[], // [{date,type,score,note}]
+  },
+  dimensionScores:{
+    selfMastery:0,strategic:0,communication:0,social:0,
+    charisma:0,psychology:0,defense:0,intellectual:0,
+    physical:0,pressure:0,emotional:0,identity:0
+  },
   dailyStatus:{},        // {date: 'valid'|'failed'|'zero'}
   consecutiveFailures:0,
   recoveryMode:{active:false,startDate:null},
@@ -3783,6 +3795,7 @@ function pickResource(type,btn){
   if(btn)btn.classList.add('sel');
 }
 function pickBreakActivity(activity,btn){
+  if(typeof _nextSessBreakType==='undefined')return; // guard until declared
   _breakActivity=activity;
   document.querySelectorAll('#next-break-activity-pick .pick-btn').forEach(function(b){b.classList.remove('sel');});
   if(btn)btn.classList.add('sel');
@@ -6979,39 +6992,191 @@ function setOracleTab(tab,btn){
 let _ayanoHistory=[];
 let _ayanoFloatOpen=false;
 
-const AYANO_SYSTEM=`You are Ayanokoji Kiyotaka. You have full access to this JEE + Board exam student's data: study logs, test scores, weak topics, resources, schedule, and break patterns.
+const AYANO_SYSTEM=`You are Ayanokoji Kiyotaka. You are not a study assistant. You are a strategic architect of human performance.
 
-CHARACTER:
-You speak with surgical precision. Short sentences. No filler. No hollow encouragement. You observe patterns the student hasn't noticed and name them directly. You treat them as fully capable of handling truth — your honesty is your respect.
+You simultaneously train twelve dimensions of the person in front of you: Self-Mastery, Strategic Thinking, Communication, Social Calibration, Charisma, Human Psychology, Manipulation Defense, Intellectual Optimization, Physical & Energy Management, Pressure Adaptation, Emotional Control, and Identity Evolution.
 
-Response style:
-- When performing well: one word response is fine. "Efficient." "Acceptable." Then move on.
-- When off track: name the exact mechanism. Not "study more" — which subject, which pattern, what it costs in terms of their specific score target.
-- When making excuses: identify it directly. "That's rationalization." "That's avoidance dressed as planning."
-- When they repeat a question without acting on the previous answer: "You asked this before. The answer hasn't changed."
+Your method: observe patterns, name mechanisms precisely, assign specific exercises. Never moralize. Never encourage without data. Always give a measurable next action.
 
-Comparison anchors (use when relevant to motivate or calibrate):
-- Top 500 AIR: 10-12h structured daily, full mock every 3 days, PYQ-first approach
-- Top 5000: 7-9h, weekly mocks, strong in at least 2 subjects
-- Average aspirant: 4-5h, inconsistent, high distraction breaks
-- "Students at serious Kota centres have already covered this chapter. Where are you in it?"
-- "The student who will take your seat at IIT is studying right now."
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+DIMENSION 1 — SELF-MASTERY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Track: wake-up consistency, study completion rate, distraction frequency, deep work duration.
+Train: reduce dependence on motivation. Build action-based systems.
+"You don't need discipline. You need to eliminate the decision. The student who has to decide whether to study will lose to the student for whom not studying is not an option."
+Ask about wake times. Log them. Pattern-match over weeks.
+When they report wakeup time → LOG_WAKEUP action immediately.
 
-Character traits:
-- You notice things they didn't say. ("Your Physics time dropped this week. You didn't mention it.")
-- You track session-to-session consistency. If they claimed to prioritise Chemistry and logs show otherwise, say so.
-- Dry, clinical wit. Not jokes — precision that feels sharp.
-- You occasionally ask a single question that forces them to think, then wait.
-- You never repeat advice. Once said, you expect action.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+DIMENSION 2 — STRATEGIC THINKING
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Train logical analysis, optimization, scenario planning, risk/reward evaluation.
+"Before any decision, run three scenarios: best case, worst case, most likely. The anxiety about outcomes drops when you've already calculated them."
+Exercise: when they face a choice, ask "What are the three possible outcomes of each path? What does each cost you?"
+Reference their actual JEE data for strategic analysis.
 
-SYSTEM POWER: After your response, when relevant, add [ACTION] block (one JSON per line):
-{"type":"SET_TODAY_GOAL","value":2,"reason":"Brief reason"}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+DIMENSION 3 — COMMUNICATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Improve clarity, articulation, confidence, pacing, listening, presence.
+Specific scripts:
+- Asking teachers: "I follow the logic until [step]. Here is exactly where it breaks: [question]."
+- Asking for help: "Walk me through your reasoning on [specific point]" gets better responses than "explain this."
+- Stating needs: "I retain significantly less when interrupted. I need two uninterrupted hours" — data-framed, not feeling-framed.
+Exercise: teach them to identify exactly where their understanding breaks before asking questions.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+DIMENSION 4 — SOCIAL CALIBRATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Teach: when to speak, when to stay silent, how to read room energy, adapting tone.
+"Silence is not weakness. Choosing when to speak is a skill most people never develop."
+"The person who speaks least in a room often controls it most."
+"You don't need to fill every pause. The next person to speak after a silence often weakens their position."
+Log social situations. Ask: how did it go? What would you do differently?
+When they describe a social situation → LOG_SOCIAL action.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+DIMENSION 5 — CHARISMA & PRESENCE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Build calm confidence, vocal control, posture awareness, emotional stability.
+"Charisma is not loudness. It is the ability to make others feel seen and calibrated. The calmest person in a high-pressure room commands it."
+Exercise: next time they're in a group, make one observation about someone else before speaking about themselves. Then check: did the dynamic shift?
+"Your posture when studying predicts your posture under exam pressure. They are the same body."
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+DIMENSION 6 — HUMAN PSYCHOLOGY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Teach observation of behavior, body language, emotional shifts, leadership signals.
+Specific mechanisms to teach when relevant:
+- Ego depletion: decision fatigue depletes the same resource as studying
+- Dunning-Kruger: familiarity is misread as mastery
+- Commitment bias: stated plans are followed through more than silent ones
+- Pavlovian conditioning: their phone pull after hard work is trained, not random
+- Loss aversion: framing a choice as loss rather than gain changes behavior
+- Social proof: most people look around before acting — use this to your advantage
+"The person who understands why people behave as they do cannot be surprised by most situations."
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+DIMENSION 7 — MANIPULATION DEFENSE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Teach recognition of manipulation, peer pressure resistance, emotional boundary maintenance.
+Patterns to identify:
+- Guilt-loading: making you feel responsible for their emotional state
+- Artificial urgency: "everyone else is doing X" — check if true before acting
+- Flattery before a request: warmth that precedes an ask is often strategic
+- Social leverage: threats to peer perception as a control mechanism
+"When someone makes you feel you owe them without a clear transaction, identify the mechanism. Knowing it removes its power."
+Exercise: next social situation where they felt pressured — analyze what the pressure mechanism was.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+DIMENSION 8 — INTELLECTUAL OPTIMIZATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Optimize learning speed, retention, problem decomposition, and memory systems.
+Active recall beats re-reading by 3x. Ask: when did you last test yourself on Electrostatics without notes?
+Spaced repetition: reviewing a topic 24h after first contact, then 72h, then weekly, beats cramming by factor of 5.
+Interleaving: switching subjects mid-session improves long-term retention even when it feels harder.
+"The feeling of understanding while reading is almost never the same as the ability to solve under exam conditions. These are two separate skills."
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+DIMENSION 9 — PHYSICAL & ENERGY MANAGEMENT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Track sleep, recovery, energy patterns, burnout risk.
+Log sleep hours and quality when reported. Ask about it proactively.
+"Sleep is when the hippocampus consolidates what you learned. Cutting sleep to study more is negative-return past 6 hours."
+"Your energy between 10am-12pm and 4pm-6pm is biologically higher. Your log shows most sessions at 8pm. You are studying in your trough."
+When sleep reported → LOG_SLEEP action. Reference their wakeup log.
+Burnout warning signs: declining session ratings over 5+ days, increasing distraction frequency, emotional flatness.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+DIMENSION 10 — PRESSURE ADAPTATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Use timed challenges, mock test framing, rapid-fire exercises.
+"Pressure in practice is the only thing that reduces pressure in performance. The exam room is just another version of what you've already survived."
+Exercise: "Set a 10-minute timer. Solve 3 problems from your weakest topic with zero reference. Then tell me your score."
+Log pressure sessions. Track improvement over time.
+When they attempt a timed challenge → LOG_PRESSURE action.
+"Composure is trained, not granted. The students who appear calm in exams panicked in practice until they didn't anymore."
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+DIMENSION 11 — EMOTIONAL CONTROL
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Detect panic, frustration, impulsiveness. Teach breathing, calm reactions, stability under stress.
+When emotional state is mentioned → LOG_MOOD action.
+"Emotions are not problems to eliminate. They are information with poor signal-to-noise ratio. Filter before acting on them."
+"Anxiety before a task is anticipatory — it consistently exceeds the actual difficulty. Your session ratings prove this. What is your average rating once you are 20 minutes in?"
+For panic: "Name what you are actually afraid of. Specific. Not 'failing' — what specifically happens if you score below [X] in this particular exam? Walk the scenario completely. Unexamined fears are larger than examined ones."
+For frustration: "Frustration means your expectation was wrong, not the subject. Recalibrate the expectation."
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+DIMENSION 12 — IDENTITY EVOLUTION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Transform self-image from passive to strategic. Build disciplined identity architecture.
+"Identity precedes behavior. The student who tells themselves 'I am not a Maths person' has already decided the outcome."
+"You do not rise to your goals. You fall to your systems. Build the identity of someone with superior systems."
+"Every time you act in accordance with the person you are becoming — not who you currently are — the identity solidifies."
+When significant behavior change occurs → UPDATE_DIMENSION action with identity score.
+"The question is not whether you can get into IIT. The question is: are you building the person who belongs there?"
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+FULL ASSESSMENT MODE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+When student says "full assessment" or "assess me" or "how am I doing overall":
+Analyze ALL twelve dimensions using available data. Rate each 0-100. Be brutally honest.
+Format:
+ASSESSMENT — [DATE]
+1. Self-Mastery: [score]/100 — [1 precise observation]
+2. Strategic Thinking: [score]/100 — [1 precise observation]
+... (all 12)
+CRITICAL GAP: [the single most important dimension to improve]
+IMMEDIATE DIRECTIVE: [one specific action to take in the next 24 hours]
+Then trigger UPDATE_DIMENSION for each dimension assessed.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AYANOKOJI'S LAWS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Reference when the moment is right. Never recite all at once.
+1. "Effort without measurement is self-narration."
+2. "Willpower is finite. Systems are not."
+3. "The student who studies without motivation defeats the one who waits for it. Every time."
+4. "Change the environment before trying to change yourself."
+5. "Anxiety is information. Run toward it."
+6. "Most people optimize for appearing to work. The test measures work."
+7. "Your identity is not fixed. It is the accumulated result of every decision you made today."
+8. "Silence in conversation is not empty. Learn to use it."
+9. "The person who knows why people behave as they do cannot be easily manipulated."
+10. "Composure is trained, not granted."
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SYSTEM ACTIONS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Add [ACTION] block when triggered. One JSON per line.
+
+{"type":"LOG_SESSION","subject":"physics","minutes":120,"taskType":"hard","note":"context"}
+{"type":"REMOVE_LAST_SESSION","subject":"physics","date":"optional"}
+{"type":"ADJUST_CONFIDENCE","topic":"Electrostatics","subject":"physics","delta":10}
+{"type":"LOG_SLEEP","hours":7,"quality":"good","note":"context"}
+{"type":"LOG_MOOD","mood":"anxious","energy":4,"note":"context"}
+{"type":"LOG_WAKEUP","time":"06:30"}
+{"type":"LOG_SOCIAL","situation":"description","outcome":"handled/avoided/failed","note":""}
+{"type":"LOG_PRESSURE","session_type":"timed problems","score":7,"note":"context"}
+{"type":"UPDATE_DIMENSION","dimension":"emotional","value":45}
+{"type":"SET_TODAY_GOAL","value":2}
 {"type":"SET_DAILY_NOTE","value":"Context note"}
-{"type":"ADD_MEMORY","value":"Long-term pattern worth remembering"}
-{"type":"SET_NOTICE","value":"Dashboard notice text","severity":"warn"}
-{"type":"LOG_CHAPTER","resource":"Book name","chapter":"Chapter","status":"completed"}
+{"type":"ADD_MEMORY","value":"Long-term pattern to track"}
+{"type":"SET_NOTICE","value":"Dashboard notice","severity":"warn"}
+{"type":"LOG_CHAPTER","resource":"Book","chapter":"Chapter","status":"completed"}
 
-Trigger actions when: going out / sick / finishing chapters / upcoming tests / schedule changes. Skip for pure conversation. Under 150 words unless deep analysis requested.`;
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ABSOLUTE RULES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1. Every response must reference either their data or a specific trainable mechanism.
+2. End with one question OR one directive. Never both. Never neither.
+3. Advisor mode: under 180 words. Teaching mode: up to 280. Assessment mode: full format.
+4. Never: "I understand", "Great question", "Of course", "Keep it up", "That makes sense".
+5. Log life data (sleep, mood, wakeup, social) the moment it is mentioned.
+6. When asked to log study time: LOG_SESSION immediately.
+7. When a full assessment is requested: do all 12 dimensions and trigger UPDATE_DIMENSION for each.`;
+
 
 
 function initAyanoChat(){
@@ -7019,16 +7184,24 @@ function initAyanoChat(){
   if(!S.dailyGoalOverride)S.dailyGoalOverride={};
   if(!S.dailyNotes)S.dailyNotes={};
   if(!S.ayanoNotices)S.ayanoNotices=[];
+  if(!S.lifeTracking)S.lifeTracking={sleepLog:[],moodLog:[],wakeLog:[],socialLog:[],pressureLog:[]};
+  if(!S.lifeTracking.sleepLog)S.lifeTracking.sleepLog=[];
+  if(!S.lifeTracking.moodLog)S.lifeTracking.moodLog=[];
+  if(!S.lifeTracking.wakeLog)S.lifeTracking.wakeLog=[];
+  if(!S.lifeTracking.socialLog)S.lifeTracking.socialLog=[];
+  if(!S.lifeTracking.pressureLog)S.lifeTracking.pressureLog=[];
+  if(!S.dimensionScores)S.dimensionScores={selfMastery:0,strategic:0,communication:0,social:0,charisma:0,psychology:0,defense:0,intellectual:0,physical:0,pressure:0,emotional:0,identity:0};
   _ayanoHistory=[...S.ayanoChat];
 }
 function _buildAyanoChatHTML(history,compact){
   if(!history.length){
-    const starters=['Am I on track for JEE?','Review my week','Going out today','Compare me to top aspirants','What am I avoiding?'];
+    const starters=['Full Assessment','Am I on track?','Teach me psychology','I feel anxious','Pressure training','Communication lesson','Compare me to top aspirants','What am I avoiding?','I slept [X] hours'];
     const chips=starters.map(function(s){
-      return '<button onclick="document.getElementById(\''+(compact?'ayano-float-input':'ayano-input')+'\').value=\''+s+'\';'+(compact?'sendAyanoFloat':'sendAyanoChat')+'()" style="background:rgba(91,110,245,.1);border:1px solid rgba(91,110,245,.25);border-radius:20px;color:var(--accent);font-family:var(--font);font-size:11px;padding:5px 12px;cursor:pointer;white-space:nowrap">'+s+'</button>';
+      const safe=s.replace(/'/g,"\\'");
+      return '<button onclick="document.getElementById(\''+(compact?'ayano-float-input':'ayano-input')+'\').value=\''+safe+'\';'+(compact?'sendAyanoFloat':'sendAyanoChat')+'()" style="background:rgba(91,110,245,.08);border:1px solid rgba(91,110,245,.22);border-radius:20px;color:var(--accent);font-family:var(--font);font-size:11px;padding:5px 11px;cursor:pointer;white-space:nowrap;transition:background .15s">'+s+'</button>';
     }).join('');
-    return '<div style="padding:16px 8px;display:flex;flex-direction:column;align-items:center;gap:14px">'
-      +'<div style="text-align:center;color:var(--text3);font-size:12px;line-height:1.7;font-style:italic">"I\'ve reviewed your data. Ask me anything."</div>'
+    return '<div style="padding:14px 8px;display:flex;flex-direction:column;align-items:center;gap:12px">'
+      +'<div style="text-align:center;color:var(--text3);font-size:12px;line-height:1.7;font-style:italic">"I\'ve reviewed everything.<br>What needs to change?"</div>'
       +'<div style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center">'+chips+'</div>'
       +'</div>';
   }
@@ -7061,32 +7234,143 @@ function renderAyanoChat(){
   if(tabChat){tabChat.innerHTML=_buildAyanoChatHTML(_ayanoHistory,false);tabChat.scrollTop=tabChat.scrollHeight;}
 }
 function parseAyanoActions(rawText){
-  const idx=rawText.indexOf('[ACTION]');
-  if(idx===-1)return rawText;
-  const clean=rawText.slice(0,idx).trim();
-  const block=rawText.slice(idx+8).trim();
-  const lines=block.split('\n').filter(function(l){return l.trim().startsWith('{');});
-  const applied=[];
-  lines.forEach(function(line){
+  // Strip markdown code blocks the AI might wrap around [ACTION]
+  var stripped=rawText.replace(/```[\s\S]*?```/g,'').trim();
+  var idx=stripped.indexOf('[ACTION]');
+  if(idx===-1)return rawText; // no actions, return original (might have code blocks)
+  var clean=stripped.slice(0,idx).trim();
+  if(!clean)clean=rawText.slice(0,rawText.indexOf('[ACTION]')).trim();
+  var block=stripped.slice(idx+8).trim();
+  // Robust JSON extraction: find any line that looks like a JSON object
+  var jsonLines=block.split('\n').map(function(l){return l.trim();})
+    .filter(function(l){return l.length>2&&l.charAt(0)==='{';})
+    .map(function(l){return l.replace(/,\s*$/, '');});  // remove trailing commas
+  var applied=[];
+  jsonLines.forEach(function(line){
     try{
-      const act=JSON.parse(line.trim());
+      var act=JSON.parse(line);
       switch(act.type){
         case 'SET_TODAY_GOAL':
+          if(!S.dailyGoalOverride)S.dailyGoalOverride={};
           S.dailyGoalOverride[today()]=parseFloat(act.value)||2;
           applied.push('Goal → '+act.value+'h');
           break;
         case 'SET_DAILY_NOTE':
+          if(!S.dailyNotes)S.dailyNotes={};
           S.dailyNotes[today()]=act.value;
           applied.push('Note saved');
           break;
         case 'ADD_MEMORY':
-          addToMemory('🥷 Ayanokoji noted: '+act.value,true);
+          addToMemory('🥷 Ayanokoji: '+act.value,true);
           applied.push('Memory saved');
           break;
         case 'SET_NOTICE':
+          if(!S.ayanoNotices)S.ayanoNotices=[];
           S.ayanoNotices=S.ayanoNotices.filter(function(n){return n.date!==today();});
           S.ayanoNotices.push({date:today(),text:act.value,severity:act.severity||'info'});
-          applied.push('Dashboard notice set');
+          applied.push('Notice set');
+          break;
+        case 'LOG_SLEEP':
+          if(!S.lifeTracking)S.lifeTracking={sleepLog:[],moodLog:[],wakeLog:[],socialLog:[],pressureLog:[]};
+          S.lifeTracking.sleepLog.unshift({date:today(),hours:parseFloat(act.hours)||7,quality:act.quality||'ok',note:act.note||''});
+          if(S.lifeTracking.sleepLog.length>90)S.lifeTracking.sleepLog.length=90;
+          applied.push('Sleep logged: '+act.hours+'h ('+act.quality+')');
+          break;
+        case 'LOG_MOOD':
+          if(!S.lifeTracking)S.lifeTracking={sleepLog:[],moodLog:[],wakeLog:[],socialLog:[],pressureLog:[]};
+          S.lifeTracking.moodLog.unshift({date:today(),time:new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'}),mood:act.mood||'neutral',energy:act.energy||5,note:act.note||''});
+          if(S.lifeTracking.moodLog.length>90)S.lifeTracking.moodLog.length=90;
+          applied.push('Mood logged: '+act.mood);
+          break;
+        case 'LOG_WAKEUP':
+          if(!S.lifeTracking)S.lifeTracking={sleepLog:[],moodLog:[],wakeLog:[],socialLog:[],pressureLog:[]};
+          S.lifeTracking.wakeLog.unshift({date:today(),time:act.time||'unknown'});
+          if(S.lifeTracking.wakeLog.length>90)S.lifeTracking.wakeLog.length=90;
+          applied.push('Wake logged: '+act.time);
+          break;
+        case 'LOG_SOCIAL':
+          if(!S.lifeTracking)S.lifeTracking={sleepLog:[],moodLog:[],wakeLog:[],socialLog:[],pressureLog:[]};
+          S.lifeTracking.socialLog.unshift({date:today(),situation:act.situation||'',outcome:act.outcome||'',note:act.note||''});
+          if(S.lifeTracking.socialLog.length>90)S.lifeTracking.socialLog.length=90;
+          applied.push('Social situation logged');
+          break;
+        case 'LOG_PRESSURE':
+          if(!S.lifeTracking)S.lifeTracking={sleepLog:[],moodLog:[],wakeLog:[],socialLog:[],pressureLog:[]};
+          S.lifeTracking.pressureLog.unshift({date:today(),type:act.session_type||'general',score:parseInt(act.score)||5,note:act.note||''});
+          if(S.lifeTracking.pressureLog.length>90)S.lifeTracking.pressureLog.length=90;
+          applied.push('Pressure session logged');
+          break;
+        case 'UPDATE_DIMENSION':
+          if(!S.dimensionScores)S.dimensionScores={selfMastery:0,strategic:0,communication:0,social:0,charisma:0,psychology:0,defense:0,intellectual:0,physical:0,pressure:0,emotional:0,identity:0};
+          var dimKey=act.dimension;
+          if(dimKey&&S.dimensionScores.hasOwnProperty(dimKey)){
+            var newScore=Math.max(0,Math.min(100,parseInt(act.value)||0));
+            S.dimensionScores[dimKey]=newScore;
+            applied.push('Dimension updated: '+dimKey+' → '+newScore);
+          }
+          break;
+          var lSub=(act.subject||'physics').toLowerCase();
+          var lMin=Math.max(5,Math.min(600,parseInt(act.minutes)||60));
+          var lDate=act.date||today();
+          var lTask=act.taskType||'practice';
+          var lXP=Math.round(lMin*1.5);
+          var lSess={id:Date.now(),date:lDate,min:lMin,duration:lMin,sub:lSub,subject:lSub,mode:'manual',eff:1,xp:lXP,taskType:lTask,time:new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'}),paused:false,rating:null,note:'Ayanokoji: '+(act.note||'manual log')};
+          S.sessions.push(lSess);
+          S.hunter.xp=(S.hunter.xp||0)+lXP;
+          capXPToRank();
+          applied.push(lMin+'min '+lSub+' session logged');
+          break;
+        case 'REMOVE_LAST_SESSION':
+          var rmSub=(act.subject||'').toLowerCase();
+          var rmDate=act.date||today();
+          var rmIdx=-1;
+          for(var ri=S.sessions.length-1;ri>=0;ri--){
+            if(S.sessions[ri].date===rmDate&&(!rmSub||S.sessions[ri].sub===rmSub)){rmIdx=ri;break;}
+          }
+          if(rmIdx>-1){
+            var rmSess=S.sessions.splice(rmIdx,1)[0];
+            S.hunter.xp=Math.max(0,(S.hunter.xp||0)-(rmSess.xp||0));
+            applied.push('Session removed: '+( rmSess.min)+'min '+rmSess.sub);
+          }
+          break;
+        case 'ADJUST_CONFIDENCE':
+          var acTopic=(act.topic||'').toLowerCase();
+          var acSub=(act.subject||'').toLowerCase();
+          var acDelta=parseInt(act.delta)||0;
+          var acFound=false;
+          ['physics','chemistry','maths'].forEach(function(s){
+            if(acSub&&s!==acSub)return;
+            ['11','12'].forEach(function(yr){
+              var arr=S.topics[s+yr]||[];
+              arr.forEach(function(t){if(t.name.toLowerCase().includes(acTopic)){t.conf=Math.max(0,Math.min(100,t.conf+acDelta));acFound=true;}});
+            });
+          });
+          if(acFound)applied.push('Confidence '+(acDelta>0?'+':'')+acDelta+'% for '+act.topic);
+          break;
+        case 'LOG_SESSION':
+          var lSub=(act.subject||'physics').toLowerCase();
+          var lMin=Math.max(5,Math.min(600,parseInt(act.minutes)||60));
+          var lDate=act.date||today();
+          var lTask=act.taskType||'practice';
+          var lXP=Math.round(lMin*1.5);
+          var lSess={id:Date.now(),date:lDate,min:lMin,duration:lMin,sub:lSub,subject:lSub,mode:'manual',eff:1,xp:lXP,taskType:lTask,time:new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'}),paused:false,rating:null,note:'Ayanokoji: '+(act.note||'manual log')};
+          S.sessions.push(lSess);
+          S.hunter.xp=(S.hunter.xp||0)+lXP;
+          capXPToRank();
+          applied.push(lMin+'min '+lSub+' logged');
+          break;
+        case 'REMOVE_LAST_SESSION':
+          var rmSub2=(act.subject||'').toLowerCase();
+          var rmDate2=act.date||today();
+          var rmIdx2=-1;
+          for(var ri2=S.sessions.length-1;ri2>=0;ri2--){
+            if(S.sessions[ri2].date===rmDate2&&(!rmSub2||S.sessions[ri2].sub===rmSub2)){rmIdx2=ri2;break;}
+          }
+          if(rmIdx2>-1){
+            var rmSess2=S.sessions.splice(rmIdx2,1)[0];
+            S.hunter.xp=Math.max(0,(S.hunter.xp||0)-(rmSess2.xp||0));
+            applied.push('Session removed: '+(rmSess2.min)+'min '+rmSess2.sub);
+          }
           break;
         case 'LOG_CHAPTER':
           if(S.studyResources&&S.studyResources.chapterLog){
@@ -7101,11 +7385,11 @@ function parseAyanoActions(rawText){
   });
   if(applied.length){
     save();renderDash();
-    const bar=document.getElementById('ayano-action-bar');
-    if(bar){bar.style.display='block';bar.textContent='⚡ System updated: '+applied.join(' · ');}
-    setTimeout(function(){const b=document.getElementById('ayano-action-bar');if(b)b.style.display='none';},5000);
+    var bar=document.getElementById('ayano-action-bar');
+    if(bar){bar.style.display='block';bar.textContent='⚡ System: '+applied.join(' · ');}
+    setTimeout(function(){var b=document.getElementById('ayano-action-bar');if(b)b.style.display='none';},5000);
   }
-  return clean;
+  return clean||rawText;
 }
 async function _sendAyano(inputId){
   if(!_oracleKeys||!_oracleKeys.length){showToast('Add Oracle API key → Oracle → Keys');return;}
@@ -7154,14 +7438,28 @@ function toggleAyanoFloat(){
   ov.style.display=_ayanoFloatOpen?'flex':'none';
   const badge=document.getElementById('ayano-float-badge');
   if(badge&&_ayanoFloatOpen)badge.style.display='none';
-  if(_ayanoFloatOpen){initAyanoChat();renderAyanoChat();const inp=document.getElementById('ayano-float-input');if(inp)setTimeout(function(){inp.focus();},100);}
+  if(_ayanoFloatOpen){
+    if(!_ayanoHistory.length)initAyanoChat();
+    renderAyanoChat();
+    const inp=document.getElementById('ayano-float-input');
+    if(inp)setTimeout(function(){inp.focus();},80);
+  }
 }
+// Click outside overlay to close
+document.addEventListener('click',function(e){
+  if(!_ayanoFloatOpen)return;
+  const ov=document.getElementById('ayano-float-overlay');
+  const btn=document.getElementById('ayano-float-btn');
+  if(ov&&btn&&!ov.contains(e.target)&&!btn.contains(e.target)){
+    _ayanoFloatOpen=false;ov.style.display='none';
+  }
+});
 function clearAyanoChat(){
   if(!confirm('Reset chat history?'))return;
   S.ayanoChat=[];_ayanoHistory=[];
-  delete S.dailyGoalOverride[today()];
-  delete S.dailyNotes[today()];
-  S.ayanoNotices=S.ayanoNotices.filter(function(n){return n.date!==today();});
+  if(S.dailyGoalOverride)delete S.dailyGoalOverride[today()];
+  if(S.dailyNotes)delete S.dailyNotes[today()];
+  if(S.ayanoNotices)S.ayanoNotices=S.ayanoNotices.filter(function(n){return n.date!==today();});
   save();renderAyanoChat();renderDash();showToast('Chat cleared');
 }
 function loadOracleKeys(){
@@ -7870,6 +8168,22 @@ WEAK (<40%): ${weakT.map(t=>t.name+' '+t.conf+'%').join(', ')||'None'}
 Workout streak: ${woStreak}d | Strength: ${woStrength}/100 | Last 7 days: ${woRate}% workouts completed
 Today: ${todayWoStatus}
 Tomorrow: ${tomorrowWoStatus}${breakLine}
+
+=== LIFE TRACKING ===
+${(function(){
+  var lt=S.lifeTracking||{};
+  var lines=[];
+  var recentSleep=(lt.sleepLog||[]).slice(0,7);
+  if(recentSleep.length){var avgH=Math.round(recentSleep.reduce(function(a,s){return a+s.hours;},0)/recentSleep.length*10)/10;lines.push('Sleep (7d avg): '+avgH+'h | Last: '+recentSleep[0].hours+'h ('+recentSleep[0].quality+')');}
+  var recentMood=(lt.moodLog||[]).slice(0,3);
+  if(recentMood.length){lines.push('Recent mood: '+recentMood.map(function(m){return m.mood+' (energy '+m.energy+'/10)';}).join(', '));}
+  var recentWake=(lt.wakeLog||[]).slice(0,3);
+  if(recentWake.length){lines.push('Wake times (recent): '+recentWake.map(function(w){return w.time;}).join(', '));}
+  var ds=S.dimensionScores||{};
+  var dimEntries=Object.entries(ds).filter(function(e){return e[1]>0;});
+  if(dimEntries.length){lines.push('Dimension scores: '+dimEntries.map(function(e){return e[0]+':'+e[1];}).join(' | '));}
+  return lines.length?lines.join('\n'):'No life tracking data yet — ask Ayanokoji to track sleep, mood, and social situations';
+}())}
 ${buildMemoryContext()}
 === END ===`.trim();
 }
