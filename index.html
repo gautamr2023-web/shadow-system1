@@ -1690,6 +1690,70 @@ input.fi:focus,select.fi:focus{
 
   <!-- Chronicle -->
   <div class="card"><div class="card-hdr"><span class="hl">Shadow Chronicle</span></div><div id="chronicle"></div></div>
+
+  <!-- SLEEP TRACKER -->
+  <div class="card">
+    <div class="card-hdr"><span class="hl">😴 Sleep Tracker</span></div>
+    <div style="font-size:11px;color:var(--text2);margin-bottom:12px;line-height:1.6">Sleep is when the brain consolidates learning. Cutting sleep to study more is negative-return past 6 hours.</div>
+    <!-- Log form -->
+    <div style="background:rgba(0,180,216,.05);border:1px solid rgba(0,180,216,.15);border-radius:10px;padding:13px;margin-bottom:14px">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--mana);margin-bottom:10px">Log Last Night</div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:10px">
+        <div style="display:flex;flex-direction:column;gap:4px">
+          <label style="font-size:11px;color:var(--text2)">Went to sleep</label>
+          <input type="time" id="sl-bedtime" class="fi" value="23:00" style="padding:6px 10px;font-size:13px;width:120px">
+        </div>
+        <div style="font-size:16px;color:var(--text3);padding-top:18px">→</div>
+        <div style="display:flex;flex-direction:column;gap:4px">
+          <label style="font-size:11px;color:var(--text2)">Woke up</label>
+          <input type="time" id="sl-waketime" class="fi" value="06:30" style="padding:6px 10px;font-size:13px;width:120px">
+        </div>
+        <div style="display:flex;flex-direction:column;gap:4px;padding-top:18px">
+          <span id="sl-hours-calc" style="font-size:22px;font-weight:700;color:var(--green)">7.5h</span>
+        </div>
+      </div>
+      <div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap">
+        <button class="sl-q-btn" onclick="pickSleepQuality('great',this)" style="padding:5px 12px;border-radius:6px;border:1px solid rgba(0,214,143,.4);background:transparent;color:var(--green);font-family:var(--font);font-size:11px;font-weight:700;cursor:pointer">😌 Great</button>
+        <button class="sl-q-btn" onclick="pickSleepQuality('good',this)" style="padding:5px 12px;border-radius:6px;border:1px solid rgba(0,180,216,.4);background:transparent;color:var(--mana);font-family:var(--font);font-size:11px;font-weight:700;cursor:pointer">🙂 Good</button>
+        <button class="sl-q-btn" onclick="pickSleepQuality('ok',this)" style="padding:5px 12px;border-radius:6px;border:1px solid rgba(244,196,48,.4);background:transparent;color:var(--gold);font-family:var(--font);font-size:11px;font-weight:700;cursor:pointer">😐 Okay</button>
+        <button class="sl-q-btn" onclick="pickSleepQuality('poor',this)" style="padding:5px 12px;border-radius:6px;border:1px solid rgba(255,59,92,.4);background:transparent;color:var(--red);font-family:var(--font);font-size:11px;font-weight:700;cursor:pointer">😔 Poor</button>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <input type="text" id="sl-note" class="fi" placeholder="Optional note… e.g. late night, stressed" style="flex:1;font-size:12px">
+        <button onclick="logSleep()" class="btn btn-primary btn-sm" style="flex-shrink:0;white-space:nowrap">+ Log Sleep</button>
+      </div>
+    </div>
+    <!-- Stats bar -->
+    <div id="sleep-stats-bar" style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:14px"></div>
+    <!-- Chart -->
+    <div class="graph-scroll-wrap"><div class="graph-inner" style="min-width:420px"><div class="chart-wrap" style="height:160px"><canvas id="ch-sleep"></canvas></div></div></div>
+    <!-- Recent log -->
+    <div id="sleep-log-list" style="margin-top:12px"></div>
+  </div>
+
+  <!-- 12 DIMENSIONS DASHBOARD -->
+  <div class="card">
+    <div class="card-hdr" style="justify-content:space-between">
+      <span class="hl">🎯 12 Dimensions</span>
+      <button onclick="toggleAyanoFloat();setTimeout(function(){var i=document.getElementById('ayano-float-input');if(i)i.value='Full Assessment';sendAyanoFloat();},300)" style="background:rgba(91,110,245,.1);border:1px solid rgba(91,110,245,.25);border-radius:6px;color:var(--accent);font-family:var(--font);font-size:10px;font-weight:700;padding:4px 10px;cursor:pointer">⚡ Full Assessment</button>
+    </div>
+    <div style="font-size:11px;color:var(--text2);margin-bottom:14px">Updated by Ayanokoji after each assessment. Start a conversation to begin tracking.</div>
+    <div id="dimensions-grid" style="display:grid;gap:8px"></div>
+    <div class="chart-wrap" style="height:220px;margin-top:16px"><canvas id="ch-dimensions"></canvas></div>
+  </div>
+
+  <!-- BURNOUT WARNING (shown only when risk detected) -->
+  <div id="burnout-card" style="display:none" class="card">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+      <span style="font-size:22px">⚠️</span>
+      <div>
+        <div style="font-size:13px;font-weight:700;color:var(--red)">Burnout Risk Detected</div>
+        <div style="font-size:11px;color:var(--text3)">Ayanokoji has identified a pattern that historically precedes burnout</div>
+      </div>
+    </div>
+    <div id="burnout-reasons" style="font-size:12px;color:var(--text2);line-height:1.8;margin-bottom:10px"></div>
+    <button onclick="toggleAyanoFloat();setTimeout(function(){var i=document.getElementById('ayano-float-input');if(i)i.value='I think I am burning out';sendAyanoFloat();},300)" style="width:100%;padding:9px;background:rgba(255,59,92,.08);border:1px solid rgba(255,59,92,.3);border-radius:8px;color:var(--red);font-family:var(--font);font-size:12px;font-weight:700;cursor:pointer">Talk to Ayanokoji about this →</button>
+  </div>
 </section>
 
 <!-- SETTINGS SECTION -->
@@ -6708,6 +6772,247 @@ document.addEventListener('click', function(e){
 let chRadar=null;
 
 const _origRenderCharts = typeof renderCharts==='function'?renderCharts:null;
+renderCharts = function(){
+  if(_origRenderCharts)_origRenderCharts();
+  renderSleepChart();
+  renderDimensionsChart();
+  renderDimensionsGrid();
+  renderSleepStats();
+  renderSleepLogList();
+  detectBurnout();
+};
+
+// ── Sleep Quality state ──
+var _sleepQuality='good';
+function pickSleepQuality(q,btn){
+  _sleepQuality=q;
+  document.querySelectorAll('.sl-q-btn').forEach(function(b){b.style.fontWeight='700';b.style.opacity='.5';});
+  if(btn){btn.style.opacity='1';}
+}
+
+// ── Calculate hours from time inputs ──
+function calcSleepHours(){
+  var bed=document.getElementById('sl-bedtime');
+  var wake=document.getElementById('sl-waketime');
+  var calc=document.getElementById('sl-hours-calc');
+  if(!bed||!wake||!calc)return 0;
+  var bedParts=bed.value.split(':').map(Number);
+  var wakeParts=wake.value.split(':').map(Number);
+  var bedMins=bedParts[0]*60+bedParts[1];
+  var wakeMins=wakeParts[0]*60+wakeParts[1];
+  var diff=wakeMins-bedMins;
+  if(diff<=0)diff+=24*60;
+  var hrs=Math.round(diff/60*10)/10;
+  var col=hrs>=8?'var(--green)':hrs>=6?'var(--gold)':'var(--red)';
+  calc.style.color=col;
+  calc.textContent=hrs+'h';
+  return hrs;
+}
+
+// ── Wire up time inputs to auto-calculate ──
+document.addEventListener('DOMContentLoaded',function(){
+  var bed=document.getElementById('sl-bedtime');
+  var wake=document.getElementById('sl-waketime');
+  if(bed)bed.addEventListener('change',calcSleepHours);
+  if(wake)wake.addEventListener('change',calcSleepHours);
+  calcSleepHours();
+});
+
+// ── Log sleep entry ──
+function logSleep(){
+  if(!S.lifeTracking)initAyanoChat();
+  var bed=document.getElementById('sl-bedtime').value||'23:00';
+  var wake=document.getElementById('sl-waketime').value||'06:30';
+  var hrs=calcSleepHours();
+  var note=(document.getElementById('sl-note').value||'').trim();
+  var entry={id:Date.now(),date:today(),sleepStart:bed,wakeTime:wake,hours:hrs,quality:_sleepQuality,note:note};
+  // Remove existing today entry
+  S.lifeTracking.sleepLog=S.lifeTracking.sleepLog.filter(function(s){return s.date!==today();});
+  S.lifeTracking.sleepLog.unshift(entry);
+  document.getElementById('sl-note').value='';
+  save();
+  renderSleepChart();renderSleepStats();renderSleepLogList();detectBurnout();
+  showToast('Sleep logged: '+hrs+'h ('+_sleepQuality+') 😴');
+}
+
+// ── Sleep stats bar ──
+function renderSleepStats(){
+  var el=document.getElementById('sleep-stats-bar');if(!el)return;
+  if(!S.lifeTracking||!S.lifeTracking.sleepLog||!S.lifeTracking.sleepLog.length){el.innerHTML='';return;}
+  var log=S.lifeTracking.sleepLog.slice(0,14);
+  var avg=Math.round(log.reduce(function(a,s){return a+s.hours;},0)/log.length*10)/10;
+  var streak7=0;
+  for(var i=0;i<log.length;i++){if(log[i].hours>=7)streak7++;else break;}
+  var best=Math.max.apply(null,log.map(function(s){return s.hours;}));
+  var worst=Math.min.apply(null,log.map(function(s){return s.hours;}));
+  var avgCol=avg>=8?'var(--green)':avg>=6?'var(--gold)':'var(--red)';
+  el.innerHTML=[
+    {label:'14d Avg',val:avg+'h',col:avgCol},
+    {label:'7h+ Streak',val:streak7+'d',col:'var(--accent)'},
+    {label:'Best',val:best+'h',col:'var(--green)'},
+    {label:'Worst',val:worst+'h',col:'var(--red)'},
+  ].map(function(s){
+    return '<div style="background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:8px;padding:8px 12px;text-align:center">'
+      +'<div style="font-size:16px;font-weight:700;color:'+s.col+'">'+s.val+'</div>'
+      +'<div style="font-size:10px;color:var(--text3);margin-top:2px">'+s.label+'</div>'
+      +'</div>';
+  }).join('');
+}
+
+// ── Sleep chart ──
+var _chSleep=null;
+function renderSleepChart(){
+  var canvas=document.getElementById('ch-sleep');if(!canvas)return;
+  if(_chSleep){_chSleep.destroy();_chSleep=null;}
+  if(!S.lifeTracking||!S.lifeTracking.sleepLog||!S.lifeTracking.sleepLog.length){
+    canvas.parentElement.innerHTML='<div class="empty" style="padding:20px">Log your first night\'s sleep above.</div>';return;
+  }
+  var log=[...S.lifeTracking.sleepLog].slice(0,14).reverse();
+  var labels=log.map(function(s){return fmtDate(s.date).replace(/\s\d{4}/,'');});
+  var hrs=log.map(function(s){return s.hours;});
+  var colors=log.map(function(s){
+    return s.quality==='great'?'rgba(0,214,143,.8)':s.quality==='good'?'rgba(0,180,216,.8)':s.quality==='ok'?'rgba(244,196,48,.8)':'rgba(255,59,92,.8)';
+  });
+  var ctx=canvas.getContext('2d');
+  _chSleep=new Chart(ctx,{
+    type:'bar',
+    data:{
+      labels:labels,
+      datasets:[
+        {label:'Hours',data:hrs,backgroundColor:colors,borderRadius:5,borderSkipped:false},
+        {type:'line',label:'Target (7h)',data:Array(labels.length).fill(7),borderColor:'rgba(91,110,245,.6)',borderWidth:2,borderDash:[4,4],pointRadius:0,fill:false},
+        {type:'line',label:'Optimal (8h)',data:Array(labels.length).fill(8),borderColor:'rgba(0,214,143,.4)',borderWidth:1,borderDash:[2,4],pointRadius:0,fill:false},
+      ]
+    },
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:function(ctx){return ctx.dataset.label==='Hours'?ctx.raw+'h sleep':ctx.dataset.label;}}}},scales:{y:{min:0,max:12,ticks:{color:'rgba(255,255,255,.4)',stepSize:2,callback:function(v){return v+'h'}},grid:{color:'rgba(255,255,255,.05)'}},x:{ticks:{color:'rgba(255,255,255,.4)'},grid:{display:false}}}}
+  });
+}
+
+// ── Sleep log list ──
+function renderSleepLogList(){
+  var el=document.getElementById('sleep-log-list');if(!el)return;
+  if(!S.lifeTracking||!S.lifeTracking.sleepLog||!S.lifeTracking.sleepLog.length){el.innerHTML='';return;}
+  var qEmoji={great:'😌',good:'🙂',ok:'😐',poor:'😔'};
+  var qCol={great:'var(--green)',good:'var(--mana)',ok:'var(--gold)',poor:'var(--red)'};
+  var recent=S.lifeTracking.sleepLog.slice(0,7);
+  el.innerHTML='<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--text3);margin-bottom:7px">Recent nights</div>'
+    +recent.map(function(s){
+      var col=qCol[s.quality]||'var(--text2)';
+      return '<div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.04)">'
+        +'<span style="font-size:14px">'+(qEmoji[s.quality]||'💤')+'</span>'
+        +'<div style="flex:1"><div style="font-size:12px;font-weight:600;color:var(--text)">'+fmtDate(s.date)+'</div>'
+        +(s.sleepStart&&s.wakeTime?'<div style="font-size:10px;color:var(--text3)">'+s.sleepStart+' → '+s.wakeTime+'</div>':'')
+        +'</div>'
+        +'<span style="font-size:14px;font-weight:700;color:'+col+'">'+s.hours+'h</span>'
+        +(s.note?'<span style="font-size:10px;color:var(--text3);max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+escHtml(s.note)+'</span>':'')
+        +'<button onclick="removeSleepLog('+s.id+')" style="background:none;border:none;color:rgba(255,255,255,.2);cursor:pointer;font-size:12px;padding:0 2px">✕</button>'
+        +'</div>';
+    }).join('');
+}
+function removeSleepLog(id){
+  if(!S.lifeTracking)return;
+  S.lifeTracking.sleepLog=S.lifeTracking.sleepLog.filter(function(s){return s.id!==id;});
+  save();renderSleepChart();renderSleepStats();renderSleepLogList();
+}
+
+// ── 12 Dimensions grid ──
+var _chDim=null;
+var DIM_META={
+  selfMastery: {label:'Self-Mastery',emoji:'⚡',desc:'Discipline & consistency'},
+  strategic:   {label:'Strategic',emoji:'♟',desc:'Long-term thinking'},
+  communication:{label:'Communication',emoji:'🗣',desc:'Clarity & presence'},
+  social:      {label:'Social',emoji:'👥',desc:'Calibration & reading rooms'},
+  charisma:    {label:'Charisma',emoji:'✨',desc:'Calm confidence'},
+  psychology:  {label:'Psychology',emoji:'🧠',desc:'Human behavior patterns'},
+  defense:     {label:'Defense',emoji:'🛡',desc:'Manipulation resistance'},
+  intellectual:{label:'Intellectual',emoji:'📚',desc:'Learning optimization'},
+  physical:    {label:'Physical',emoji:'💪',desc:'Sleep & energy'},
+  pressure:    {label:'Pressure',emoji:'⏱',desc:'Performance under stress'},
+  emotional:   {label:'Emotional',emoji:'🎭',desc:'Control & stability'},
+  identity:    {label:'Identity',emoji:'🎯',desc:'Self-image evolution'},
+};
+function renderDimensionsGrid(){
+  var el=document.getElementById('dimensions-grid');if(!el)return;
+  var ds=S.dimensionScores||{};
+  var keys=Object.keys(DIM_META);
+  var allZero=keys.every(function(k){return !ds[k];});
+  if(allZero){
+    el.innerHTML='<div style="font-size:12px;color:var(--text3);padding:8px 0;grid-column:1/-1">Ask Ayanokoji for a "Full Assessment" to populate your dimension scores.</div>';
+    return;
+  }
+  el.innerHTML=keys.map(function(k){
+    var m=DIM_META[k];
+    var score=ds[k]||0;
+    var col=score>=80?'rgba(0,214,143,1)':score>=60?'rgba(0,180,216,1)':score>=40?'rgba(244,196,48,1)':'rgba(255,59,92,1)';
+    var bg=score>=80?'rgba(0,214,143,.08)':score>=60?'rgba(0,180,216,.08)':score>=40?'rgba(244,196,48,.08)':'rgba(255,59,92,.08)';
+    var label=score>=80?'Strong':score>=60?'Developing':score>=40?'Weak':'Critical';
+    return '<div style="background:'+bg+';border:1px solid '+col.replace(',1)',',.2)')+';border-radius:9px;padding:10px 12px">'
+      +'<div style="display:flex;align-items:center;gap:7px;margin-bottom:7px">'
+      +'<span style="font-size:15px">'+m.emoji+'</span>'
+      +'<div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:700;color:var(--text)">'+m.label+'</div>'
+      +'<div style="font-size:10px;color:var(--text3)">'+m.desc+'</div></div>'
+      +'<span style="font-size:15px;font-weight:700;color:'+col+'">'+score+'</span>'
+      +'</div>'
+      +'<div style="height:5px;background:rgba(255,255,255,.07);border-radius:3px">'
+      +'<div style="height:100%;width:'+score+'%;background:'+col+';border-radius:3px;transition:width .5s"></div>'
+      +'</div>'
+      +'<div style="font-size:9px;color:'+col+';margin-top:4px;font-weight:700;text-transform:uppercase;letter-spacing:.5px">'+label+'</div>'
+      +'</div>';
+  }).join('');
+}
+function renderDimensionsChart(){
+  var canvas=document.getElementById('ch-dimensions');if(!canvas)return;
+  if(_chDim){_chDim.destroy();_chDim=null;}
+  var ds=S.dimensionScores||{};
+  var keys=Object.keys(DIM_META);
+  var vals=keys.map(function(k){return ds[k]||0;});
+  if(vals.every(function(v){return !v;}))return;
+  var labels=keys.map(function(k){return DIM_META[k].emoji+' '+DIM_META[k].label;});
+  var ctx=canvas.getContext('2d');
+  _chDim=new Chart(ctx,{
+    type:'radar',
+    data:{labels:labels,datasets:[{label:'Dimensions',data:vals,backgroundColor:'rgba(91,110,245,.15)',borderColor:'rgba(91,110,245,.7)',borderWidth:2,pointBackgroundColor:'rgba(91,110,245,.9)',pointRadius:4}]},
+    options:{responsive:true,maintainAspectRatio:false,scales:{r:{min:0,max:100,ticks:{stepSize:25,color:'rgba(255,255,255,.3)',font:{size:9}},grid:{color:'rgba(255,255,255,.08)'},pointLabels:{color:'rgba(255,255,255,.6)',font:{size:9}}}},plugins:{legend:{display:false}}}
+  });
+}
+
+// ── Burnout Detection ──
+function detectBurnout(){
+  var card=document.getElementById('burnout-card');
+  var reasons=document.getElementById('burnout-reasons');
+  if(!card||!reasons)return;
+  var signals=[];
+  // Signal 1: Declining session ratings over last 7 sessions
+  var rated=S.sessions.filter(function(s){return !s.paused&&s.stars&&s.stars>0;}).slice(-7);
+  if(rated.length>=5){
+    var first=rated.slice(0,3).reduce(function(a,s){return a+s.stars;},0)/3;
+    var last=rated.slice(-3).reduce(function(a,s){return a+s.stars;},0)/3;
+    if(last<first-0.8)signals.push('Session ratings have dropped '+Math.round((first-last)*10)/10+' points over the last 7 sessions');
+  }
+  // Signal 2: Poor sleep average
+  var recentSleep=(S.lifeTracking&&S.lifeTracking.sleepLog||[]).slice(0,5);
+  if(recentSleep.length>=3){
+    var avgSleep=recentSleep.reduce(function(a,s){return a+s.hours;},0)/recentSleep.length;
+    if(avgSleep<6.5)signals.push('Average sleep: '+Math.round(avgSleep*10)/10+'h (below 6.5h — cognitive recovery is impaired)');
+  }
+  // Signal 3: Low mood energy
+  var recentMood=(S.lifeTracking&&S.lifeTracking.moodLog||[]).slice(0,5);
+  if(recentMood.length>=3){
+    var avgEnergy=recentMood.reduce(function(a,m){return a+m.energy;},0)/recentMood.length;
+    if(avgEnergy<4)signals.push('Average energy: '+Math.round(avgEnergy*10)/10+'/10 across recent mood logs');
+  }
+  // Signal 4: Study hours dropping
+  var last7=[];for(var i=6;i>=0;i--){var d=new Date();d.setDate(d.getDate()-i);last7.push(d.toISOString().split('T')[0]);}
+  var wkMins=S.sessions.filter(function(s){return last7.indexOf(s.date)>-1&&!s.paused;}).reduce(function(a,s){return a+s.min;},0);
+  var goal=(S.goals&&S.goals.studyHours||6)*7*60;
+  if(wkMins<goal*0.5&&wkMins>0)signals.push('This week: '+Math.round(wkMins/60*10)/10+'h — below 50% of your weekly goal');
+  if(signals.length>=2){
+    card.style.display='block';
+    reasons.innerHTML=signals.map(function(s){return '• '+s;}).join('<br>');
+  } else {
+    card.style.display='none';
+  }
+}
 if(_origRenderCharts){
   renderCharts = function(){
     _origRenderCharts();
