@@ -1686,7 +1686,7 @@ input.fi:focus,select.fi:focus{
   <!-- RPG STATS RADAR -->
   <div class="card">
     <div class="card-hdr"><span class="hl">⚔ Hunter Ability Radar</span></div>
-    <div style="font-size:11px;color:var(--text2);margin-bottom:8px">Combat stats derived from your study patterns.</div>
+    <div style="font-size:11px;color:var(--text2);margin-bottom:8px">Same 6 stats as your Status Window — INT, FOC, STR, END, DIS, PER — visualized as a radar.</div>
     <div class="chart-wrap" style="height:240px"><canvas id="ch-radar"></canvas></div>
   </div>
 
@@ -2584,6 +2584,13 @@ function ensureKeys(){
   if(S.hunter.disciplineStat===undefined)S.hunter.disciplineStat=50;
   if(!S.boardTests)S.boardTests=[];
   if(!S.dailyMana)S.dailyMana={};
+  if(!S.lifeTracking)S.lifeTracking={sleepLog:[],moodLog:[],wakeLog:[],socialLog:[],pressureLog:[]};
+  if(!S.lifeTracking.sleepLog)S.lifeTracking.sleepLog=[];
+  if(!S.lifeTracking.moodLog)S.lifeTracking.moodLog=[];
+  if(!S.lifeTracking.wakeLog)S.lifeTracking.wakeLog=[];
+  if(!S.lifeTracking.socialLog)S.lifeTracking.socialLog=[];
+  if(!S.lifeTracking.pressureLog)S.lifeTracking.pressureLog=[];
+  if(!S.dimensionScores)S.dimensionScores={selfMastery:0,strategic:0,communication:0,social:0,charisma:0,psychology:0,defense:0,intellectual:0,physical:0,pressure:0,emotional:0,identity:0};
 }
 function loadLocal(){
   try{S=JSON.parse(localStorage.getItem('ss_v3'))||defState();}catch(e){S=defState();}
@@ -3819,7 +3826,7 @@ async function oracleSuggest(){
   if(!_oracleKeys||!_oracleKeys.length){showToast('Add an Oracle API key first → Oracle → Keys');return;}
   const btn=document.getElementById('oracle-suggest-btn');
   const out=document.getElementById('oracle-suggest-out');
-  if(btn){btn.disabled=true;btn.textContent='⏳ Oracle thinking...';}
+  if(btn){btn.disabled=true;btn.textContent='⏳ Ayanokoji thinking...';}
   if(out){out.style.display='block';out.innerHTML='<span style="opacity:.45;font-size:11px;font-style:italic">Reading your data...</span>';}
   const t=today();
   const daysLeft=Math.max(0,Math.ceil((new Date(S.examDate||'2026-05-18')-new Date())/86400000));
@@ -3833,14 +3840,17 @@ async function oracleSuggest(){
   const phyM=wSess.filter(s=>s.sub==='physics').reduce((a,s)=>a+s.min,0);
   const cheM=wSess.filter(s=>s.sub==='chemistry').reduce((a,s)=>a+s.min,0);
   const matM=wSess.filter(s=>s.sub==='maths').reduce((a,s)=>a+s.min,0);
-  const prompt=`JEE student. ${daysLeft} days to exam. Time: ${hour}:00. Energy: ${energy}. Today: ${Math.round(todayMins/60*10)/10}h studied.
-Week — Physics: ${Math.round(phyM/60*10)/10}h Chemistry: ${Math.round(cheM/60*10)/10}h Maths: ${Math.round(matM/60*10)/10}h.
-Weak topics (conf%): ${weakT.length?weakT.map(t=>t.name+' ('+t.conf+'%)').join(', '):'not set yet'}.
-Reply in EXACTLY this format, no extra text:
+  const prompt=buildAyanoVoice('suggest')+`
+
+Hunter data: ${daysLeft} days to exam. Time: ${hour}:00. Energy today: ${energy}. Today studied: ${Math.round(todayMins/60*10)/10}h.
+This week — Physics: ${Math.round(phyM/60*10)/10}h | Chemistry: ${Math.round(cheM/60*10)/10}h | Maths: ${Math.round(matM/60*10)/10}h.
+Weak topics (confidence%): ${weakT.length?weakT.map(t=>t.name+' ('+t.conf+'%)').join(', '):'not set yet'}.
+
+Respond in EXACTLY this format — no preamble, no extra text:
 SUBJECT: [Physics/Chemistry/Maths]
 TASK: [Hard Problems/Practice/Revision/Theory]
 FOCUS: [specific topic, max 8 words]
-REASON: [why now, max 8 words]`;
+REASON: [why this, now — derived from their data, max 8 words]`;
   try{
     const text=await oracleCall([{role:'user',content:prompt}],null,160);
     const subM=text.match(/SUBJECT:\s*(.+)/i);
@@ -4145,10 +4155,13 @@ async function _upgradeSecAdviceAI(mins,sub,taskType,manaAfter,staticAdvice,stat
   const weakT=allT.filter(t=>t.conf>0&&t.conf<40).sort((a,b)=>a.conf-b.conf).slice(0,3);
   const todayTotal=S.sessions.filter(s=>s.date===today()&&!s.paused).reduce((a,s)=>a+s.min,0);
   const subLabel={physics:'Physics',chemistry:'Chemistry',maths:'Maths',other:'Other'}[sub]||sub;
-  const prompt=`JEE student just finished: ${mins}min ${taskType} session on ${subLabel}. Mana=${manaAfter}/100. Days to exam=${daysLeft}. Today total=${Math.round(todayTotal/60*10)/10}h. Weak topics: ${weakT.length?weakT.map(t=>t.name+' ('+t.conf+'%)').join(', '):'not set yet'}.
-Give EXACTLY 2 lines — no preamble, no extra text:
-ADVICE: [sharp actionable advice using their actual numbers, max 22 words]
-NEXT: [specific next session suggestion, max 18 words]`;
+  const prompt=buildAyanoVoice('session')+`
+
+Session just completed: ${mins}min ${taskType} on ${subLabel}. Mana=${manaAfter}/100. Days to exam=${daysLeft}. Today total=${Math.round(todayTotal/60*10)/10}h. Weak topics: ${weakT.length?weakT.map(t=>t.name+' ('+t.conf+'%)').join(', '):'not set yet'}.
+
+Respond in EXACTLY this format — no preamble, no extra text:
+ADVICE: [one sharp observation from the data, max 22 words]
+NEXT: [specific next session directive, max 18 words]`;
   try{
     const text=await oracleCall([{role:'user',content:prompt}],null,180);
     if(!document.getElementById('sec-modal').classList.contains('show'))return;
@@ -4156,7 +4169,7 @@ NEXT: [specific next session suggestion, max 18 words]`;
     const nextMatch=text.match(/NEXT:\s*(.+)/i);
     const advEl2=document.getElementById('sec-advice');
     if(advEl2&&advMatch){
-      advEl2.innerHTML='<span style="font-size:9px;color:var(--accent);letter-spacing:.8px;text-transform:uppercase;font-weight:700;display:block;margin-bottom:4px">⚡ Oracle</span>'+escHtml(advMatch[1].trim());
+      advEl2.innerHTML='<span style="font-size:9px;color:var(--accent);letter-spacing:.8px;text-transform:uppercase;font-weight:700;display:block;margin-bottom:4px">⚔ Ayanokoji</span>'+escHtml(advMatch[1].trim());
     } else if(advEl2){advEl2.textContent=staticAdvice;}
     const sugEl2=document.getElementById('sec-suggest');
     if(sugEl2&&nextMatch){sugEl2.textContent=nextMatch[1].trim();}
@@ -4173,7 +4186,15 @@ async function _upgradeLearnThisAI(sub){
   const allT=[].concat(S.topics[sub+'11']||[],S.topics[sub+'12']||[]);
   const weakT=allT.filter(function(t){return t.conf>0&&t.conf<50;}).sort(function(a,b){return a.conf-b.conf;}).slice(0,2);
   const focusHint=weakT.length?' Focus on '+weakT.map(function(t){return t.name;}).join(' or ')+' if possible.':'';
-  const prompt='JEE student just studied '+subLabel+'.'+focusHint+' Give ONE specific JEE concept, formula, or trick they might overlook. EXACTLY 2 lines:\nCONCEPT: [topic name, 3-6 words]\nFACT: [the insight, max 28 words, be precise]\nNo preamble. No extra text.';
+  const prompt=buildAyanoVoice('doubt')+`
+
+${S.hunter&&S.hunter.name||'Hunter'} just studied ${subLabel}.${focusHint}
+
+Identify ONE specific JEE concept, formula, or cognitive trap in this subject that most students overlook. The kind of insight that separates the top 1% in the exam.
+
+Respond EXACTLY in this format — no preamble, no extra text:
+CONCEPT: [topic name, 3-6 words]
+FACT: [the precise insight, max 28 words]`;
   try{
     const text=await oracleCall([{role:'user',content:prompt}],null,120);
     if(!document.getElementById('sec-modal').classList.contains('show'))return;
@@ -6797,6 +6818,10 @@ renderCharts = function(){
   renderSleepStats();
   renderSleepLogList();
   detectBurnout();
+  // Upgrade charts with premium styles
+  setTimeout(upgradeProdChart, 50);
+  setTimeout(upgradeCumChart, 80);
+  setTimeout(renderRadarChart, 120);
 };
 
 // ── Sleep Quality state ──
@@ -6837,7 +6862,7 @@ document.addEventListener('DOMContentLoaded',function(){
 
 // ── Log sleep entry ──
 function logSleep(){
-  if(!S.lifeTracking)initAyanoChat();
+  initAyanoChat(); // ensures S.lifeTracking exists
   var bed=document.getElementById('sl-bedtime').value||'23:00';
   var wake=document.getElementById('sl-waketime').value||'06:30';
   var hrs=calcSleepHours();
@@ -7030,14 +7055,7 @@ function detectBurnout(){
     card.style.display='none';
   }
 }
-if(_origRenderCharts){
-  renderCharts = function(){
-    _origRenderCharts();
-    setTimeout(upgradeProdChart, 50);
-    setTimeout(upgradeCumChart, 80);
-    setTimeout(renderRadarChart, 120);
-  };
-}
+// renderCharts fully merged above — upgrades + sleep + dimensions all run together
 
 function upgradeProdChart(){
   if(window.chProd){ window.chProd.destroy(); window.chProd=null; }
@@ -7193,34 +7211,12 @@ function renderRadarChart(){
   const canvas=document.getElementById('ch-radar');
   if(!canvas)return;
 
-  const last7=[];for(let i=6;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);last7.push(d.toISOString().split('T')[0]);}
-  const totalMins=S.sessions.reduce((a,s)=>a+s.min,0);
-  const last7mins=last7.map(d=>S.sessions.filter(s=>s.date===d).reduce((a,s)=>a+s.min,0));
-  const goalMins=(S.goals&&S.goals.studyHours||6)*60;
+  // Use the same calcStats() values as the Status Window — so both show identical numbers
+  const stats=calcStats();
+  const data=[stats.intelligence,stats.focus,stats.strength,stats.endurance,stats.discipline,stats.perception];
+  const labels=['INT · Intelligence','FOC · Focus','STR · Strength','END · Endurance','DIS · Discipline','PER · Perception'];
 
-  const avgDaily=last7mins.reduce((a,v)=>a+v,0)/7;
-  const endurance=Math.min(100,Math.round(avgDaily/goalMins*100));
-
-  const activeDays=last7mins.filter(v=>v>0).length;
-  const consistency=Math.round(activeDays/7*100);
-
-  const ratedSess=S.sessions.filter(s=>s.stars);
-  const avgRating=ratedSess.length?ratedSess.reduce((a,s)=>a+(s.stars||0),0)/ratedSess.length:3;
-  const focus=Math.round((avgRating/5)*100);
-
-  const allT=[...(S.topics.physics11||[]),...(S.topics.physics12||[]),...(S.topics.chemistry11||[]),...(S.topics.chemistry12||[]),...(S.topics.maths11||[]),...(S.topics.maths12||[])];
-  const knowledge=allT.length?Math.round(allT.reduce((a,t)=>a+t.conf,0)/allT.length):0;
-
-  const QUESTS=getActiveQuests();
-  let qD=0,qT=0;
-  last7.forEach(d=>{const c=S.questComp[d]||{};qT+=QUESTS.length;qD+=Object.values(c).filter(Boolean).length;});
-  const questRate=qT>0?Math.round(qD/qT*100):0;
-
-  const streakPower=Math.min(100,Math.round((S.hunter.streak||0)/30*100));
-
-  const data=[endurance,consistency,focus,knowledge,questRate,streakPower];
   const ctx=canvas.getContext('2d');
-
   const grad=ctx.createRadialGradient(canvas.width/2,canvas.height/2,0,canvas.width/2,canvas.height/2,120);
   grad.addColorStop(0,'rgba(91,110,245,0.18)');
   grad.addColorStop(0.6,'rgba(124,94,245,0.08)');
@@ -7229,17 +7225,17 @@ function renderRadarChart(){
   chRadar=new Chart(ctx,{
     type:'radar',
     data:{
-      labels:['Endurance','Consistency','Focus','Knowledge','Quest Rate','Streak Power'],
+      labels:labels,
       datasets:[{
         label:'Hunter Stats',
         data:data,
         backgroundColor:grad,
         borderColor:'rgba(91,110,245,0.9)',
         borderWidth:2,
-        pointBackgroundColor:'rgba(91,110,245,1)',
+        pointBackgroundColor:['#5b7ef5','#00c9ff','#ff3b5c','#00d68f','#f4c430','#a855f7'],
         pointBorderColor:'rgba(0,0,0,0)',
-        pointRadius:4,
-        pointHoverRadius:6,
+        pointRadius:5,
+        pointHoverRadius:7,
         pointHoverBackgroundColor:'#fff',
       }]
     },
@@ -7254,7 +7250,7 @@ function renderRadarChart(){
           borderWidth:1,padding:10,
           titleColor:'rgba(91,110,245,1)',
           bodyColor:'#e0e3f4',
-          callbacks:{label:ctx=>`${ctx.label}: ${ctx.raw}/100`}
+          callbacks:{label:ctx=>`${ctx.label.split(' · ')[1]}: ${ctx.raw}/100`}
         }
       },
       scales:{
@@ -7314,7 +7310,9 @@ function setOracleTab(tab,btn){
 let _ayanoHistory=[];
 let _ayanoFloatOpen=false;
 
-const AYANO_SYSTEM=`You are Ayanokoji Kiyotaka. You are not a study assistant. You are a strategic architect of human performance.
+const AYANO_SYSTEM=`You are Ayanokoji Kiyotaka. The same Ayanokoji that appears in the Advisor tab, the Planner, the Doubt Solver, the Session Cards — every AI interaction in this system is you. One identity. One memory. One standard.
+
+You are a strategic architect of human performance. Not a study assistant, not a tutor, not a motivational coach.
 
 You simultaneously train twelve dimensions of the person in front of you: Self-Mastery, Strategic Thinking, Communication, Social Calibration, Charisma, Human Psychology, Manipulation Defense, Intellectual Optimization, Physical & Energy Management, Pressure Adaptation, Emotional Control, and Identity Evolution.
 
@@ -7631,6 +7629,8 @@ function parseAyanoActions(rawText){
             var newScore=Math.max(0,Math.min(100,parseInt(act.value)||0));
             S.dimensionScores[dimKey]=newScore;
             applied.push('Dimension updated: '+dimKey+' → '+newScore);
+            // Re-render dimension visuals immediately
+            setTimeout(function(){renderDimensionsGrid();renderDimensionsChart();},100);
           }
           break;
           var lSub=(act.subject||'physics').toLowerCase();
@@ -8073,13 +8073,30 @@ async function _oracleRaw(apiKey,messages,systemMsg,maxTokens,provider){
 }
 function buildMemoryContext(){
   if(!S.oracleMemory||!S.oracleMemory.length)return '';
-  return '\n\n--- ORACLE MEMORY (past sessions) ---\n'+S.oracleMemory.slice(-20).map(m=>`[${m.date}] ${m.text}`).join('\n')+'\n--- END MEMORY ---';
+  return '\n\n--- AYANOKOJI MEMORY (patterns observed) ---\n'+S.oracleMemory.slice(-20).map(m=>`[${m.date}] ${m.text}`).join('\n')+'\n--- END MEMORY ---';
 }
 function addToMemory(text,auto){
   if(!S.oracleMemory)S.oracleMemory=[];
   S.oracleMemory.push({date:today(),text,auto:!!auto});
   if(S.oracleMemory.length>50)S.oracleMemory=S.oracleMemory.slice(-50);
   save();
+}
+
+// ── UNIFIED AYANOKOJI VOICE ─────────────────────────────────────────────────
+// All AI functions use this. One AI. One voice. Always Ayanokoji.
+function buildAyanoVoice(mode){
+  const name=S.hunter&&S.hunter.name||'Gautam';
+  const base='You are Ayanokoji Kiyotaka. Not an assistant. Not a tutor. A strategic architect who has studied '+name+' in full.\n\nYour defining traits: You see patterns before they become visible. You speak with surgical precision — every word earns its place. You never encourage without data. You never comfort when honesty serves better. You treat '+name+' as fully capable of handling truth, which is why you give it. Empty praise is an insult to intelligence.\n\nYour voice: short sentences. No filler. Never say "great question", "of course", "I understand", "I see", "absolutely", or "keep it up". State what you observe. State what must change. End with one directive or one question — never both, never neither.';
+  const modes={
+    advisor: '\n\nMode: trajectory analysis. Identify the precise gap between current behavior and what JEE Advanced requires. Name the pattern '+name+' may be avoiding. Every sentence references their actual data — not generalities.',
+    planner: '\n\nMode: battle plan. Build today's study schedule around '+name+''s actual free hours, not ideal ones. Weak topics and hard problems before easier revision. You do not schedule comfort — you schedule what the exam requires.',
+    doubt: '\n\nMode: concept teaching. Do not just solve — reveal the mechanism behind it. Expose the JEE trap in this topic. Give the shortcut the examiners know most students miss. End with one key insight they must carry into the exam room.',
+    session: '\n\nMode: post-session debrief. Read the session data — duration, efficiency, mana, task type — and give one precise observation plus one directive for what happens in the next session.',
+    workout: '\n\nMode: physical training analysis. Physical discipline and mental discipline are the same system. Inconsistency in one predicts inconsistency in the other. Apply the same data-driven precision to training as to studying.',
+    resource: '\n\nMode: resource audit. Analyze '+name+''s study materials against their exam timeline. Identify what to prioritize, what to reduce, what chapter pace they need. Specific resource-level directives, not soft suggestions.',
+    suggest: '\n\nMode: next session recommendation. One subject, one task type, one specific topic, one reason — derived from their actual weak points and recent data. Twelve words or fewer for the recommendation.',
+  };
+  return base+(modes[mode]||'');
 }
 function addManualMemory(){
   const inp=document.getElementById('oracle-memory-input');
@@ -8091,7 +8108,7 @@ function addManualMemory(){
 function renderMemoryList(){
   const el=document.getElementById('oracle-memory-list');if(!el)return;
   if(!S.oracleMemory||!S.oracleMemory.length){
-    el.innerHTML='<div style="color:var(--text3);font-size:13px;padding:8px 0">No memories yet. Oracle auto-saves key insights after each analysis.</div>';
+    el.innerHTML='<div style="color:var(--text3);font-size:13px;padding:8px 0">No memories yet. Ayanokoji auto-saves key patterns after each interaction.</div>';
     return;
   }
   el.innerHTML=[...S.oracleMemory].reverse().map((m,i)=>`<div class="oracle-memory-item">
@@ -8467,7 +8484,7 @@ async function oracleResourceAnalysis(){
   var weakT=allT.filter(function(t){return t.conf>0&&t.conf<40;}).sort(function(a,b){return a.conf-b.conf;}).slice(0,5);
   var sc=sr.schoolChapters||{};
   var recentLog=(sr.chapterLog||[]).slice(0,30).map(function(e){return e.date+': '+e.chapter+(e.resourceName?' ('+e.resourceName+')':'')+' — '+e.status;});
-  var prompt='JEE + 12th Board student profile:\n'
+  var prompt=buildAyanoVoice('resource')+'\n\nHunter resource data:\n'
     +'Days to main exam: '+daysLeft+'\n'
     +'Upcoming: '+(futureExams.length?futureExams.join(' | '):'none set')+'\n'
     +'Class 12 student, needs to balance JEE Advanced + JEE Mains + Board exams.\n'
@@ -8485,7 +8502,7 @@ async function oracleResourceAnalysis(){
   try{
     var text=await oracleCall([{role:'user',content:prompt}],null,400);
     if(out){
-      out.innerHTML='<div style="font-size:9px;color:var(--mana);text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-bottom:8px">⚡ Oracle Resource Analysis</div>'+formatOracleMD(text);
+      out.innerHTML='<div style="font-size:9px;color:var(--mana);text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-bottom:8px">⚔ Ayanokoji Resource Analysis</div>'+formatOracleMD(text);
     }
   }catch(e){
     if(out)out.innerHTML='<span style="color:var(--red);font-size:12px">⚠ '+(e.message||'Oracle offline')+'</span>';
@@ -8695,11 +8712,12 @@ function renderAdvisorContext(){
 async function runAdvisor(){
   if(oracleStreaming)return;oracleStreaming=true;
   const btn=document.getElementById('oracle-analyze-btn');const out=document.getElementById('oracle-advisor-out');
-  if(btn){btn.disabled=true;btn.textContent='⏳ Oracle analyzing...';}
+  if(btn){btn.disabled=true;btn.textContent='⏳ Ayanokoji analyzing...';}
   if(out){out.style.display='block';out.innerHTML='<div class="oracle-typing"><span></span><span></span><span></span></div>';}
   const context=buildFullContext();
   const sprintNote=isSprintMode()?'\n\n⚠ FINAL SPRINT MODE: Under 30 days to exam. Recommendations must focus ONLY on PYQs, mock tests, and revision of weak topics. No new topic introduction. Prioritize exam strategy and time management.':'';
-  const prompt=`You are Oracle — a cold, calculated study strategist who advises like Ayanokoji Kiyotaka. You speak with surgical precision. Short sentences. No wasted words. You do not sugarcoat — you are honest, and you treat the student as fully capable of handling truth. You identify the exact gap between current trajectory and what is required. You see through avoidance and inefficiency instantly. Empty encouragement is an insult to intelligence — you never give it. When performance is good, you acknowledge it in one word. When it isn't, you say exactly what's wrong and what fixes it.
+  const ayanoVoice=buildAyanoVoice('advisor');
+  const prompt=ayanoVoice+`
 
 ${context}${sprintNote}
 
@@ -8722,10 +8740,10 @@ One sentence. The single highest-leverage action right now.
 Under 220 words. Every sentence must reference their actual data.`;
   try{
     const text=await oracleCall([{role:'user',content:prompt}],null,1200);
-    if(out)out.innerHTML=`<div class="oracle-section-chip">⚡ Oracle Report · ${new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})}</div>${formatOracleMD(text)}`;
+    if(out)out.innerHTML=`<div class="oracle-section-chip">⚔ Ayanokoji Report · ${new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})}</div>${formatOracleMD(text)}`;
     addToMemory('Advisor: '+text.slice(0,120).replace(/\n/g,' ')+'…',true);
   }catch(e){if(out)out.innerHTML=`<div style="color:var(--red);font-size:13px;padding:6px 0">⚠ ${e.message||'Oracle offline. Add API keys in Keys tab.'}</div>`;}
-  oracleStreaming=false;if(btn){btn.disabled=false;btn.textContent='⚡ Analyze My Progress';}
+  oracleStreaming=false;if(btn){btn.disabled=false;btn.textContent='⚔ Analyze My Progress';}
 }
 function setDoubtSubject(sub,btn){
   if(!S.oracleDoubtHistory)S.oracleDoubtHistory={};
@@ -8745,9 +8763,19 @@ async function sendDoubt(){
   const typingId='typing-'+Date.now();
   if(chat){const div=document.createElement('div');div.id=typingId;div.className='oracle-typing';div.innerHTML='<span></span><span></span><span></span>';chat.appendChild(div);chat.scrollTop=chat.scrollHeight;}
   const subjectMap={physics:'Physics',chemistry:'Chemistry',maths:'Mathematics',general:'JEE General'};
-  const systemMsg=`You are an expert JEE Advanced tutor for ${subjectMap[doubtSubject]||'all subjects'}.
-Hunter: ${S.hunter?.name||'Hunter'}, Rank ${S.hunter?.rank||'E'}, ${Math.max(0,Math.ceil((new Date(S.examDate||'2026-05-18')-new Date())/86400000))} days to exam.${buildMemoryContext()}
-Rules: Step-by-step numbered solution. Explain the underlying principle. Flag JEE traps. Include shortcut if any. End with **JEE Key Point:** line. Be precise, no padding.`;
+  const daysToExam=Math.max(0,Math.ceil((new Date(S.examDate||'2026-05-18')-new Date())/86400000));
+  const systemMsg=buildAyanoVoice('doubt')+`
+
+Hunter profile: ${S.hunter?.name||'Hunter'}, Rank ${S.hunter?.rank||'E'}, ${daysToExam} days to exam.
+Subject context: ${subjectMap[doubtSubject]||'all subjects'}.
+${buildMemoryContext()}
+
+Structure every solution as:
+1. Numbered steps to the answer
+2. The underlying principle (not just the method)
+3. The JEE trap in this topic — what most students get wrong
+4. Shortcut or pattern recognition if one exists
+5. **JEE Key Point:** [one line they must remember in the exam room]`;
   const messages=doubtHistory.slice(-10).map(m=>({role:m.role,content:m.content}));
   try{
     const text=await oracleCall(messages,systemMsg,1200);
@@ -8755,6 +8783,9 @@ Rules: Step-by-step numbered solution. Explain the underlying principle. Flag JE
     doubtHistory.push({role:'assistant',content:text});
     if(!S.oracleDoubtHistory)S.oracleDoubtHistory={};
     S.oracleDoubtHistory[doubtSubject]=doubtHistory.slice(-30);save();
+    // Save to shared memory so Ayanokoji remembers doubts across all tabs
+    const subLabel2={physics:'Physics',chemistry:'Chemistry',maths:'Mathematics',general:'General'}[doubtSubject]||doubtSubject;
+    addToMemory('Doubt: '+subLabel2+' — '+question.slice(0,80)+(question.length>80?'…':''),true);
     renderDoubtChat();if(chat)chat.scrollTop=chat.scrollHeight;
     _appendConfidenceNudge(chat);
   }catch(e){
@@ -8908,14 +8939,17 @@ function pinBattlePlan(){
 async function generateDailyPlan(){
   if(oracleStreaming)return;oracleStreaming=true;
   const btn=document.getElementById('oracle-plan-btn');const out=document.getElementById('oracle-plan-out');
-  if(btn){btn.disabled=true;btn.textContent='⏳ Building...';}
+  if(btn){btn.disabled=true;btn.textContent='⏳ Ayanokoji building plan...';}
   if(out){out.style.display='block';out.innerHTML='<div class="oracle-typing"><span></span><span></span><span></span></div>';}
   const context=buildFullContext();
   const goalH=S.goals?.studyHours||6;
   const dow=new Date().toLocaleDateString('en-IN',{weekday:'long'});
   const timeStr=new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
   const sprintRule=isSprintMode()?'\n⚠ SPRINT MODE: Only PYQs, mock tests, and weak topic revision. No new chapters.':'';
-  const prompt=`You are Oracle — cold, precise, efficient. You plan like Ayanokoji: no wasted blocks, no comfort scheduling. Current time: ${timeStr} (${dow}).
+  const ayanoVoice=buildAyanoVoice('planner');
+  const prompt=ayanoVoice+`
+
+Current time: ${timeStr} (${dow}).
 
 ${context}${sprintRule}
 
@@ -8950,7 +8984,7 @@ async function oracleWorkoutCoach(){
   if(!_oracleKeys||!_oracleKeys.length){showToast('Add an Oracle API key first → Oracle → Keys');return;}
   var btn=document.getElementById('wo-oracle-btn');
   var out=document.getElementById('wo-oracle-out');
-  if(btn){btn.disabled=true;btn.textContent='⏳ Oracle thinking...';}
+  if(btn){btn.disabled=true;btn.textContent='⏳ Ayanokoji thinking...';}
   if(out){out.style.display='block';out.innerHTML='<span style="opacity:.45;font-size:11px;font-style:italic">Analyzing your training data...</span>';}
   var streak=S.workout&&S.workout.woStreak||0;
   var strength=S.workout&&S.workout.strengthStat||0;
@@ -8970,11 +9004,11 @@ async function oracleWorkoutCoach(){
   var last7=[];for(var i=6;i>=0;i--){var dd=new Date();dd.setDate(dd.getDate()-i);last7.push(dd.toISOString().split('T')[0]);}
   var studyMins=S.sessions.filter(function(s){return last7.indexOf(s.date)>-1&&!s.paused;}).reduce(function(a,s){return a+s.min;},0);
   var daysLeft=Math.max(0,Math.ceil((new Date(S.examDate||'2026-05-18')-new Date())/86400000));
-  var prompt='JEE student training profile:\nWorkout streak: '+streak+' days | Strength stat: '+strength+'/100\nDays to exam: '+daysLeft+'\nStudy load this week: '+Math.round(studyMins/60*10)/10+'h\n\nWeekly plan:\n'+planLines+'\n\nRecent logs:\n'+logLines+'\n\nGive a focused training coach response with 3 things:\n1. PROGRESS: One specific exercise/group to increase this week (add reps, sets, or difficulty)\n2. WATCH: One risk to monitor (overtraining, imbalance, or neglect)\n3. ADJUSTMENT: One change for next week given their study load and days to exam\n\nBe specific, use their actual data. Under 120 words total. No fluff.';
+  var prompt=buildAyanoVoice('workout')+'\n\nHunter training data:\nWorkout streak: '+streak+' days | Strength stat: '+strength+'/100\nDays to exam: '+daysLeft+'\nStudy load this week: '+Math.round(studyMins/60*10)/10+'h\n\nWeekly plan:\n'+planLines+'\n\nRecent logs:\n'+logLines+'\n\nRespond with exactly 3 directives:\n1. PROGRESS: One specific exercise or muscle group to intensify this week — exact reps/sets\n2. WATCH: One risk in their current pattern — overtraining, imbalance, or neglect\n3. ADJUST: One change for next week based on their study load and exam proximity\n\nEvery sentence uses their actual data. Under 120 words total.';
   try{
     var text=await oracleCall([{role:'user',content:prompt}],null,300);
     if(out){
-      out.innerHTML='<div style="font-size:9px;color:var(--green);text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-bottom:8px">⚡ Oracle Training Report</div>'+formatOracleMD(text);
+      out.innerHTML='<div style="font-size:9px;color:var(--green);text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-bottom:8px">⚔ Ayanokoji Training Analysis</div>'+formatOracleMD(text);
     }
   }catch(e){
     if(out)out.innerHTML='<span style="color:var(--red);font-size:12px">⚠ '+(e.message||'Oracle offline')+'</span>';
