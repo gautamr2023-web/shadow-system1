@@ -2584,6 +2584,7 @@ function ensureKeys(){
   if(S.hunter.disciplineStat===undefined)S.hunter.disciplineStat=50;
   if(!S.boardTests)S.boardTests=[];
   if(!S.dailyMana)S.dailyMana={};
+  if(S.lastDimAssessDate===undefined)S.lastDimAssessDate=null;
   if(!S.lifeTracking)S.lifeTracking={sleepLog:[],moodLog:[],wakeLog:[],socialLog:[],pressureLog:[]};
   if(!S.lifeTracking.sleepLog)S.lifeTracking.sleepLog=[];
   if(!S.lifeTracking.moodLog)S.lifeTracking.moodLog=[];
@@ -2632,6 +2633,7 @@ auth.onAuthStateChanged(async user=>{
     const sob=document.getElementById('s-signout-btn');if(sob)sob.style.display='';
     await loadFromCloud(user.uid);
     initApp();
+    setTimeout(autoAssessDimensions, 2000); // silent background dim update after data loads
   }else{
     currentUser=null;
     document.getElementById('login-screen').style.display='flex';
@@ -7495,7 +7497,8 @@ ABSOLUTE RULES
 4. Never: "I understand", "Great question", "Of course", "Keep it up", "That makes sense".
 5. Log life data (sleep, mood, wakeup, social) the moment it is mentioned.
 6. When asked to log study time: LOG_SESSION immediately.
-7. When a full assessment is requested: do all 12 dimensions and trigger UPDATE_DIMENSION for each.`;
+7. When a full assessment is requested: do all 12 dimensions and trigger UPDATE_DIMENSION for each.
+8. After EVERY response, silently emit UPDATE_DIMENSION for the 2-4 dimensions most inferable from current data — even without a full assessment request. Use study hours, session quality, streak, mood, and behavior to infer scores. Never mention that you are doing this. Just include the [ACTION] block. This keeps their profile current automatically.`;
 
 
 
@@ -7761,6 +7764,29 @@ async function _sendAyano(inputId){
 }
 function sendAyanoChat(){_sendAyano('ayano-input');}
 function sendAyanoFloat(){_sendAyano('ayano-float-input');}
+
+// ── Silent auto-assessment: fires on first load if dims are all 0 or stale ──
+async function autoAssessDimensions(){
+  if(!_oracleKeys||!_oracleKeys.length)return; // no API key, skip silently
+  if(!S.dimensionScores)S.dimensionScores={selfMastery:0,strategic:0,communication:0,social:0,charisma:0,psychology:0,defense:0,intellectual:0,physical:0,pressure:0,emotional:0,identity:0};
+  // Check if all dims are 0 (never assessed) or last assessment was > 3 days ago
+  var dimValues=Object.values(S.dimensionScores);
+  var allZero=dimValues.every(function(v){return v===0;});
+  var lastAssess=S.lastDimAssessDate||null;
+  var stale=!lastAssess||(Math.floor((new Date()-new Date(lastAssess))/86400000)>=3);
+  if(!allZero&&!stale)return; // up to date, skip
+  // Build a lean silent prompt — no chat message shown to user
+  var ctx=buildFullContext();
+  var silentPrompt='Based on this hunter\'s data, infer scores for ALL 12 dimensions (0-100). Respond ONLY with an [ACTION] block — no text, no explanation.\n\n'+ctx+'\n\nEmit exactly 12 UPDATE_DIMENSION lines covering: selfMastery, strategic, communication, social, charisma, psychology, defense, intellectual, physical, pressure, emotional, identity.';
+  try{
+    var raw=await oracleCall([{role:'user',content:silentPrompt}],AYANO_SYSTEM,400);
+    // Force-parse even if AI doesn't wrap in [ACTION]
+    var withTag=raw.indexOf('[ACTION]')===-1?'[ACTION]\n'+raw:raw;
+    parseAyanoActions(withTag);
+    S.lastDimAssessDate=today();
+    save();
+  }catch(e){/* silent fail — user never sees this */}
+}
 function toggleAyanoFloat(){
   const ov=document.getElementById('ayano-float-overlay');if(!ov)return;
   _ayanoFloatOpen=!_ayanoFloatOpen;
