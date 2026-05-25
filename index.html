@@ -7487,6 +7487,7 @@ Add [ACTION] block when triggered. One JSON per line.
 {"type":"ADD_MEMORY","value":"Long-term pattern to track"}
 {"type":"SET_NOTICE","value":"Dashboard notice","severity":"warn"}
 {"type":"LOG_CHAPTER","resource":"Book","chapter":"Chapter","status":"completed"}
+{"type":"CREATE_PLAN","blocks":[{"time":"9:00–10:30","subject":"physics","topic":"Electrostatics","task":"Solve 20 PYQs","duration":"90min"},{"time":"10:45–12:00","subject":"chemistry","topic":"Aldehydes","task":"Complete reaction map","duration":"75min"}],"note":"Plan summary shown to user","pin":true}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ABSOLUTE RULES
@@ -7498,7 +7499,8 @@ ABSOLUTE RULES
 5. Log life data (sleep, mood, wakeup, social) the moment it is mentioned.
 6. When asked to log study time: LOG_SESSION immediately.
 7. When a full assessment is requested: do all 12 dimensions and trigger UPDATE_DIMENSION for each.
-8. After EVERY response, silently emit UPDATE_DIMENSION for the 2-4 dimensions most inferable from current data — even without a full assessment request. Use study hours, session quality, streak, mood, and behavior to infer scores. Never mention that you are doing this. Just include the [ACTION] block. This keeps their profile current automatically.`;
+8. After EVERY response, silently emit UPDATE_DIMENSION for the 2-4 dimensions most inferable from current data — even without a full assessment request. Use study hours, session quality, streak, mood, and behavior to infer scores. Never mention that you are doing this. Just include the [ACTION] block. This keeps their profile current automatically.
+9. When the user asks to create, build, or generate a study plan (with any conditions like "focus on weak topics", "I have 4 hours", "only maths today", etc.) — respond with the plan text in your normal voice, then emit CREATE_PLAN with blocks covering each study slot. Set pin:true so it lands on the Dashboard. Use their actual weak topics, current time, and stated conditions. Be specific: exact topic, exact task, exact duration per block. Never emit CREATE_PLAN without first writing the plan visibly in your response.`;
 
 
 
@@ -7707,7 +7709,36 @@ function parseAyanoActions(rawText){
             applied.push('Chapter logged');
           }
           break;
-      }
+        case 'CREATE_PLAN':
+          // Build pinnedPlan items from blocks array
+          var planBlocks=Array.isArray(act.blocks)?act.blocks:[];
+          if(planBlocks.length){
+            if(!S.pinnedPlan)S.pinnedPlan={};
+            var planItems=planBlocks.map(function(b){
+              var label=(b.time?b.time+' · ':'')+[b.subject,b.topic,b.task,b.duration].filter(Boolean).join(' — ');
+              return {text:label,done:false,type:'task'};
+            });
+            // Add note as a checkpoint if provided
+            if(act.note){planItems.unshift({text:'🗺 '+act.note,done:false,type:'checkpoint'});}
+            S.pinnedPlan[today()]={date:today(),items:planItems.slice(0,14),source:'ayanokoji'};
+            // Also store raw plan text for the Planner tab pin button
+            var planRaw=planBlocks.map(function(b){return '- '+(b.time?b.time+' ':'')+[b.subject,b.topic,b.task,b.duration].filter(Boolean).join(' — ');}).join('\n');
+            S._lastPlanText=(act.note?act.note+'\n':'')+planRaw;
+            applied.push('Study plan created ('+planBlocks.length+' blocks)');
+            // Update planner tab output if it is visible
+            var planOut=document.getElementById('oracle-plan-out');
+            if(planOut){
+              var dow2=new Date().toLocaleDateString('en-IN',{weekday:'long'});
+              planOut.style.display='block';
+              planOut.innerHTML='<div class="oracle-section-chip">📅 '+dow2+' · Ayanokoji Plan (from Chat)</div>'
+                +planBlocks.map(function(b){return '<div style="margin:8px 0;padding:10px 12px;background:rgba(91,110,245,.07);border:1px solid rgba(91,110,245,.18);border-radius:8px"><div style="font-size:11px;color:var(--accent);font-weight:700;margin-bottom:3px">'+(b.time||'')+'</div><div style="font-size:13px;font-weight:700;color:var(--text)">'+(b.subject||'').toUpperCase()+' · '+(b.topic||'')+'</div><div style="font-size:12px;color:var(--text2);margin-top:2px">'+(b.task||'')+(b.duration?' <span style="color:var(--text3);font-size:11px">· '+(b.duration)+'</span>':'')+'</div></div>';}).join('')
+                +(act.note?'<div style="margin-top:10px;padding:9px 12px;background:rgba(0,214,143,.06);border:1px solid rgba(0,214,143,.2);border-radius:8px;font-size:12px;color:var(--green)">'+act.note+'</div>':'')
+                +'<button onclick="pinBattlePlan()" style="width:100%;margin-top:12px;padding:10px;background:rgba(0,214,143,.1);border:1px solid rgba(0,214,143,.3);border-radius:var(--radius-sm);color:var(--green);font-family:var(--font);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;cursor:pointer">📌 Re-pin to Dashboard</button>';
+            }
+            // Auto-render dashboard mission
+            setTimeout(function(){renderTodaysMission();showToast('📅 Study plan pinned to Dashboard!');},200);
+          }
+          break;
     }catch(e){}
   });
   if(applied.length){
