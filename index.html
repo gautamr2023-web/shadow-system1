@@ -7027,14 +7027,56 @@ function renderDimensionsChart(){
   if(_chDim){_chDim.destroy();_chDim=null;}
   var ds=S.dimensionScores||{};
   var keys=Object.keys(DIM_META);
-  var vals=keys.map(function(k){return ds[k]||0;});
-  if(vals.every(function(v){return !v;}))return;
+  var rawVals=keys.map(function(k){return ds[k]||0;});
+  // Show chart even if all zero — use floor of 5 so polygon is visible
+  var vals=rawVals.map(function(v){return Math.max(v,v>0?v:0);});
   var labels=keys.map(function(k){return DIM_META[k].emoji+' '+DIM_META[k].label;});
   var ctx=canvas.getContext('2d');
   _chDim=new Chart(ctx,{
     type:'radar',
-    data:{labels:labels,datasets:[{label:'Dimensions',data:vals,backgroundColor:'rgba(91,110,245,.15)',borderColor:'rgba(91,110,245,.7)',borderWidth:2,pointBackgroundColor:'rgba(91,110,245,.9)',pointRadius:4}]},
-    options:{responsive:true,maintainAspectRatio:false,scales:{r:{min:0,max:100,ticks:{stepSize:25,color:'rgba(255,255,255,.3)',font:{size:9}},grid:{color:'rgba(255,255,255,.08)'},pointLabels:{color:'rgba(255,255,255,.6)',font:{size:9}}}},plugins:{legend:{display:false}}}
+    data:{
+      labels:labels,
+      datasets:[{
+        label:'Dimensions',
+        data:vals,
+        backgroundColor:'rgba(91,110,245,.18)',
+        borderColor:'rgba(91,110,245,.85)',
+        borderWidth:2.5,
+        pointBackgroundColor:'rgba(91,110,245,1)',
+        pointBorderColor:'rgba(255,255,255,.3)',
+        pointBorderWidth:1.5,
+        pointRadius:5,
+        pointHoverRadius:7,
+        fill:true
+      }]
+    },
+    options:{
+      responsive:true,
+      maintainAspectRatio:false,
+      layout:{padding:{top:18,bottom:18,left:18,right:18}},
+      scales:{
+        r:{
+          min:0,
+          max:100,
+          ticks:{stepSize:25,color:'rgba(255,255,255,.25)',font:{size:10},backdropColor:'transparent'},
+          grid:{color:'rgba(255,255,255,.1)',circular:false},
+          angleLines:{color:'rgba(255,255,255,.08)'},
+          pointLabels:{
+            color:'rgba(255,255,255,.75)',
+            font:{size:11,weight:'600'},
+            padding:12
+          }
+        }
+      },
+      plugins:{
+        legend:{display:false},
+        tooltip:{
+          callbacks:{
+            label:function(ctx){return ctx.label.split(' ').slice(1).join(' ')+': '+ctx.raw+'/100';}
+          }
+        }
+      }
+    }
   });
 }
 
@@ -7659,8 +7701,13 @@ function parseAyanoActions(rawText){
             var newScore=Math.max(0,Math.min(100,parseInt(act.value)||0));
             S.dimensionScores[dimKey]=newScore;
             applied.push('Dimension updated: '+dimKey+' → '+newScore);
-            // Re-render dimension visuals immediately
-            setTimeout(function(){renderDimensionsGrid();renderDimensionsChart();},100);
+            // Save immediately then re-render visuals
+            save();
+            setTimeout(function(){
+              renderDimensionsGrid();
+              renderDimensionsChart();
+              if(typeof renderRadarChart==='function')renderRadarChart();
+            },120);
           }
           break;
           var lSub=(act.subject||'physics').toLowerCase();
@@ -7808,6 +7855,11 @@ function parseAyanoActions(rawText){
   });
   if(applied.length){
     save();renderDash();
+    // If a session was logged, also refresh the session history page
+    if(applied.some(function(a){return a.indexOf('min')>-1&&a.indexOf('logged')>-1;})){
+      if(typeof renderSessionLog==='function')renderSessionLog();
+      if(typeof renderSessLog==='function')renderSessLog();
+    }
     var bar=document.getElementById('ayano-action-bar');
     if(bar){bar.style.display='block';bar.textContent='⚡ System: '+applied.join(' · ');}
     setTimeout(function(){var b=document.getElementById('ayano-action-bar');if(b)b.style.display='none';},5000);
@@ -8079,7 +8131,7 @@ function showAyanoPopout(text,preload,autoMs){
     +'</div>'
     +'<div style="display:flex;gap:6px">'
     +'<button onclick="dismissAyanoPopout()" style="flex:1;padding:7px;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:7px;color:var(--text3);font-family:var(--font);font-size:11px;cursor:pointer">Dismiss</button>'
-    +(preload?'<button onclick="openAyanoFromPopout(\''+safePreload+'\')" style="flex:1;padding:7px;background:rgba(91,110,245,.15);border:1px solid rgba(91,110,245,.4);border-radius:7px;color:var(--accent);font-family:var(--font);font-size:11px;font-weight:700;cursor:pointer">Continue →</button>':'')
+    +(preload?'<button onclievent.stopPropagation();ck="openAyanoFromPopout(\''+safePreload+'\')" style="flex:1;padding:7px;background:rgba(91,110,245,.15);border:1px solid rgba(91,110,245,.4);border-radius:7px;color:var(--accent);font-family:var(--font);font-size:11px;font-weight:700;cursor:pointer">Continue →</button>':'')
     +'</div>';
   document.body.appendChild(div);
   setTimeout(function(){div.classList.add('show');},40);
