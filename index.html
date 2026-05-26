@@ -7957,6 +7957,113 @@ function _buildBehaviorContext(){
   return lines.length?'\n=== BEHAVIORAL INTELLIGENCE ===\n'+lines.join('\n'):'';
 }
 
+function buildAnalyticsLayer(){
+  var t=today();
+  var sAll=S.sessions.filter(function(s){return !s.paused;});
+  var insights=[];
+
+  // ── 1. SESSION CONSISTENCY ──────────────────────────────────────
+  var last14=[];for(var i=13;i>=0;i--){var d2=new Date();d2.setDate(d2.getDate()-i);last14.push(d2.toISOString().split('T')[0]);}
+  var studiedDays=last14.filter(function(d){return sAll.some(function(s){return s.date===d;});});
+  var consistencyPct=Math.round(studiedDays.length/14*100);
+  insights.push('Study consistency (14d): '+consistencyPct+'% ('+studiedDays.length+'/14 days active)');
+
+  // ── 2. SUBJECT BALANCE & NEGLECT ─────────────────────────────────
+  var subMins={physics:0,chemistry:0,maths:0};
+  sAll.filter(function(s){return last14.includes(s.date);}).forEach(function(s){if(subMins[s.sub]!==undefined)subMins[s.sub]+=s.min;});
+  var totalSubMins=subMins.physics+subMins.chemistry+subMins.maths||1;
+  var subPct={physics:Math.round(subMins.physics/totalSubMins*100),chemistry:Math.round(subMins.chemistry/totalSubMins*100),maths:Math.round(subMins.maths/totalSubMins*100)};
+  var neglected=Object.entries(subPct).sort(function(a,b){return a[1]-b[1]})[0];
+  insights.push('Subject split (14d): Physics '+subPct.physics+'% | Chemistry '+subPct.chemistry+'% | Maths '+subPct.maths+'%');
+  insights.push('Most neglected: '+neglected[0]+' ('+neglected[1]+'% of sessions) — ideal split is 33/33/33');
+
+  // ── 3. SESSION QUALITY TREND ─────────────────────────────────────
+  var rated=sAll.filter(function(s){return (s.stars||s.rating)>0;}).slice(-14);
+  if(rated.length>=6){
+    var first=rated.slice(0,Math.floor(rated.length/2));
+    var last=rated.slice(Math.floor(rated.length/2));
+    var firstAvg=first.reduce(function(a,s){return a+(s.stars||s.rating);},0)/first.length;
+    var lastAvg=last.reduce(function(a,s){return a+(s.stars||s.rating);},0)/last.length;
+    var trend=lastAvg>firstAvg+0.2?'IMPROVING':lastAvg<firstAvg-0.2?'DECLINING':'STABLE';
+    insights.push('Session quality trend: '+trend+' (was '+firstAvg.toFixed(1)+', now '+lastAvg.toFixed(1)+'/5)');
+  }
+
+  // ── 4. PLAN ADHERENCE ────────────────────────────────────────────
+  var planDays=Object.keys(S.pinnedPlan||{}).filter(function(d){return last14.includes(d);});
+  if(planDays.length>0){
+    var totalTasks=0,doneTasks=0;
+    planDays.forEach(function(d){var plan=S.pinnedPlan[d];if(!plan||!plan.items)return;totalTasks+=plan.items.length;doneTasks+=plan.items.filter(function(i){return i.done;}).length;});
+    var adherence=totalTasks>0?Math.round(doneTasks/totalTasks*100):0;
+    insights.push('Plan adherence (14d): '+adherence+'% ('+doneTasks+'/'+totalTasks+' tasks completed)');
+    if(adherence<50)insights.push('LOW ADHERENCE ALERT: More than half of planned tasks are abandoned — this is the primary gap.');
+  }
+
+  // ── 5. SLEEP → PERFORMANCE CORRELATION ───────────────────────────
+  var sleepLog=S.lifeTracking&&S.lifeTracking.sleepLog||[];
+  if(sleepLog.length>=3&&rated.length>=3){
+    var goodSleepSess=[];var poorSleepSess=[];
+    sleepLog.forEach(function(sl){
+      var nextDaySess=rated.filter(function(s){return s.date===sl.date||(new Date(s.date)-new Date(sl.date)===86400000);});
+      nextDaySess.forEach(function(s){(sl.hours>=7?goodSleepSess:poorSleepSess).push(s.stars||s.rating);});
+    });
+    if(goodSleepSess.length>=2&&poorSleepSess.length>=2){
+      var gAvg=goodSleepSess.reduce(function(a,v){return a+v;},0)/goodSleepSess.length;
+      var pAvg=poorSleepSess.reduce(function(a,v){return a+v;},0)/poorSleepSess.length;
+      insights.push('Sleep correlation: 7h+ sleep → avg session ★'+gAvg.toFixed(1)+' | <7h sleep → avg session ★'+pAvg.toFixed(1)+' — delta: '+(gAvg-pAvg).toFixed(1)+' stars');
+    }
+  }
+
+  // ── 6. MANA EFFICIENCY ──────────────────────────────────────────
+  var freshSess=sAll.filter(function(s){return s.date===t&&(S.dailyMana&&S.dailyMana[s.date]&&S.dailyMana[s.date].energy==='fresh');});
+  var tiredSess=sAll.filter(function(s){return s.date===t&&(S.dailyMana&&S.dailyMana[s.date]&&S.dailyMana[s.date].energy==='tired');});
+  if(freshSess.length||tiredSess.length){
+    var fRated=freshSess.filter(function(s){return s.stars||s.rating;});
+    var tRated=tiredSess.filter(function(s){return s.stars||s.rating;});
+    if(fRated.length&&tRated.length){
+      var fAvg=fRated.reduce(function(a,s){return a+(s.stars||s.rating);},0)/fRated.length;
+      var tAvg=tRated.reduce(function(a,s){return a+(s.stars||s.rating);},0)/tRated.length;
+      insights.push('Mana impact: Fresh sessions avg ★'+fAvg.toFixed(1)+' vs Tired avg ★'+tAvg.toFixed(1));
+    }
+  }
+
+  // ── 7. PEAK HOUR ANALYSIS ───────────────────────────────────────
+  var hourData={};
+  sAll.filter(function(s){return s.time&&(s.stars||s.rating)>0;}).forEach(function(s){
+    try{var tm=s.time.match(/(\d+):(\d+)\s*(AM|PM)?/i);if(!tm)return;var h=parseInt(tm[1])+(tm[3]&&tm[3].toUpperCase()==='PM'&&tm[1]!=='12'?12:0)+(tm[3]&&tm[3].toUpperCase()==='AM'&&tm[1]==='12'?-12:0);if(!hourData[h])hourData[h]={r:[],m:0};hourData[h].r.push(s.stars||s.rating);hourData[h].m+=s.min;}catch(e){}
+  });
+  var sortedHours=Object.entries(hourData).filter(function(e){return e[1].r.length>=2;}).sort(function(a,b){var aA=a[1].r.reduce(function(x,v){return x+v;},0)/a[1].r.length;var bA=b[1].r.reduce(function(x,v){return x+v;},0)/b[1].r.length;return bA-aA;});
+  if(sortedHours.length){
+    var ph=sortedHours[0];var hr=parseInt(ph[0]);var label=hr===0?'12 AM':hr<12?hr+' AM':hr===12?'12 PM':(hr-12)+' PM';
+    var phAvg=(ph[1].r.reduce(function(a,v){return a+v;},0)/ph[1].r.length).toFixed(1);
+    insights.push('Peak performance hour: '+label+' (avg ★'+phAvg+', '+ph[1].r.length+' sessions) — schedule hardest topic here');
+    if(sortedHours.length>=2){var lh=sortedHours[sortedHours.length-1];var lr=parseInt(lh[0]);var ll=lr===0?'12 AM':lr<12?lr+' AM':lr===12?'12 PM':(lr-12)+' PM';var lhAvg=(lh[1].r.reduce(function(a,v){return a+v;},0)/lh[1].r.length).toFixed(1);insights.push('Lowest performance hour: '+ll+' (avg ★'+lhAvg+') — avoid hard topics here');}
+  }
+
+  // ── 8. EXAM GAP ANALYSIS ────────────────────────────────────────
+  var allT=[...(S.topics.physics11||[]),...(S.topics.physics12||[]),...(S.topics.chemistry11||[]),...(S.topics.chemistry12||[]),...(S.topics.maths11||[]),...(S.topics.maths12||[])];
+  var critGaps=allT.filter(function(t2){return t2.conf>0&&t2.conf<30;}).sort(function(a,b){return a.conf-b.conf;}).slice(0,5);
+  var unstudied=allT.filter(function(t2){return t2.conf===0;}).length;
+  var daysLeft=Math.max(0,Math.ceil((new Date(S.examDate||'2026-05-18')-new Date())/86400000));
+  if(critGaps.length)insights.push('CRITICAL CONFIDENCE GAPS (<30%): '+critGaps.map(function(t2){return t2.name+' '+t2.conf+'%';}).join(', '));
+  if(unstudied>0)insights.push('Topics at 0% confidence (never studied): '+unstudied+' — '+(unstudied>20?'CRITICAL, too many untouched topics':'manageable if addressed soon'));
+
+  // ── 9. BEHAVIORAL FINGERPRINT ───────────────────────────────────
+  var avMap=S.avoidanceMap||{};
+  var avoidedSub=Object.entries(avMap).sort(function(a,b){return b[1]-a[1];});
+  if(avoidedSub.length)insights.push('Plan deletion pattern (avoidance): '+avoidedSub.map(function(e){return e[0]+' deleted '+e[1]+'x';}).join(', '));
+
+  // ── 10. TODAY'S OPTIMAL ACTION ──────────────────────────────────
+  var todayStudied=(S.sessions.filter(function(s){return s.date===t&&!s.paused;}).reduce(function(a,s){return a+s.min;},0)/60).toFixed(1);
+  var goalH=S.goals&&S.goals.studyHours||6;
+  var remaining=Math.max(0,goalH-parseFloat(todayStudied));
+  var nowH=new Date().getHours();
+  var bestNextSub=neglected[0];
+  if(critGaps.length){var cgSub=critGaps[0].name.toLowerCase();if(cgSub.includes('electrostatics')||cgSub.includes('mechanics')||cgSub.includes('optics')||cgSub.includes('waves'))bestNextSub='physics';else if(cgSub.includes('organic')||cgSub.includes('inorganic')||cgSub.includes('physical'))bestNextSub='chemistry';else bestNextSub='maths';}
+  insights.push('TODAY OPTIMAL: '+remaining.toFixed(1)+'h remaining toward '+goalH+'h goal | Best next subject: '+bestNextSub+' (most neglected + critical gaps) | Current time: '+nowH+':00');
+
+  return insights.length?'\n=== AYANOKOJI INTELLIGENCE LAYER (pre-computed) ===\n'+insights.join('\n')+'\n=== USE THESE INSIGHTS IN EVERY DECISION ===':'';
+}
+
 async function _sendAyano(inputId){
   if(!_oracleKeys||!_oracleKeys.length){showToast('Add Oracle API key → Oracle → Keys');return;}
   const input=document.getElementById(inputId);
