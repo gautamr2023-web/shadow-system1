@@ -2591,12 +2591,14 @@ function ensureKeys(){
   if(!S.hunter.rank)S.hunter.rank=getRankByXPStatic(S.hunter.xp||0);
   if(S.hunter.focusStat===undefined)S.hunter.focusStat=50;
   if(S.hunter.disciplineStat===undefined)S.hunter.disciplineStat=50;
+  if(!S.hunter.startDate)S.hunter.startDate=today();
   if(!S.boardTests)S.boardTests=[];
   if(!S.dailyMana)S.dailyMana={};
   if(S.lastDimAssessDate===undefined)S.lastDimAssessDate=null;
   if(!S.behaviorLog)S.behaviorLog=[];
   if(!S.activityLog)S.activityLog=[];
-  if(!S.dimTrainingLog)S.dimTrainingLog={}; // {dimKey: {lastDate, lastExIdx, totalSessions, responses:[]}}S.avoidanceMap={};   // subject/topic -> skip count
+  if(!S.dimTrainingLog)S.dimTrainingLog={};
+  if(!S.avoidanceMap)S.avoidanceMap={};
   if(!S.predictionLog)S.predictionLog=[]; // {date, prediction, outcome:'pending'|'confirmed'|'wrong'}
   if(!S.msgPatterns)S.msgPatterns={totalMsgs:0,lateNight:0,shortMsgs:0,avoidTopics:{},lastMsgDate:null};
   if(!S.lifeTracking)S.lifeTracking={sleepLog:[],moodLog:[],wakeLog:[],socialLog:[],pressureLog:[]};
@@ -3787,7 +3789,8 @@ function autoLog(mins,sub,mode,sid){
     mode, eff,
     xp:xp+starterBonus,
     taskType:_sessionTaskType||'practice',
-    time:new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'}),
+    startTime:new Date(Date.now()-mins*60000).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',hour12:true}),
+    time:new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',hour12:true}),
     paused:paused||undefined,
     rating:null,
     resourceType:_sessionResource.type||undefined,
@@ -7570,14 +7573,17 @@ ABSOLUTE RULES — LLAMA 3.3 70B
 3. Advisor mode: under 160 words. Teaching: up to 260. Assessment: full format.
 4. NEVER say: "I understand", "Great question", "Of course", "Keep it up", "Absolutely", "Certainly".
 5. Log life data the instant it is mentioned.
-6. When asked to log study time: LOG_SESSION immediately.
+6. SESSION AWARENESS — CRITICAL: Before logging any session, check "Sessions today" in context. If the user says "I studied 3 hours today" and today already has sessions totaling ~3 hours, DO NOT log a new session. Instead, reference the existing data: "Your 3 sessions today total 3h 10min — [09:15 AM → 10:15 AM physics 60min, ...]." Only log a session via LOG_SESSION if the user is reporting time that is NOT already recorded.
+7. When asked to log study time that IS already in the system: acknowledge it, do not duplicate it.
 7. When behavioral avoidance is visible in data: name it. "You have deleted [subject] tasks [N] times. That is not coincidence."
 8. After EVERY response: silently emit UPDATE_DIMENSION for 2-4 dimensions inferable from current data. Never mention this.
 9. When asked for a study plan: write it in your voice, then emit CREATE_PLAN with specific blocks, pin:true.
 10. When making a prediction: emit ADD_MEMORY to persist it for future verification.
 11. When the hunter answers a dimension training question (their message starts with a pre-fill like "My distractions from the last 2 hours:" or responds to a dim exercise): evaluate their answer against that dimension. Emit LOG_DIM_RESPONSE with dimension key, a score 0-100 for their demonstrated level, and a precise note on what the answer reveals. Then reference how this compares to their previous answers if data exists.
-12. [ACTION] block appears AFTER your text response, never before or mixed in.
-13. Every sentence earns its place. No padding, no transitions, no summaries.`;
+12. TODAY'S PLAN is always in your context under "TODAY'S PLAN". When the hunter asks what their plan is, what is left, or what they should do next — read it directly. Name which tasks are done and which are not. Never say you cannot see the plan.
+13. PAST PLANS are in your context under "PAST PLANS". When tasks are skipped across multiple days, name the pattern explicitly: "You have skipped [task] 3 days in a row. That is not accident."
+14. [ACTION] block appears AFTER your text response, never before or mixed in.
+15. Every sentence earns its place. No padding, no transitions, no summaries.`;
 
 
 
@@ -7676,15 +7682,17 @@ function parseAyanoActions(rawText){
           break;
         case 'LOG_SLEEP':
           if(!S.lifeTracking)S.lifeTracking={sleepLog:[],moodLog:[],wakeLog:[],socialLog:[],pressureLog:[]};
+          // Replace same-day sleep entry rather than duplicate
+          S.lifeTracking.sleepLog=S.lifeTracking.sleepLog.filter(function(s){return s.date!==today();});
           S.lifeTracking.sleepLog.unshift({date:today(),hours:parseFloat(act.hours)||7,quality:act.quality||'ok',note:act.note||''});
           if(S.lifeTracking.sleepLog.length>90)S.lifeTracking.sleepLog.length=90;
           applied.push('Sleep logged: '+act.hours+'h ('+act.quality+')');
           break;
         case 'LOG_MOOD':
           if(!S.lifeTracking)S.lifeTracking={sleepLog:[],moodLog:[],wakeLog:[],socialLog:[],pressureLog:[]};
-          S.lifeTracking.moodLog.unshift({date:today(),time:new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'}),mood:act.mood||'neutral',energy:act.energy||5,note:act.note||''});
+          S.lifeTracking.moodLog.unshift({date:today(),time:new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',hour12:true}),mood:act.mood||'neutral',energy:parseInt(act.energy)||5,note:act.note||''});
           if(S.lifeTracking.moodLog.length>90)S.lifeTracking.moodLog.length=90;
-          applied.push('Mood logged: '+act.mood);
+          applied.push('Mood logged: '+act.mood+' energy:'+act.energy+'/10');
           break;
         case 'LOG_WAKEUP':
           if(!S.lifeTracking)S.lifeTracking={sleepLog:[],moodLog:[],wakeLog:[],socialLog:[],pressureLog:[]};
@@ -7720,16 +7728,6 @@ function parseAyanoActions(rawText){
             },120);
           }
           break;
-          var lSub=(act.subject||'physics').toLowerCase();
-          var lMin=Math.max(5,Math.min(600,parseInt(act.minutes)||60));
-          var lDate=act.date||today();
-          var lTask=act.taskType||'practice';
-          var lXP=Math.round(lMin*1.5);
-          var lSess={id:Date.now(),date:lDate,min:lMin,duration:lMin,sub:lSub,subject:lSub,mode:'manual',eff:1,xp:lXP,taskType:lTask,time:new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'}),paused:false,rating:null,note:'Ayanokoji: '+(act.note||'manual log')};
-          S.sessions.push(lSess);
-          addXP(lXP);
-          capXPToRank();
-          applied.push(lMin+'min '+lSub+' session logged');
           break;
         case 'REMOVE_LAST_SESSION':
           var rmSub=(act.subject||'').toLowerCase();
@@ -7768,15 +7766,27 @@ function parseAyanoActions(rawText){
           var lMin=Math.max(5,Math.min(600,parseInt(act.minutes)||60));
           var lDate=act.date||today();
           var lTask=act.taskType||'practice';
-          var lXP=Math.round(lMin*1.5);
-          var lSess={id:Date.now(),date:lDate,min:lMin,duration:lMin,sub:lSub,subject:lSub,mode:'manual',eff:1,xp:lXP,taskType:lTask,time:new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'}),paused:false,rating:null,note:'Ayanokoji: '+(act.note||'manual log')};
-          S.sessions.push(lSess);
-          addXP(lXP);
-          capXPToRank();
-          if(!S.activityLog)S.activityLog=[];
-          S.activityLog.unshift({type:'session',date:lDate,time:new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',hour12:true}),subject:lSub,minutes:lMin,taskType:lTask});
-          if(S.activityLog.length>100)S.activityLog=S.activityLog.slice(0,100);
-          applied.push(lMin+'min '+lSub+' logged');
+          // DUPLICATE DETECTION: check if today's sessions for this subject already cover this duration
+          var existingSubs=S.sessions.filter(function(s){return s.date===lDate&&s.sub===lSub&&!s.paused;});
+          var existingMins=existingSubs.reduce(function(a,s){return a+s.min;},0);
+          var allTodayMins=S.sessions.filter(function(s){return s.date===lDate&&!s.paused;}).reduce(function(a,s){return a+s.min;},0);
+          var isDuplicate=Math.abs(existingMins-lMin)<=10||(existingMins>=lMin&&existingMins>0);
+          if(isDuplicate){
+            // Don't log — just confirm existing data
+            applied.push('Session already recorded: '+lSub+' has '+existingMins+'min today (requested '+lMin+'min — skipped)');
+          } else {
+            var lXP=Math.round(lMin*1.5);
+            var lNowTime=new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',hour12:true});
+            var lStartMs=Date.now()-lMin*60000;
+            var lStartTime=new Date(lStartMs).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',hour12:true});
+            var lSess={id:Date.now(),date:lDate,min:lMin,duration:lMin,sub:lSub,subject:lSub,mode:'ayanokoji',eff:1,xp:lXP,taskType:lTask,startTime:act.startTime||lStartTime,time:act.endTime||lNowTime,paused:false,stars:null,rating:null,note:'Ayanokoji: '+(act.note||'logged via chat')};
+            S.sessions.push(lSess);
+            addXP(lXP);
+            if(!S.activityLog)S.activityLog=[];
+            S.activityLog.unshift({type:'session',date:lDate,time:lNowTime,subject:lSub,minutes:lMin,taskType:lTask,startTime:lSess.startTime,endTime:lSess.time});
+            if(S.activityLog.length>100)S.activityLog=S.activityLog.slice(0,100);
+            applied.push(lMin+'min '+lSub+' logged ('+lSess.startTime+' → '+lSess.time+')');
+          }
           break;
         case 'REMOVE_LAST_SESSION':
           var rmSub2=(act.subject||'').toLowerCase();
@@ -9065,7 +9075,9 @@ function buildFullContext(){
     if(e.type==='conf_update')return (e.date+' '+e.time)+' — Confidence '+(e.delta>0?'+':'')+e.delta+'% on '+e.topic+' ('+e.subject+')';
     if(e.type==='session')return (e.date+' '+e.time)+' — Session: '+e.subject+' '+e.minutes+'min ['+e.taskType+']';
     if(e.type==='resource_update')return (e.date+' '+e.time)+' — Resource: '+e.name+' → '+e.pct+'% complete';
-    if(e.type==='plan_pin')return (e.date+' '+e.time)+' — Plan pinned ('+e.blocks+' blocks)';
+    if(e.type==='plan_pin')return (e.date+' '+e.time)+' — Plan pinned by Ayanokoji ('+e.blocks+' blocks)';
+    if(e.type==='plan_manual_add')return (e.date+' '+e.time)+' — Manual task added: '+e.task;
+    if(e.type==='plan_delete')return (e.date+' '+e.time)+' — Task deleted (avoidance?): '+(e.data&&e.data.task?e.data.task.slice(0,50):'?');
     return (e.date+' '+(e.time||''))+' — '+e.type;
   }).join('\n'):'';
 
@@ -9083,7 +9095,7 @@ function buildFullContext(){
 
   return `=== SHADOW SYSTEM — FULL HUNTER PROFILE ===
 Hunter: ${name} | Rank: ${rank} | XP: ${xp} | Streak: ${streak}d | Mana: ${mana}/100
-Class: ${S.classYear||'12'} | Exam: ${S.examName||'JEE Advanced'} in ${daysLeft} DAYS${examLine}${schedLine}${overrideLine}
+Class: ${S.classYear||'12'} | Target: ${S.jeeTarget||250} marks | Exam: ${S.examName||'JEE Advanced'} in ${daysLeft} DAYS${examLine}${schedLine}${overrideLine}
 Current time: ${nowTime} (${nowDay})
 
 === STUDY RESOURCES ===
@@ -9096,17 +9108,69 @@ Active quests today (${activeQ.length} total, configured by user):
 ${questStatus}
 
 === TODAY (${t}) ===
+${(function(){
+  var dm=S.dailyMana&&S.dailyMana[t]||{};
+  var manaLine='Mana: '+mana+'/100'+(dm.energy?' | Energy declared: '+dm.energy:'')+(dm.task?' | Task type: '+dm.task:'')+(dm.mod&&dm.mod!==1?' | XP modifier: '+dm.mod+'x':'');
+  var streak2=S.hunter.streak||0;
+  var cf=S.consecutiveFailures||0;
+  var rm=S.recoveryMode||{};
+  var pm=S.pauseMode||{};
+  var statusLine='';
+  if(pm.active)statusLine='⏸ PAUSE MODE active ('+pm.start+' to '+pm.end+')';
+  else if(rm.active)statusLine='🔄 RECOVERY MODE active since '+rm.startDate+' (streak broken, rebuilding)';
+  else if(cf>0)statusLine='⚠ '+cf+' consecutive day'+(cf>1?'s':'')+' failed study goal';
+  // Last 7 days status
+  var ds=S.dailyStatus||{};
+  var last7stat=last7.map(function(d){var st=ds[d];return d.slice(5)+'('+(st==='valid'?'✓':st==='failed'?'✗':st==='zero'?'0':'?')+')';}).join(' ');
+  return manaLine+(statusLine?'\n'+statusLine:'')+'\nLast 7 days: '+last7stat;
+})()}
 Studied: ${(todayMins/60).toFixed(1)}h | Sessions: ${todaySess.length} | Quests: ${Object.values(todayComp).filter(Boolean).length}/${activeQ.length}
-${todaySess.length?'Sessions today:\n'+todaySess.map(s=>'  '+( s.time||'??:??')+' — '+s.sub+' '+s.min+'min'+(s.chapter?' ['+s.chapter+']':'')+(s.stars?' ★'+s.stars:'')).join('\n'):'No sessions yet today'}
+${todaySess.length?'Sessions today:\n'+todaySess.map(function(s){
+  var st=s.startTime||(s.time&&s.min?'~'+(function(){try{var d=new Date();var t=s.time.match(/(\d+):(\d+)\s*(AM|PM)?/i);if(t){var h=parseInt(t[1])+(t[3]&&t[3].toUpperCase()==='PM'&&t[1]!=='12'?12:0)+(t[3]&&t[3].toUpperCase()==='AM'&&t[1]==='12'?-12:0);var m=parseInt(t[2]);var end=new Date();end.setHours(h,m,0,0);var start=new Date(end-s.min*60000);return start.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',hour12:true});}return '?';}catch(e){return '?'}}()):'?');
+  var et=s.time||'?';
+  var stars=s.stars||s.rating;
+  return '  '+st+' → '+et+' | '+s.sub+' '+s.min+'min ['+( s.taskType||'practice')+']'+(s.chapter?' ['+s.chapter+']':'')+(stars?' ★'+stars+'/5':'')+(s.manaDrain?' mana-'+s.manaDrain:'')+(s.eff&&s.eff!==1?' eff:'+s.eff:'')+(s.mode==='ayanokoji'?' (AI logged)':s.mode==='manual'?' (manual)':' (timer)');
+}).join('\n'):'No sessions logged today'}
 
-=== THIS WEEK ===
-Total: ${(weekMins/60).toFixed(1)}h | Physics: ${(sub.physics/60).toFixed(1)}h | Chemistry: ${(sub.chemistry/60).toFixed(1)}h | Maths: ${(sub.maths/60).toFixed(1)}h
-Quest completion: ${questRate}% | All-time: ${(totalMins/60).toFixed(1)}h | Avg rating: ${avgRating}/5
+=== THIS WEEK (day-by-day) ===
+${(function(){
+  var lines=[];
+  var allTimeSub={physics:0,chemistry:0,maths:0};
+  S.sessions.filter(function(s){return !s.paused;}).forEach(function(s){if(allTimeSub[s.sub]!==undefined)allTimeSub[s.sub]+=s.min;});
+  lines.push('All-time: Physics '+(allTimeSub.physics/60).toFixed(1)+'h | Chemistry '+(allTimeSub.chemistry/60).toFixed(1)+'h | Maths '+(allTimeSub.maths/60).toFixed(1)+'h | Total '+(totalMins/60).toFixed(1)+'h');
+  lines.push('This week: Physics '+(sub.physics/60).toFixed(1)+'h | Chemistry '+(sub.chemistry/60).toFixed(1)+'h | Maths '+(sub.maths/60).toFixed(1)+'h | Total '+(weekMins/60).toFixed(1)+'h');
+  lines.push('Quest completion: '+questRate+'% | Avg session rating: '+avgRating+'/5');
+  lines.push('Day-by-day:');
+  last7.forEach(function(d){
+    var daySess=S.sessions.filter(function(s){return s.date===d&&!s.paused;});
+    var dayMins=daySess.reduce(function(a,s){return a+s.min;},0);
+    var dn=new Date(d+'T12:00:00').toLocaleDateString('en-IN',{weekday:'short'});
+    if(!dayMins){lines.push('  '+d+' ('+dn+'): No sessions');return;}
+    var detail=daySess.map(function(s){return s.sub+' '+(s.min)+'min';}).join(', ');
+    lines.push('  '+d+' ('+dn+'): '+(dayMins/60).toFixed(1)+'h — '+detail);
+  });
+  // Peak study hour analysis
+  var hourBuckets={};
+  S.sessions.filter(function(s){return !s.paused&&s.time;}).forEach(function(s){
+    try{var t2=s.time.match(/(\d+):(\d+)\s*(AM|PM)?/i);if(!t2)return;var h=parseInt(t2[1])+(t2[3]&&t2[3].toUpperCase()==='PM'&&t2[1]!=='12'?12:0)+(t2[3]&&t2[3].toUpperCase()==='AM'&&t2[1]==='12'?-12:0);if(!hourBuckets[h])hourBuckets[h]={count:0,mins:0,stars:[]};hourBuckets[h].count++;hourBuckets[h].mins+=s.min;var sr=s.stars||s.rating;if(sr)hourBuckets[h].stars.push(sr);}catch(e){}
+  });
+  var peakHours=Object.entries(hourBuckets).sort(function(a,b){return b[1].mins-a[1].mins;}).slice(0,3);
+  if(peakHours.length){lines.push('Peak study hours: '+peakHours.map(function(e){var hr=parseInt(e[0]);var label=(hr===0?'12 AM':hr<12?hr+' AM':hr===12?'12 PM':(hr-12)+' PM');var avg=e[1].stars.length?(e[1].stars.reduce(function(a,v){return a+v;},0)/e[1].stars.length).toFixed(1):'?';return label+' ('+e[1].count+' sessions, avg ★'+avg+')';}).join(' | '));}
+  return lines.join('\n');
+})()}
 
 === TESTS ===
 Recent avg: ${avgTest}% (last ${recentTests.length} tests)
-${recentTests.slice(-3).map(t=>`  ${t.date}: PHY${t.phy} CHE${t.che} MAT${t.mat} = ${t.total}/${t.max||300} (${Math.round(t.total/(t.max||300)*100)}%)`).join('\n')||'  No tests yet'}
-${Object.keys(boardAvg).length?'Board averages: '+Object.entries(boardAvg).map(([k,v])=>k+' '+v+'%').join(' | '):''}
+${recentTests.slice(-5).map(function(t){
+  var pct=Math.round(t.total/(t.max||300)*100);
+  var line='  '+t.date+' ['+( t.type||'test')+']: PHY '+t.phy+' CHE '+t.che+' MAT '+t.mat+' = '+t.total+'/'+(t.max||300)+' ('+pct+'%)';
+  if(t.chapters)line+=' chapters:'+t.chapters;
+  if(t.notes)line+=' note:'+t.notes;
+  if(t.weakTopics&&t.weakTopics.length)line+='\n    Weak from test: '+t.weakTopics.map(function(w){return w.name+'('+w.subject+')';}).join(', ');
+  return line;
+}).join('\n')||'  No tests yet'}
+${Object.keys(boardAvg).length?'Board averages: '+Object.entries(boardAvg).map(function(e){return e[0]+' '+e[1]+'%';}).join(' | '):''}
+${(S.boardTests&&S.boardTests.length?'Recent board tests: '+S.boardTests.slice(-3).map(function(bt){return bt.date+' '+bt.subj+' '+bt.pct+'%';}).join(' | '):'')}
 
 === TOPIC CONFIDENCE ===
 Overall avg: ${avgConf}% | Mastered: ${strongT}/${allT.length}
@@ -9204,6 +9268,43 @@ ${(function(){
     sections['tier'+meta.tier].push(entry);
   });
   return '=== DIMENSION TRAINING STATUS ===\nPriority: Train Tier1 first — they unlock everything above.\nTier1 Foundation: '+sections.tier1.join(' | ')+'\nTier2 Unlocked: '+sections.tier2.join(' | ')+'\nTier3 Social: '+sections.tier3.join(' | ')+'\nTier4 Peak: '+sections.tier4.join(' | ');
+})()}
+${(function(){
+  var pin=S.pinnedPlan&&S.pinnedPlan[t];
+  if(!pin||!pin.items||!pin.items.length)return '=== TODAY\'S PLAN ===\nNo plan set yet.';
+  var done=pin.items.filter(function(i){return i.done;}).length;
+  var lines=['=== TODAY\'S PLAN === (source: '+(pin.source||'manual')+') '+done+'/'+pin.items.length+' done'];
+  pin.items.forEach(function(item){lines.push('  '+(item.done?'\u2713':'\u25cb')+' ['+(item.type||'task')+'] '+item.text);});
+  return lines.join('\n');
+})()}
+${(function(){
+  var pastKeys=Object.keys(S.pinnedPlan||{}).filter(function(d){return d!==t;}).sort().slice(-7);
+  if(!pastKeys.length)return '';
+  var lines=['=== PAST PLANS (completion history) ==='];
+  pastKeys.reverse().forEach(function(d){
+    var plan=S.pinnedPlan[d];if(!plan||!plan.items||!plan.items.length)return;
+    var done=plan.items.filter(function(i){return i.done;}).length;
+    var total=plan.items.length;
+    lines.push(d+': '+done+'/'+total+' done ('+(total>0?Math.round(done/total*100):0)+'%) source:'+(plan.source||'manual'));
+    var skipped=plan.items.filter(function(i){return !i.done;});
+    if(skipped.length)lines.push('  Skipped: '+skipped.slice(0,3).map(function(i){return i.text.slice(0,45);}).join(' | '));
+  });
+  return lines.join('\n');
+})()}
+${(function(){
+  var lines=['=== HUNTER STATUS ==='];
+  var daysOnSystem=S.hunter.startDate?Math.max(1,Math.ceil((new Date()-new Date(S.hunter.startDate))/86400000)):1;
+  lines.push('Focus: '+(S.hunter.focusStat||50)+'/100 | Discipline: '+(S.hunter.disciplineStat||50)+'/100 | Days on system: '+daysOnSystem);
+  var sprintActive=Math.max(0,Math.ceil((new Date(S.examDate||'2026-05-18')-new Date())/86400000))<=30;
+  if(sprintActive)lines.push('SPRINT MODE ACTIVE — under 30 days to exam.');
+  var wkStr=(function(){var d=new Date();var s=new Date(d.getFullYear(),0,4);return d.getFullYear()+'W'+Math.ceil(((d-s)/86400000+s.getDay()+1)/7);})();
+  lines.push('Weekly boss: '+(!!(S.weeklyBoss&&S.weeklyBoss[wkStr])?'Defeated this week':'Not defeated yet'));
+  var notices=(S.ayanoNotices||[]).filter(function(n){return n.date===t;});
+  if(notices.length)lines.push('Active notices: '+notices.map(function(n){return '['+n.severity+'] '+n.text;}).join(' | '));
+  var dnotes=S.dailyNotes||{};
+  var noteKeys=Object.keys(dnotes).sort().slice(-5);
+  if(noteKeys.length)lines.push('Recent notes: '+noteKeys.map(function(d){return d+': '+dnotes[d];}).join(' | '));
+  return lines.join('\n');
 })()}
 ${buildMemoryContext()}
 === END ===`.trim();
@@ -9429,6 +9530,9 @@ function addPinnedItem(){
   if(!S.pinnedPlan)S.pinnedPlan={};
   if(!S.pinnedPlan[t])S.pinnedPlan[t]={date:t,items:[]};
   S.pinnedPlan[t].items.push({text:text,done:false,type:'task'});
+  if(!S.activityLog)S.activityLog=[];
+  S.activityLog.unshift({type:'plan_manual_add',date:t,time:new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',hour12:true}),task:text});
+  if(S.activityLog.length>100)S.activityLog=S.activityLog.slice(0,100);
   save();renderTodaysMission();
 }
 function togglePinnedItem(idx){
