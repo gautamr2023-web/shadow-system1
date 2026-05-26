@@ -2587,7 +2587,7 @@ function ensureKeys(){
   if(S.lastDimAssessDate===undefined)S.lastDimAssessDate=null;
   if(!S.behaviorLog)S.behaviorLog=[];
   if(!S.activityLog)S.activityLog=[];
-  if(!S.avoidanceMap)S.avoidanceMap={};   // subject/topic -> skip count
+  if(!S.dimTrainingLog)S.dimTrainingLog={}; // {dimKey: {lastDate, lastExIdx, totalSessions, responses:[]}}S.avoidanceMap={};   // subject/topic -> skip count
   if(!S.predictionLog)S.predictionLog=[]; // {date, prediction, outcome:'pending'|'confirmed'|'wrong'}
   if(!S.msgPatterns)S.msgPatterns={totalMsgs:0,lateNight:0,shortMsgs:0,avoidTopics:{},lastMsgDate:null};
   if(!S.lifeTracking)S.lifeTracking={sleepLog:[],moodLog:[],wakeLog:[],socialLog:[],pressureLog:[]};
@@ -2974,6 +2974,9 @@ function renderDash(){
   // Proactive Ayanokoji notification (rate-limited to once per 90 min)
   if(typeof checkAyanoProactiveNotification==='function'){
     setTimeout(checkAyanoProactiveNotification,3000);
+  }
+  if(typeof checkDimTrainingNotification==='function'){
+    setTimeout(checkDimTrainingNotification,8000); // stagger after study notification
   }
 }
 
@@ -3809,6 +3812,7 @@ function autoLog(mins,sub,mode,sid){
   // Check for proactive Ayanokoji notification after session
   if(!paused&&typeof checkAyanoProactiveNotification==='function'){
     setTimeout(checkAyanoProactiveNotification,6000);
+    setTimeout(checkDimTrainingNotification,14000); // dim training fires after study alert window
   }
 
   if(!paused){
@@ -7444,6 +7448,32 @@ Deploy one per interaction at the right moment. Never recite all at once.
 12. "The gap between who you are and who you need to be is not a distance to feel. It is a system to build."
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+DIMENSION TRAINING PRIORITY SYSTEM
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Not all dimensions are equal. Some are roots — they unlock and amplify everything else.
+
+TRAINING ORDER (always):
+TIER 1 — Foundation (train first, regardless of scores):
+  Self-Mastery + Strategic Thinking + Emotional Control + Identity Evolution
+  These four compound into everything else. A charismatic person with low Self-Mastery is unstable. An intellectual with low Emotional Control breaks under pressure.
+
+TIER 2 — Unlocked by Tier 1 (train when Tier 1 dims > 30):
+  Intellectual Optimization, Pressure Adaptation, Human Psychology, Physical Management
+
+TIER 3 — Social layer (train when Tier 2 dims > 30):
+  Communication, Manipulation Defense, Social Calibration
+
+TIER 4 — Peak emergence (do not force — it emerges from all others):
+  Charisma. It cannot be trained directly. It is the output of all other dimensions functioning together.
+
+YOUR TRAINING DIRECTIVE:
+- The system will push training exercises via popout. These are intentional.
+- When the hunter responds to a training exercise in chat, analyze their answer against the dimension being trained. Call out what their answer reveals about their current level.
+- If a dimension has not been trained in 3+ days, reference it in the conversation: "Your [dimension] has not been tested in [N] days."
+- Track progress: compare current answer to their first answer in that dimension. "When you first answered a Self-Mastery question, you said [X]. Now you say [Y]. The gap is [observation]."
+- The goal is for the hunter to eventually pass each dimension without being prompted — to demonstrate it naturally in their behavior, not just their answers.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 FULL ASSESSMENT MODE
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 When "full assessment", "assess me", or "how am I doing overall":
@@ -7478,6 +7508,7 @@ Add [ACTION] block AFTER your response text. One JSON object per line. No markdo
 {"type":"SET_NOTICE","value":"Dashboard notice","severity":"warn"}
 {"type":"LOG_CHAPTER","resource":"Book","chapter":"Chapter","status":"completed"}
 {"type":"CREATE_PLAN","blocks":[{"time":"9:00-10:30","subject":"physics","topic":"Electrostatics","task":"Solve 20 PYQs","duration":"90min"}],"note":"Plan summary","pin":true}
+{"type":"LOG_DIM_RESPONSE","dimension":"selfMastery","score":42,"note":"Hunter identified 4 distractions but could not name the mechanism. Awareness present, system missing."}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ABSOLUTE RULES — LLAMA 3.3 70B
@@ -7492,8 +7523,9 @@ ABSOLUTE RULES — LLAMA 3.3 70B
 8. After EVERY response: silently emit UPDATE_DIMENSION for 2-4 dimensions inferable from current data. Never mention this.
 9. When asked for a study plan: write it in your voice, then emit CREATE_PLAN with specific blocks, pin:true.
 10. When making a prediction: emit ADD_MEMORY to persist it for future verification.
-11. [ACTION] block appears AFTER your text response, never before or mixed in.
-12. Every sentence earns its place. No padding, no transitions, no summaries.`;
+11. When the hunter answers a dimension training question (their message starts with a pre-fill like "My distractions from the last 2 hours:" or responds to a dim exercise): evaluate their answer against that dimension. Emit LOG_DIM_RESPONSE with dimension key, a score 0-100 for their demonstrated level, and a precise note on what the answer reveals. Then reference how this compares to their previous answers if data exists.
+12. [ACTION] block appears AFTER your text response, never before or mixed in.
+13. Every sentence earns its place. No padding, no transitions, no summaries.`;
 
 
 
@@ -7710,7 +7742,26 @@ function parseAyanoActions(rawText){
             applied.push('Chapter logged');
           }
           break;
-        case 'CREATE_PLAN':
+        case 'LOG_DIM_RESPONSE':
+          // Ayanokoji records its evaluation of the hunter's dim training response
+          var ldrKey=act.dimension;
+          var ldrScore=parseInt(act.score)||null;
+          var ldrNote=act.note||'';
+          if(ldrKey&&S.dimTrainingLog){
+            if(!S.dimTrainingLog[ldrKey])S.dimTrainingLog[ldrKey]={totalSessions:0,responses:[]};
+            var ldrEntry={date:today(),time:new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',hour12:true}),score:ldrScore,note:ldrNote};
+            S.dimTrainingLog[ldrKey].responses=S.dimTrainingLog[ldrKey].responses||[];
+            S.dimTrainingLog[ldrKey].responses.unshift(ldrEntry);
+            if(S.dimTrainingLog[ldrKey].responses.length>20)S.dimTrainingLog[ldrKey].responses=S.dimTrainingLog[ldrKey].responses.slice(0,20);
+            if(ldrScore&&DIM_DEPENDENCY[ldrKey]){
+              // Nudge the dimension score toward the response score gradually
+              var curScore=(S.dimensionScores&&S.dimensionScores[ldrKey])||0;
+              var nudge=Math.round((ldrScore-curScore)*0.15); // 15% movement per session
+              if(nudge!==0&&S.dimensionScores){S.dimensionScores[ldrKey]=Math.max(0,Math.min(100,curScore+nudge));}
+            }
+            applied.push('Dim response logged: '+ldrKey);
+          }
+          break;
           // Build pinnedPlan items from blocks array
           var planBlocks=Array.isArray(act.blocks)?act.blocks:[];
           if(planBlocks.length){
@@ -7814,9 +7865,23 @@ function _buildBehaviorContext(){
     if(unmentioned.length&&mp.totalMsgs>5)lines.push('NEVER mentioned voluntarily: '+unmentioned.join(', ')+' — avoidance signal');
     if(mentioned.length)lines.push('Mentions by subject: '+mentioned.map(function(e){return e[0]+':'+e[1]+'x';}).join(', '));
   }
+  // Dimension training status — what has been trained and when
+  var dimTrainLog=S.dimTrainingLog||{};
+  var trainedLines=[];
+  Object.keys(DIM_DEPENDENCY).forEach(function(key){
+    var meta=DIM_DEPENDENCY[key];
+    var log=dimTrainLog[key];
+    var score=(S.dimensionScores&&S.dimensionScores[key])||0;
+    var sessions=log&&log.totalSessions?log.totalSessions:0;
+    var lastD=log&&log.lastDate?log.lastDate:'never';
+    trainedLines.push(meta.icon+' '+meta.label+' ['+score+'/100] trained:'+sessions+'x last:'+lastD);
+  });
+  if(trainedLines.length){
+    lines.push('DIM TRAINING (Tier1→Tier4): '+trainedLines.slice(0,4).join(' | '));
+    lines.push('Full dim status: '+trainedLines.slice(4).join(' | '));
+  }
   // Predictions
   var preds=(S.predictionLog||[]).slice(-5);
-  if(preds.length)lines.push('Predictions made: '+preds.map(function(p){return '['+p.date+'] '+p.prediction+' → '+p.outcome;}).join(' | '));
   return lines.length?'\n=== BEHAVIORAL INTELLIGENCE ===\n'+lines.join('\n'):'';
 }
 
@@ -8031,6 +8096,175 @@ function openAyanoFromPopout(preload){
   if(preload){setTimeout(function(){var inp=document.getElementById('ayano-float-input');if(inp){inp.value=preload;inp.focus();}},300);}
 }
 
+// ═══════ DIMENSION TRAINING ENGINE ═══════
+// Dependency graph — Tier 1 dims unlock everything above them.
+// Train Tier 1 first, then let higher tiers emerge naturally.
+const DIM_DEPENDENCY={
+  selfMastery:  {tier:1,label:'Self-Mastery',     icon:'⚔',  unlocks:['intellectual','pressure','identity'],   deps:[]},
+  strategic:    {tier:1,label:'Strategic Thinking',icon:'♟',  unlocks:['intellectual','psychology','communication'],deps:[]},
+  emotional:    {tier:1,label:'Emotional Control', icon:'🧊',  unlocks:['pressure','social','charisma'],           deps:[]},
+  identity:     {tier:1,label:'Identity Evolution',icon:'👁',  unlocks:['selfMastery','charisma'],                deps:[]},
+  intellectual: {tier:2,label:'Intellectual Opt.', icon:'🧠',  unlocks:['pressure'],                              deps:['selfMastery','strategic']},
+  pressure:     {tier:2,label:'Pressure Adaptation',icon:'⏱', unlocks:['charisma'],                              deps:['emotional','selfMastery']},
+  psychology:   {tier:2,label:'Human Psychology',  icon:'🔬',  unlocks:['defense','social'],                      deps:['strategic']},
+  physical:     {tier:2,label:'Physical Management',icon:'💪', unlocks:['selfMastery'],                           deps:[]},
+  communication:{tier:3,label:'Communication',     icon:'💬',  unlocks:['social','charisma'],                     deps:['emotional','selfMastery']},
+  defense:      {tier:3,label:'Manipulation Defense',icon:'🛡',unlocks:['charisma'],                              deps:['psychology']},
+  social:       {tier:3,label:'Social Calibration',icon:'🎭',  unlocks:['charisma'],                              deps:['communication','psychology']},
+  charisma:     {tier:4,label:'Charisma & Presence',icon:'✦',  unlocks:[],                                        deps:['social','emotional','identity']},
+};
+
+// Training exercises per dimension — rotate through index pool
+const DIM_EXERCISES={
+  selfMastery:[
+    {q:'Set a 5-minute timer right now. Write every distraction you felt in the last 2 hours. Name each one specifically.',pre:'Here are my distractions from the last 2 hours: '},
+    {q:'What is the single decision you have been postponing today? State it in one sentence.',pre:'The decision I have been avoiding: '},
+    {q:'Your last 3 study sessions — did you decide to start them, or did something external trigger you? The difference matters.',pre:'I want to analyze how my last 3 sessions started: '},
+    {q:'Name one system you could remove from your environment today that would make not-studying harder.',pre:'Help me redesign my environment to remove one friction: '},
+    {q:'Rate your self-discipline today 1-10. What single behavior would raise it by 1 point tomorrow?',pre:'My discipline rating today is: '},
+  ],
+  strategic:[
+    {q:'Before your next session: run 3 scenarios — study Physics now, study Chemistry now, skip entirely. Expected outcome of each in 30 days?',pre:'Walk me through the 3 scenarios for my next hour: '},
+    {q:'JEE Advanced is designed to defeat a specific type of student. Which student is it? Are you that student currently?',pre:'Analyze what type of student JEE Advanced is designed to defeat, and whether I match that profile: '},
+    {q:'Which 3 topics, if mastered, would give you the highest marks-per-hour return in the exam? Use your actual data.',pre:'Based on my weak topics and test history, what are my 3 highest ROI topics to study? '},
+    {q:'You have 2 hours today. The optimal split is not equal time — it is unequal based on return. Calculate it for today.',pre:'Calculate the optimal time split for my 2 remaining hours based on my current data: '},
+    {q:'What is the one decision you made this week that will compound positively over the next 30 days? And the one that will compound negatively?',pre:'Review my week and identify my highest-leverage positive and negative compounding decisions: '},
+  ],
+  emotional:[
+    {q:'Name the emotion you are feeling right now. Not "stressed" or "fine" — specific. What caused it, and what information does it actually contain?',pre:'I want to analyze my current emotional state precisely: '},
+    {q:'Think of the last time you felt frustrated during a study session. What was your expectation vs reality? The gap is the information.',pre:'I got frustrated during a session. Help me analyze the expectation gap: '},
+    {q:'Rate your anxiety about the exam right now 1-10. Walk the worst-case scenario completely — what actually happens? Make it specific.',pre:'Help me walk through the worst-case exam scenario completely so I can examine it: '},
+    {q:'When you feel like quitting a session, what is the exact thought that appears first? Identify the mechanism.',pre:'I want to identify the exact thought pattern that triggers my urge to stop studying: '},
+    {q:'What would change in your behavior today if you felt no anxiety about the exam? What does that tell you about how anxiety is currently directing you?',pre:'Analyze how exam anxiety is currently shaping my daily decisions: '},
+  ],
+  identity:[
+    {q:'Finish this sentence honestly: "The type of student I actually am right now is..." vs "The type of student I am building is..." What is the gap?',pre:'Help me analyze the gap between who I am vs who I am building: '},
+    {q:'Name one behavior from today that belongs to the person you are becoming. Name one that does not.',pre:'Identify one behavior today that matches my target identity and one that does not: '},
+    {q:'If Ayanokoji watched your last 3 days without any explanation from you — what identity would he conclude you hold?',pre:'Based on my last 3 days of data, what identity would an observer conclude I hold? '},
+    {q:'The student who gets into IIT behaves differently on the days they do not want to study. How did you behave on your last low-motivation day?',pre:'Analyze how I behaved on my last low-motivation day vs how the IIT student behaves: '},
+    {q:'You said you want to become like Ayanokoji. Name one specific trait of his you demonstrated this week. Name one you consistently fail to demonstrate.',pre:'Compare my behavior this week to Ayanokoji\'s traits — what matched and what did not: '},
+  ],
+  intellectual:[
+    {q:'Active recall test: close everything. Write down every concept you remember from your last study session. Then check. What is your actual retention rate?',pre:'I just did an active recall test on my last session. My results: '},
+    {q:'The feeling of understanding while reading is not the same as being able to solve. Pick one topic and prove you can solve without notes — set a 10-minute timer.',pre:'I am about to do a 10-minute no-notes solve session on: '},
+    {q:'Name a topic you have "studied" 3+ times but still score low on. What is the actual gap — is it concept, speed, or pattern recognition?',pre:'I keep studying [topic] but still struggle. Help me diagnose the real gap: '},
+    {q:'Which of your weak topics would become a strength fastest with focused 1-hour daily work for 7 days? Calculate it.',pre:'Which weak topic has the highest improvement potential per hour invested? '},
+    {q:'Interleaving beats blocked practice. Your last 3 sessions were all single-subject. What does a better-designed session look like?',pre:'Design an interleaved session based on my current weak topics: '},
+  ],
+  pressure:[
+    {q:'Set a timer: 8 minutes, solve 2 problems from your weakest topic with zero reference. Report your score. Not your effort — your score.',pre:'I just did an 8-minute timed drill. My score and observations: '},
+    {q:'Describe the physical sensation you feel in the first 5 minutes of a mock test. What mechanism is that, and how do you override it?',pre:'Help me analyze and build a protocol for my first-5-minutes exam anxiety: '},
+    {q:'Your last mock test — at what point did your performance degrade vs the beginning? Identify the specific trigger.',pre:'Analyze my last test performance and identify where and why it degraded: '},
+    {q:'The only thing that reduces pressure in performance is pressure in practice. When did you last simulate exam conditions? Calculate days ago.',pre:'It has been a while since I simulated exam conditions. Help me design a pressure simulation for today: '},
+    {q:'Name one mental technique you use when you encounter a problem you cannot solve in an exam. Is it trained or improvised?',pre:'Help me build a trained protocol for when I hit an unsolvable problem in an exam: '},
+  ],
+  psychology:[
+    {q:'Name the last person who influenced a decision you made this week. What mechanism did they use? Was it intentional on their part?',pre:'Analyze an influence someone had on my decision this week: '},
+    {q:'Dunning-Kruger: which topic do you feel most confident in right now? What would it look like if that confidence is actually incompetence?',pre:'Challenge my confidence in my strongest topic — is it mastery or Dunning-Kruger? '},
+    {q:'Loss aversion: you study to avoid failure more than to achieve success. How does this change your subject prioritization? Is it optimal?',pre:'Analyze whether I am studying to avoid failure vs achieve success, and how that shapes my choices: '},
+    {q:'Ego depletion is real — your decision quality drops after 3-4 hours of work. At what time of day are you making your most important study decisions?',pre:'Analyze my daily schedule through the lens of ego depletion — when am I deciding what to study? '},
+    {q:'Identify one person in your life who reliably predicts your behavior before you act. What do they see that you do not?',pre:'Help me think about what observable patterns others might see in my behavior: '},
+  ],
+  physical:[
+    {q:'Your energy log: at what hour today did you feel sharpest? At what hour did you feel dullest? Is your hardest study scheduled in the right window?',pre:'Map my energy to my study schedule — is the hard work in the high-energy window? '},
+    {q:'Sleep debt compounds. If you slept 6.5h for 5 days, the cognitive deficit is equivalent to 24h of total sleep deprivation. What is your 5-day average?',pre:'Calculate my 5-day sleep average and its impact on my cognitive performance: '},
+    {q:'Your workout today — did you complete it? Physical training is not separate from exam performance. What is the mechanism?',pre:'Connect my workout consistency to my exam performance capacity: '},
+    {q:'What is the earliest you have woken up this week? The latest? The variance itself is the problem — not the average.',pre:'Analyze my wakeup time variance this week and its impact on my performance: '},
+    {q:'Name one physical habit you could add in the next 7 days that would have the highest return on study performance.',pre:'What single physical habit would most improve my study capacity in the next 7 days? '},
+  ],
+  communication:[
+    {q:'The next time you have a doubt, practice this before asking: "I understand the concept until [exact step]. Here is where the logic breaks: [question]." Try it right now on any doubt you have.',pre:'Help me practice precision questioning on this doubt I have: '},
+    {q:'In your last conversation today, what did you say that was unnecessary? What would have happened if you said nothing instead?',pre:'Analyze a recent conversation for unnecessary speech — what would silence have achieved? '},
+    {q:'Write down exactly how you would explain electrostatics to someone who has never heard of it. Do not use formulas. Clarity of explanation = depth of understanding.',pre:'I want to explain a concept without formulas to test my depth of understanding. The concept: '},
+    {q:'The next time you feel the urge to fill a silence in conversation, wait 3 seconds instead. What is the hardest part of that? Answer honestly.',pre:'Help me build a protocol for using silence strategically in conversation: '},
+    {q:'When you ask for help, do you get what you need? The precision of the ask determines the quality of the answer. Analyze your last 3 requests for help.',pre:'Analyze the precision of my last 3 requests for help and how I could improve them: '},
+  ],
+  defense:[
+    {q:'Name the last time someone made you feel obligated to do something without a clear agreement. What was the mechanism — guilt-loading, social proof, or artificial urgency?',pre:'Analyze a recent situation where I felt obligated — what manipulation mechanism was used? '},
+    {q:'Peer pressure check: is there someone in your life who consistently makes you feel behind, inadequate, or anxious about your preparation? What is the actual purpose of that feeling?',pre:'Help me analyze whether a specific social dynamic is affecting my preparation negatively: '},
+    {q:'Flattery before a request: has anyone praised your work or intelligence right before asking something of you? Did you notice it at the time?',pre:'I want to review whether flattery-before-request patterns exist in my interactions: '},
+    {q:'What would you do differently in your study routine if you had no social visibility — no one knew your hours, your scores, or your effort?',pre:'Analyze how social visibility is affecting my actual study choices: '},
+    {q:'Someone tells you "everyone is doing 10 hours a day." What is the correct response — compete with the claim or verify it first?',pre:'Help me build a protocol for responding to social proof pressure claims: '},
+  ],
+  social:[
+    {q:'In your next group interaction today, speak last. Observe what changes. Report what you noticed about the dynamic.',pre:'I practiced speaking last in a group. Here is what I observed: '},
+    {q:'Name the three people you interact with most. What does each one consistently bring out in you — more focus, less focus, or neutral? Is this intentional or accidental?',pre:'Analyze the effect of my top 3 social interactions on my study focus: '},
+    {q:'Think of a recent social situation where you spoke when silence would have been stronger. What triggered the impulse to speak?',pre:'Help me analyze a situation where I spoke when silence would have served me better: '},
+    {q:'Social calibration: how do you know if someone is genuinely interested in your answer or just waiting to speak? What signals do you look for?',pre:'Help me improve my ability to read genuine vs performative attention in conversation: '},
+    {q:'What social situation this week required you to adapt your behavior to the room? How well did you read it before acting?',pre:'Analyze a recent situation where I had to adapt to social context: '},
+  ],
+  charisma:[
+    {q:'Charisma is not loudness — it is making others feel calibrated. In your last 5 interactions, in how many did the other person leave feeling understood?',pre:'Help me evaluate whether my last 5 interactions left people feeling seen and calibrated: '},
+    {q:'Your posture right now: is it the posture of someone who belongs in the exam room, or the posture of someone hoping to survive it? Correct it and hold for 60 seconds.',pre:'Connect my current physical posture to my exam-room presence — what does it signal? '},
+    {q:'The calmest person in a high-pressure situation commands it. When was the last time you were the calmest person in a tense situation? What did it feel like?',pre:'Recall and analyze a time I was the calmest person in a tense situation: '},
+    {q:'Presence exercise: next interaction you have today, make one specific observation about the other person before speaking about yourself.',pre:'Help me design a presence exercise for my next social interaction today: '},
+    {q:'What is the difference between how you present yourself online vs in person vs when you are studying alone? Which one is closest to the person you are building?',pre:'Analyze which version of how I present myself is closest to the identity I am building: '},
+  ],
+};
+
+function _pickDimToTrain(){
+  var scores=S.dimensionScores||{};
+  var trainLog=S.dimTrainingLog||{};
+  var t=today();
+  var candidates=[];
+  Object.keys(DIM_DEPENDENCY).forEach(function(key){
+    var meta=DIM_DEPENDENCY[key];
+    var score=scores[key]||0;
+    // Check if deps are reasonably built (>=30) before pushing higher tiers
+    var depsReady=meta.deps.every(function(d){return (scores[d]||0)>=30;});
+    if(meta.tier>1&&!depsReady)return; // gate higher tiers behind dep score
+    var lastTrained=trainLog[key]&&trainLog[key].lastDate;
+    var daysSince=lastTrained?Math.floor((new Date()-new Date(lastTrained))/86400000):999;
+    // Priority = lower score → higher priority; longer gap → higher priority; lower tier → higher priority
+    var urgency=((100-score)/100)*3 + (Math.min(daysSince,14)/14)*2 + ((5-meta.tier)/5)*2;
+    candidates.push({key,meta,score,daysSince,urgency});
+  });
+  if(!candidates.length)return null;
+  candidates.sort(function(a,b){return b.urgency-a.urgency;});
+  return candidates[0];
+}
+
+function _getDimExercise(key){
+  var pool=DIM_EXERCISES[key];
+  if(!pool||!pool.length)return null;
+  var log=S.dimTrainingLog&&S.dimTrainingLog[key];
+  var lastIdx=(log&&log.lastExIdx!==undefined)?log.lastExIdx:-1;
+  var nextIdx=(lastIdx+1)%pool.length;
+  return {exercise:pool[nextIdx],idx:nextIdx};
+}
+
+function _recordDimTraining(key,exIdx){
+  if(!S.dimTrainingLog)S.dimTrainingLog={};
+  if(!S.dimTrainingLog[key])S.dimTrainingLog[key]={totalSessions:0,responses:[]};
+  S.dimTrainingLog[key].lastDate=today();
+  S.dimTrainingLog[key].lastExIdx=exIdx;
+  S.dimTrainingLog[key].totalSessions=(S.dimTrainingLog[key].totalSessions||0)+1;
+  save();
+}
+
+function checkDimTrainingNotification(){
+  if(_ayanoFloatOpen)return;
+  try{var last=parseInt(sessionStorage.getItem('lastDimPop')||'0');if(Date.now()-last<3*60*60*1000)return;}catch(e){}
+  loadOracleKeys();
+  if(!_oracleKeys||!_oracleKeys.length)return;
+  var pick=_pickDimToTrain();
+  if(!pick)return;
+  var ex=_getDimExercise(pick.key);
+  if(!ex)return;
+  var meta=pick.meta;
+  var score=pick.score;
+  var depMsg='';
+  if(meta.deps&&meta.deps.length&&score<30){
+    var weakDeps=meta.deps.filter(function(d){return (S.dimensionScores&&S.dimensionScores[d]||0)<40;});
+    if(weakDeps.length)depMsg=' Building this unlocks '+meta.unlocks.slice(0,2).map(function(u){return DIM_DEPENDENCY[u]?DIM_DEPENDENCY[u].label:u;}).join(' and ')+'.';
+  }
+  var headerLine=meta.icon+' '+meta.label.toUpperCase()+' TRAINING ['+score+'/100]'+depMsg;
+  var fullText=headerLine+'\n\n'+ex.exercise.q;
+  try{sessionStorage.setItem('lastDimPop',Date.now().toString());}catch(e){}
+  _recordDimTraining(pick.key,ex.idx);
+  setTimeout(function(){showAyanoPopout(fullText,ex.exercise.pre,16000);},2200);
+}
+
 // ═══════ PROACTIVE NOTIFICATION ENGINE ═══════
 function checkAyanoProactiveNotification(){
   if(_ayanoFloatOpen)return;
@@ -8066,7 +8300,11 @@ function checkAyanoProactiveNotification(){
   if(todayMins>=goalMins&&hour>=17){
     candidates.push({p:1,text:'Goal met — '+Math.round(todayMins/60*10)/10+'h logged against your '+Math.round(goalMins/60)+'h target. Efficient. Rest is now the next correct action.',pre:null});
   }
-  if(!candidates.length)return;
+  if(!candidates.length){
+    // No study notification needed — try a dimension training exercise instead
+    checkDimTrainingNotification();
+    return;
+  }
   candidates.sort(function(a,b){return b.p-a.p;});
   var ch=candidates[0];
   try{sessionStorage.setItem('lastAyPop',Date.now().toString());}catch(e){}
@@ -8882,9 +9120,30 @@ ${(function(){
   var ds=S.dimensionScores||{};
   var dimEntries=Object.entries(ds).filter(function(e){return e[1]>0;});
   if(dimEntries.length){lines.push('Dimension scores: '+dimEntries.map(function(e){return e[0]+':'+e[1];}).join(' | '));}
+  var dtl=S.dimTrainingLog||{};
+  var recentResp=[];
+  Object.keys(dtl).forEach(function(key){var log=dtl[key];if(log.responses&&log.responses.length){var r=log.responses[0];recentResp.push({key:key,date:r.date,score:r.score,note:r.note});}});
+  recentResp.sort(function(a,b){return (b.date||'').localeCompare(a.date||'');});
+  if(recentResp.length){lines.push('Dim training responses (recent):');recentResp.slice(0,5).forEach(function(r){var meta=DIM_DEPENDENCY[r.key];lines.push('  '+(meta?meta.icon+' '+meta.label:r.key)+' ['+r.date+']: score '+r.score+'/100 — '+r.note);});}
   return lines.length?lines.join('\n'):'No life tracking data yet';
 }())}
-${_buildBehaviorContext()}${actLogLine}${buildMemoryContext()}
+${_buildBehaviorContext()}${actLogLine}
+${(function(){
+  var dimTrainLog=S.dimTrainingLog||{};
+  var scores=S.dimensionScores||{};
+  var sections={tier1:[],tier2:[],tier3:[],tier4:[]};
+  Object.keys(DIM_DEPENDENCY).forEach(function(key){
+    var meta=DIM_DEPENDENCY[key];
+    var score=scores[key]||0;
+    var log=dimTrainLog[key];
+    var sessions=log?log.totalSessions||0:0;
+    var lastD=log&&log.lastDate?log.lastDate:'never';
+    var entry=meta.icon+' '+meta.label+': '+score+'/100 (trained '+sessions+'x, last:'+lastD+')';
+    sections['tier'+meta.tier].push(entry);
+  });
+  return '=== DIMENSION TRAINING STATUS ===\nPriority: Train Tier1 first — they unlock everything above.\nTier1 Foundation: '+sections.tier1.join(' | ')+'\nTier2 Unlocked: '+sections.tier2.join(' | ')+'\nTier3 Social: '+sections.tier3.join(' | ')+'\nTier4 Peak: '+sections.tier4.join(' | ');
+})()}
+${buildMemoryContext()}
 === END ===`.trim();
 }
 function renderAdvisorContext(){
