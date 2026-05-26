@@ -1747,7 +1747,7 @@ input.fi:focus,select.fi:focus{
     </div>
     <div style="font-size:11px;color:var(--text2);margin-bottom:14px">Updated by Ayanokoji after each assessment. Start a conversation to begin tracking.</div>
     <div id="dimensions-grid" style="display:grid;gap:8px"></div>
-    <div class="chart-wrap" style="height:220px;margin-top:16px"><canvas id="ch-dimensions"></canvas></div>
+    <div class="chart-wrap" style="height:420px;margin-top:16px"><canvas id="ch-dimensions"></canvas></div>
   </div>
 
   <!-- BURNOUT WARNING (shown only when risk detected) -->
@@ -2375,8 +2375,17 @@ const RANK_ORDER=['E','D','C','B','A','S','SS','SSS'];
 function capXPToRank(){
   const rk=S.hunter.rank||'E';
   const rankData=RANKS.find(r=>r.r===rk)||RANKS[0];
-  const ceiling=rankData.max-1;
+  if(rankData.max===Infinity)return; // SSS — no ceiling
+  const ceiling=rankData.max; // INCLUSIVE — allows reaching the promotion threshold
   if((S.hunter.xp||0)>ceiling)S.hunter.xp=ceiling;
+  S.hunter.xp=Math.max(0,Math.floor(S.hunter.xp||0)); // always integer, never negative
+}
+
+// Central XP adder — always caps, always integer, always triggers rank check
+function addXP(amount){
+  if(!amount||amount<=0)return;
+  S.hunter.xp=Math.floor((S.hunter.xp||0)+amount);
+  capXPToRank();
 }
 
 function applyXPDecay(){
@@ -2793,7 +2802,7 @@ function checkRankUp(){
   if(xp>=req.xp&&streak>=req.streak&&perfOk){
     const old=S.hunter.rank;
     S.hunter.rank=req.to;
-    S.hunter.xp+=50; // rank-up bonus
+    addXP(50); // rank-up bonus
     save();
     setTimeout(()=>showToast('⚔ RANK UP! '+old+' → '+req.to+' +50 bonus XP 🎉'),800);
     updateHeader();
@@ -2816,7 +2825,8 @@ function updateHeader(){
   const{xp,mana,streak,name}=S.hunter;
   const rk=getRank(xp),prog=getRankProg(xp);
   const cls='rank-'+rk.r,hc=getClass(rk.r);
-  const rankCeiling=(RANKS.find(function(r){return r.r===rk.r;})||RANKS[0]).max-1;
+  const rankData=RANKS.find(function(r){return r.r===rk.r;})||RANKS[0];
+  const rankCeiling=rankData.max===Infinity?'∞':rankData.max;
   const xpDisplay=xp+' / '+rankCeiling+' XP';
   const start=new Date(S.hunter.startDate),now=new Date();
   const dayN=Math.max(1,Math.floor((now-start)/86400000)+1);
@@ -2996,11 +3006,11 @@ function renderQuests(){
     Object.values(woLog.comp||{}).filter(Boolean).length===todayPlan.exercises.length);
 
   let changed=false;
-  if(tMins>=(goalH*60)&&!comp.q1){comp.q1=true;S.hunter.xp+=50;changed=true;}
-  if(hasP&&!comp.q2){comp.q2=true;S.hunter.xp+=25;changed=true;}
+  if(tMins>=(goalH*60)&&!comp.q1){comp.q1=true;addXP(50);changed=true;}
+  if(hasP&&!comp.q2){comp.q2=true;addXP(25);changed=true;}
   if(woDone&&!comp.q3&&QUESTS.find(q=>q.id==='q3')){comp.q3=true;changed=true;}
   if(tMins>=240&&!comp.q6&&QUESTS.find(q=>q.id==='q6')){
-    comp.q6=true;S.hunter.xp+=30;changed=true;
+    comp.q6=true;addXP(30);changed=true;
     setTimeout(()=>showToast('🏆 4h Study Marathon complete! +30 XP'),400);
   }
   S.questComp[t]=comp;if(changed){save();updateHeader();}
@@ -3035,7 +3045,7 @@ function tQ(id){
   const q=QUESTS.find(q=>q.id===id);if(!q||q.auto)return;
   const was=S.questComp[t][id];
   S.questComp[t][id]=!was;
-  if(!was){S.hunter.xp+=q.xp;showToast('Quest done! +'+q.xp+' XP ⚡');}
+  if(!was){addXP(q.xp);showToast('Quest done! +'+q.xp+' XP ⚡');}
   else S.hunter.xp=Math.max(0,S.hunter.xp-q.xp);
   save();renderDash();
   setTimeout(()=>checkRankUp(),300);
@@ -3498,11 +3508,11 @@ function submitRating(save_it){
         else if(ratingStars===2){xpDelta=-Math.round(baseXP*0.10);msg='😕 2⭐ Low focus. -10% XP';}
         else if(ratingStars===1){xpDelta=-Math.round(baseXP*0.20);msg='😴 1⭐ Barely there. -20% XP';}
         if(xpDelta!==0){
-          S.hunter.xp=Math.max(0,S.hunter.xp+xpDelta);
+          if(xpDelta>0){addXP(xpDelta);}
+          else{S.hunter.xp=Math.max(0,Math.floor(S.hunter.xp+xpDelta));capXPToRank();}
           sess.xp=Math.max(0,(sess.xp||0)+xpDelta);
           sess.ratingXPDelta=xpDelta;
         }
-        capXPToRank(); // never exceed rank ceiling
         if(!S.hunter.focusStat)S.hunter.focusStat=50;
         if(!S.hunter.disciplineStat)S.hunter.disciplineStat=50;
         const targetFocus=(ratingStars/5)*100;
@@ -3788,7 +3798,7 @@ function autoLog(mins,sub,mode,sid){
   _breakActivity='';
   S.sessions.push(sessObj);
   if(!paused){
-    S.hunter.xp+=xp+starterBonus;
+    addXP(xp+starterBonus);
     capXPToRank(); // never overshoot rank ceiling
     setTimeout(()=>checkRankUp(),400);
   }
@@ -3819,9 +3829,9 @@ function autoLog(mins,sub,mode,sid){
     const comp=S.questComp[t]||{};
     const tM=S.sessions.filter(s=>s.date===t&&!s.paused).reduce((a,s)=>a+s.min,0);
     const goalMins=((S.goals&&S.goals.questStudyHours)||2)*60;
-    if(tM>=goalMins&&!comp.q1){comp.q1=true;S.hunter.xp+=50;S.questComp[t]=comp;save();showToast('Quest done: study goal hit! +50 XP 🔥');updateHeader();}
-    if(mode==='pomodoro'&&mins>=25&&!comp.q2){comp.q2=true;S.hunter.xp+=25;S.questComp[t]=comp;save();updateHeader();}
-    if(tM>=240&&!comp.q6){comp.q6=true;S.hunter.xp+=30;S.questComp[t]=comp;save();showToast('🏆 4h Marathon complete! +30 XP');updateHeader();}
+    if(tM>=goalMins&&!comp.q1){comp.q1=true;addXP(50);S.questComp[t]=comp;save();showToast('Quest done: study goal hit! +50 XP 🔥');updateHeader();}
+    if(mode==='pomodoro'&&mins>=25&&!comp.q2){comp.q2=true;addXP(25);S.questComp[t]=comp;save();updateHeader();}
+    if(tM>=240&&!comp.q6){comp.q6=true;addXP(30);S.questComp[t]=comp;save();showToast('🏆 4h Marathon complete! +30 XP');updateHeader();}
   }
 }
 function restoreMana(){
@@ -4301,7 +4311,7 @@ function confirmNextSessModal(){
   let xpToast='';
   if(_nextSessBreakType==='productive'){
     const xpBonus=_nextSessBreakLen==='long'?15:8;
-    S.hunter.xp+=xpBonus;
+    addXP(xpBonus);
     xpToast=`✅ Productive break! Mana +${manaRecovery} · XP +${xpBonus}`;
   } else if(_nextSessBreakType==='waste'){
     S.hunter.xp=Math.max(0,S.hunter.xp-15);
@@ -5074,13 +5084,13 @@ function addTest(){
     });
     setTimeout(()=>showToast('⚠ Confidence -10% for '+weakTopics.length+' weak topic'+(weakTopics.length>1?'s':'')),800);
   }
-  const xp=Math.round((total/max)*40);S.hunter.xp+=xp;
+  const xp=Math.round((total/max)*40);addXP(xp);
   let bossXP=0;
   if(type==='mock'||type==='chapter'){
     const wk=getWeekKey(date);
     if(!S.weeklyBoss)S.weeklyBoss={};
     if(!S.weeklyBoss[wk]&&!isPaused()){
-      S.weeklyBoss[wk]=true;bossXP=200;S.hunter.xp+=200;
+      S.weeklyBoss[wk]=true;bossXP=200;addXP(200);
       setTimeout(()=>showToast('⚔ Weekly Boss Defeated! +200 XP 🏆🔥'),700);
     } else if(S.weeklyBoss[wk]){showToast('Boss already defeated this week. +'+xp+' XP');}
   }
@@ -5368,7 +5378,7 @@ function togEx(i){
 
   const targetXP=dc*5;
   const delta=targetXP-log.xpRewarded;
-  if(delta>0){S.hunter.xp+=delta;log.xpRewarded=targetXP;}
+  if(delta>0){addXP(delta);log.xpRewarded=targetXP;}
   else if(delta<0){S.hunter.xp=Math.max(0,S.hunter.xp+delta);log.xpRewarded=targetXP;}
   log.xp=targetXP;
 
@@ -5377,7 +5387,7 @@ function togEx(i){
     const qc=S.questComp[t]||{};
     if(!qc.q3){
       qc.q3=true;S.questComp[t]=qc;
-      S.hunter.xp+=30;log.xpRewarded+=30;log.xp+=30;
+      addXP(30);log.xpRewarded+=30;log.xp+=30;
 
       const lastWo=S.workout.woLastDate;
       const yesterday=new Date();yesterday.setDate(yesterday.getDate()-1);
@@ -7043,10 +7053,10 @@ function renderDimensionsChart(){
         borderColor:'rgba(91,110,245,.85)',
         borderWidth:2.5,
         pointBackgroundColor:'rgba(91,110,245,1)',
-        pointBorderColor:'rgba(255,255,255,.3)',
-        pointBorderWidth:1.5,
-        pointRadius:5,
-        pointHoverRadius:7,
+        pointBorderColor:'rgba(255,255,255,.25)',
+        pointBorderWidth:1,
+        pointRadius:3,
+        pointHoverRadius:5,
         fill:true
       }]
     },
@@ -7062,9 +7072,9 @@ function renderDimensionsChart(){
           grid:{color:'rgba(255,255,255,.1)',circular:false},
           angleLines:{color:'rgba(255,255,255,.08)'},
           pointLabels:{
-            color:'rgba(255,255,255,.75)',
-            font:{size:11,weight:'600'},
-            padding:12
+            color:'rgba(255,255,255,.8)',
+            font:{size:13,weight:'600'},
+            padding:16
           }
         }
       },
@@ -7717,7 +7727,7 @@ function parseAyanoActions(rawText){
           var lXP=Math.round(lMin*1.5);
           var lSess={id:Date.now(),date:lDate,min:lMin,duration:lMin,sub:lSub,subject:lSub,mode:'manual',eff:1,xp:lXP,taskType:lTask,time:new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'}),paused:false,rating:null,note:'Ayanokoji: '+(act.note||'manual log')};
           S.sessions.push(lSess);
-          S.hunter.xp=(S.hunter.xp||0)+lXP;
+          addXP(lXP);
           capXPToRank();
           applied.push(lMin+'min '+lSub+' session logged');
           break;
@@ -7761,7 +7771,7 @@ function parseAyanoActions(rawText){
           var lXP=Math.round(lMin*1.5);
           var lSess={id:Date.now(),date:lDate,min:lMin,duration:lMin,sub:lSub,subject:lSub,mode:'manual',eff:1,xp:lXP,taskType:lTask,time:new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'}),paused:false,rating:null,note:'Ayanokoji: '+(act.note||'manual log')};
           S.sessions.push(lSess);
-          S.hunter.xp=(S.hunter.xp||0)+lXP;
+          addXP(lXP);
           capXPToRank();
           if(!S.activityLog)S.activityLog=[];
           S.activityLog.unshift({type:'session',date:lDate,time:new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',hour12:true}),subject:lSub,minutes:lMin,taskType:lTask});
@@ -9557,7 +9567,7 @@ function togglePlanCheck(el){
       const done=container.querySelectorAll('.o-check-box.o-checked').length;
       if(done===total&&total>0){
         showToast('🏆 All battle plan tasks done! +20 XP');
-        S.hunter.xp+=20;save();updateHeader();
+        addXP(20);save();updateHeader();
         setTimeout(()=>checkRankUp(),400);
       } else {
         showToast('Task done ⚡  ('+done+'/'+total+')');
