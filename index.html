@@ -1747,7 +1747,7 @@ input.fi:focus,select.fi:focus{
     </div>
     <div style="font-size:11px;color:var(--text2);margin-bottom:14px">Updated by Ayanokoji after each assessment. Start a conversation to begin tracking.</div>
     <div id="dimensions-grid" style="display:grid;gap:8px"></div>
-    <div class="chart-wrap" style="height:420px;margin-top:16px"><canvas id="ch-dimensions"></canvas></div>
+    <div class="chart-wrap" style="height:220px;margin-top:16px"><canvas id="ch-dimensions"></canvas></div>
   </div>
 
   <!-- BURNOUT WARNING (shown only when risk detected) -->
@@ -2358,6 +2358,7 @@ input.fi:focus,select.fi:focus{
 <div class="toast" id="toast"></div>
 
 <script>
+
 const RANKS=[
   {r:'E',min:0,max:800},{r:'D',min:800,max:1700},{r:'C',min:1700,max:2700},
   {r:'B',min:2700,max:4300},{r:'A',min:4300,max:7200},{r:'S',min:7200,max:15000},
@@ -7663,17 +7664,33 @@ function renderAyanoChat(){
   if(tabChat){tabChat.innerHTML=_buildAyanoChatHTML(_ayanoHistory,false);tabChat.scrollTop=tabChat.scrollHeight;}
 }
 function parseAyanoActions(rawText){
-  // Strip markdown code blocks the AI might wrap around [ACTION]
-  var stripped=rawText.replace(/```[\s\S]*?```/g,'').trim();
-  var idx=stripped.indexOf('[ACTION]');
-  if(idx===-1)return rawText; // no actions, return original (might have code blocks)
-  var clean=stripped.slice(0,idx).trim();
-  if(!clean)clean=rawText.slice(0,rawText.indexOf('[ACTION]')).trim();
-  var block=stripped.slice(idx+8).trim();
-  // Robust JSON extraction: find any line that looks like a JSON object
-  var jsonLines=block.split('\n').map(function(l){return l.trim();})
+  var workText=rawText;
+  var idx2=workText.indexOf('[ACTION]');
+  if(idx2===-1){
+    var stripped2=rawText.replace(/```[\w]*/g,'').replace(/```/g,'');
+    idx2=stripped2.indexOf('[ACTION]');
+    if(idx2!==-1)workText=stripped2;
+  }
+  var jsonFallback=[];
+  if(idx2===-1){
+    var scanText=rawText.replace(/```[\s\S]*?```/g,'');
+    var fRx=/\{"type"\s*:\s*"[A-Z_]+"[\s\S]*?\}/g,fm;
+    while((fm=fRx.exec(scanText))!==null){try{JSON.parse(fm[0]);jsonFallback.push(fm[0]);}catch(e){}}
+    if(!jsonFallback.length)return rawText;
+  }
+  var clean,block2;
+  if(idx2!==-1){
+    clean=workText.slice(0,idx2).trim();
+    if(!clean){var ri=rawText.indexOf('[ACTION]');clean=ri>=0?rawText.slice(0,ri).trim():rawText.trim();}
+    block2=workText.slice(idx2+8).trim();
+  } else {
+    clean=rawText.replace(/\{"type"[\s\S]*?\}/g,'').replace(/\[ACTION\]/g,'').trim();
+    block2=jsonFallback.join('\n');
+  }
+  var jsonLines=(idx2!==-1?block2:jsonFallback.join('\n'))
+    .split('\n').map(function(l){return l.trim();})
     .filter(function(l){return l.length>2&&l.charAt(0)==='{';})
-    .map(function(l){return l.replace(/,\s*$/, '');});  // remove trailing commas
+    .map(function(l){return l.replace(/,\s*$/,'');});
   var applied=[];
   jsonLines.forEach(function(line){
     try{
@@ -7733,20 +7750,17 @@ function parseAyanoActions(rawText){
           break;
         case 'UPDATE_DIMENSION':
           if(!S.dimensionScores)S.dimensionScores={selfMastery:0,strategic:0,communication:0,social:0,charisma:0,psychology:0,defense:0,intellectual:0,physical:0,pressure:0,emotional:0,identity:0};
-          var dimKey=act.dimension;
+          var dimKey=act.dimension||'';
+          // Normalise variants the AI might send (e.g. self_mastery, Self-Mastery)
+          if(dimKey&&!S.dimensionScores.hasOwnProperty(dimKey)){
+            var _km={'self_mastery':'selfMastery','self-mastery':'selfMastery','strategic_thinking':'strategic','emotional_control':'emotional','human_psychology':'psychology','manipulation_defense':'defense','intellectual_optimization':'intellectual','pressure_adaptation':'pressure','social_calibration':'social','identity_evolution':'identity','physical_management':'physical','selfmastery':'selfMastery','strategicthinking':'strategic','emotionalcontrol':'emotional','humanpsychology':'psychology','manipulationdefense':'defense','intellectualoptimization':'intellectual','pressureadaptation':'pressure','socialcalibration':'social','identityevolution':'identity','physicalmanagement':'physical'};
+            dimKey=_km[dimKey.toLowerCase().replace(/[\s-]/g,'_')]||_km[dimKey.toLowerCase().replace(/[\s_-]/g,'')]||dimKey;
+          }
           if(dimKey&&S.dimensionScores.hasOwnProperty(dimKey)){
             var newScore=Math.max(0,Math.min(100,parseInt(act.value)||0));
             S.dimensionScores[dimKey]=newScore;
             applied.push('Dimension updated: '+dimKey+' → '+newScore);
-            // Save immediately then re-render visuals
-            save();
-            setTimeout(function(){
-              renderDimensionsGrid();
-              renderDimensionsChart();
-              if(typeof renderRadarChart==='function')renderRadarChart();
-            },120);
           }
-          break;
           break;
         case 'REMOVE_LAST_SESSION':
           var rmSub=(act.subject||'').toLowerCase();
@@ -7881,12 +7895,17 @@ function parseAyanoActions(rawText){
             setTimeout(function(){
               renderTodaysMission();
               save();
-              // Navigate: go to oracle section, then switch to planner tab
-              var plannerBtn=document.querySelector('#oracle-tab-bar .tab-btn:nth-child(3)');
               goTo('oracle',null);
-              setTimeout(function(){setOracleTab('planner',plannerBtn);},200);
-              showToast('📅 Plan pinned! Opening Planner...');
-            },400);
+              setTimeout(function(){
+                var allTabBtns=document.querySelectorAll('#oracle-tab-bar .tab-btn');
+                var plannerBtn=null;
+                allTabBtns.forEach(function(b){if(b.textContent.toLowerCase().indexOf('plan')>-1)plannerBtn=b;});
+                setOracleTab('planner',plannerBtn);
+                var po=document.getElementById('oracle-plan-out');
+                if(po)po.style.display='block';
+                showToast('Plan ready - pinned to Dashboard!');
+              },450);
+            },300);
           }
           break;
       }
@@ -7894,8 +7913,10 @@ function parseAyanoActions(rawText){
   });
   if(applied.length){
     save();renderDash();
-    // If a session was logged, also refresh the session history page
-    if(applied.some(function(a){return a.indexOf('min')>-1&&a.indexOf('logged')>-1;})){
+    if(applied.some(function(a){return a.indexOf('Dimension updated')>-1;})){
+      setTimeout(function(){renderDimensionsGrid();renderDimensionsChart();if(typeof renderRadarChart==='function')renderRadarChart();},150);
+    }
+    if(applied.some(function(a){return a.indexOf('logged')>-1&&(a.indexOf('min')>-1||a.indexOf('Session')>-1);})){
       if(typeof renderSessionLog==='function')renderSessionLog();
       if(typeof renderSessLog==='function')renderSessLog();
     }
@@ -8277,9 +8298,11 @@ function showAyanoPopout(text,preload,autoMs){
     +'</div>'
     +'<div style="display:flex;gap:6px">'
     +'<button onclick="dismissAyanoPopout()" style="flex:1;padding:7px;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:7px;color:var(--text3);font-family:var(--font);font-size:11px;cursor:pointer">Dismiss</button>'
-    +(preload?'<button onclievent.stopPropagation();ck="openAyanoFromPopout(\''+safePreload+'\')" style="flex:1;padding:7px;background:rgba(91,110,245,.15);border:1px solid rgba(91,110,245,.4);border-radius:7px;color:var(--accent);font-family:var(--font);font-size:11px;font-weight:700;cursor:pointer">Continue →</button>':'')
+        +(preload?'<button id="ayano-popout-continue" style="flex:1;padding:7px;background:rgba(91,110,245,.15);border:1px solid rgba(91,110,245,.4);border-radius:7px;color:var(--accent);font-family:var(--font);font-size:11px;font-weight:700;cursor:pointer">Continue →</button>':'')
     +'</div>';
   document.body.appendChild(div);
+  var _cb=document.getElementById('ayano-popout-continue');
+  if(_cb&&preload){(function(p){_cb.addEventListener('click',function(e){e.stopPropagation();openAyanoFromPopout(p);});})(preload);}
   setTimeout(function(){div.classList.add('show');},40);
   _popoutTimer=setTimeout(function(){dismissAyanoPopout();},autoMs||11000);
 }
@@ -8290,8 +8313,10 @@ function dismissAyanoPopout(){
 }
 function openAyanoFromPopout(preload){
   dismissAyanoPopout();
-  if(!_ayanoFloatOpen)toggleAyanoFloat();
-  if(preload){setTimeout(function(){var inp=document.getElementById('ayano-float-input');if(inp){inp.value=preload;inp.focus();}},300);}
+  setTimeout(function(){
+    if(!_ayanoFloatOpen)toggleAyanoFloat();
+    if(preload){setTimeout(function(){var inp=document.getElementById('ayano-float-input');if(inp){inp.value=preload;inp.focus();}},350);}
+  },80);
 }
 
 // ═══════ DIMENSION TRAINING ENGINE ═══════
@@ -9398,6 +9423,24 @@ ${(function(){
   return '=== DIMENSION TRAINING STATUS ===\nPriority: Train Tier1 first — they unlock everything above.\nTier1 Foundation: '+sections.tier1.join(' | ')+'\nTier2 Unlocked: '+sections.tier2.join(' | ')+'\nTier3 Social: '+sections.tier3.join(' | ')+'\nTier4 Peak: '+sections.tier4.join(' | ');
 })()}
 ${(function(){
+  // TASK-SESSION CROSS-REFERENCE — maps plan items to actual sessions
+  var pin=S.pinnedPlan&&S.pinnedPlan[t];
+  var todaySess2=S.sessions.filter(function(s){return s.date===t&&!s.paused;});
+  if(!pin||!pin.items||!pin.items.length||!todaySess2.length)return '';
+  var lines=['=== WHAT YOU DID TODAY (tasks vs sessions) ==='];
+  pin.items.forEach(function(item){
+    var txt=item.text.toLowerCase();
+    var msub=null;
+    ['physics','chemistry','maths'].forEach(function(sub){if(txt.indexOf(sub)>-1)msub=sub;});
+    var ms=msub?todaySess2.filter(function(s){return s.sub===msub;}):[];
+    var sd=ms.length?ms.map(function(s){return s.min+'min'+(s.startTime?' ('+s.startTime+'\u2192'+(s.time||'?')+')':'')+(s.stars||s.rating?' \u2605'+(s.stars||s.rating):'');}).join(', '):'no session found for this subject';
+    lines.push('  '+(item.done?'\u2713':'\u25cb')+' '+item.text.slice(0,55)+(msub?' | '+msub+': '+sd:''));
+  });
+  var unplanned=todaySess2.filter(function(s){return !pin.items.some(function(i){return i.text.toLowerCase().indexOf(s.sub)>-1;});});
+  if(unplanned.length)lines.push('  Extra (not in plan): '+unplanned.map(function(s){return s.sub+' '+s.min+'min';}).join(', '));
+  return lines.join('\n');
+})()}
+${(function(){
   var pin=S.pinnedPlan&&S.pinnedPlan[t];
   if(!pin||!pin.items||!pin.items.length)return '=== TODAY\'S PLAN ===\nNo plan set yet.';
   var done=pin.items.filter(function(i){return i.done;}).length;
@@ -9821,6 +9864,7 @@ function formatOracleMD(text){
     .replace(/\n\n/g,'<br style="line-height:2.5">').replace(/\n/g,'<br>');
 }
 function escHtml(text){return String(text).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
 </script>
 <!-- SL PENALTY OVERLAY — top priority messages -->
 <div class="sl-penalty-overlay" id="sl-penalty-overlay" style="display:none">
