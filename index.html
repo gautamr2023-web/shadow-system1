@@ -7603,7 +7603,9 @@ ABSOLUTE RULES — LLAMA 3.3 70B
 14. PAST PLANS are in context. When tasks are skipped across multiple days, name the pattern.
 15. Cross-correlate sleep, mana, session quality, and subject avoidance in every substantive response.
 16. [ACTION] block after text. Never before. Never mixed in.
-17. Every sentence earns its place. No padding. No transitions. No summaries. No filler.`;
+17. Every sentence earns its place. No padding. No transitions. No summaries. No filler.
+18. WEEKLY SCHEDULE is always in context. When building any plan, read it first. Do not put study blocks during school hours. Coaching slots are not free time — work around them. If today is a school day, the earliest study block starts at the freeAfter time. If tomorrow is also school, note it when setting expectations.
+19. STUDY RESOURCES are always in context. When giving study advice or building a plan, reference the specific book and its completion percentage. Any resource below 40% completion needs an explicit time block this week. Any resource above 85% is near-done — note it. When the hunter mentions a subject, cross-reference which of their resources covers it and what the current completion is.`;
 
 
 
@@ -9176,21 +9178,20 @@ function buildFullContext(){
     });
   const examLine=futureExams.length?'\nUpcoming exams: '+futureExams.join(' | '):'';
 
-  // Weekly schedule context
+  // Weekly schedule context — full 7-day block
   const wDays=['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
   const todayDayName=wDays[new Date().getDay()];
-  const tomorrowDayName=wDays[(new Date().getDay()+1)%7];
   const ws=S.weeklySchedule||{};
-  const todaySched=ws[todayDayName];
-  const tmrwSched=ws[tomorrowDayName];
-  const schedLine=todaySched
-    ?'\nToday ('+todayDayName+'): '+(todaySched.type==='holiday'?'Holiday — no study pressure'
-      :todaySched.type==='free'?'Free day — full study available'
-      :'Study from '+todaySched.freeAfter+(todaySched.coaching?' | Coaching: '+todaySched.coachingTime:''))
-      +(tmrwSched?'\nTomorrow ('+tomorrowDayName+'): '+(tmrwSched.type==='holiday'?'Holiday'
-        :tmrwSched.type==='free'?'Free day'
-        :'School until '+tmrwSched.freeAfter+(tmrwSched.coaching?' + Coaching '+tmrwSched.coachingTime:'')):'')
-    :'';
+  const weekSchedLines=wDays.map(function(d){
+    var sc=ws[d];
+    var isToday=d===todayDayName?' ← TODAY':'';
+    if(!sc||!sc.type)return d.charAt(0).toUpperCase()+d.slice(1)+': Not configured'+isToday;
+    if(sc.type==='holiday')return d.charAt(0).toUpperCase()+d.slice(1)+': Holiday — no study'+isToday;
+    if(sc.type==='free')return d.charAt(0).toUpperCase()+d.slice(1)+': Free day — study available all day'+(sc.coaching?' | Coaching: '+sc.coachingTime:'')+isToday;
+    return d.charAt(0).toUpperCase()+d.slice(1)+': School — free after '+sc.freeAfter+(sc.coaching?' | Coaching: '+sc.coachingTime:'')+isToday;
+  });
+  const schedLine='';
+
 
   _initSR();
   const sr=S.studyResources;
@@ -9250,6 +9251,9 @@ function buildFullContext(){
 Hunter: ${name} | Rank: ${rank} | XP: ${xp} | Streak: ${streak}d | Mana: ${mana}/100
 Class: ${S.classYear||'12'} | Target: ${S.jeeTarget||250} marks | Exam: ${S.examName||'JEE Advanced'} in ${daysLeft} DAYS${examLine}${schedLine}${overrideLine}
 Current time: ${nowTime} (${nowDay})
+
+=== WEEKLY SCHEDULE ===
+${weekSchedLines.join('\n')}
 
 === STUDY RESOURCES ===
 ${srLines.length?srLines.join('\n'):'No resources configured yet'}
