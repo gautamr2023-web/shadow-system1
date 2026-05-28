@@ -2166,28 +2166,21 @@ input.fi:focus,select.fi:focus{
       <div style="font-size:12px;color:var(--text2);line-height:1.7;margin-bottom:12px">
         Add your API keys below. Oracle auto-rotates Groq keys when rate-limited, and falls back to OpenRouter if all Groq keys fail. Zero downtime.
         <br><br>
-        <span style="color:var(--text3)">Gemini keys: <b style="color:var(--green)">aistudio.google.com</b> → Get API Key (free, no card — recommended). &nbsp;&nbsp;Groq keys: <b style="color:var(--accent)">console.groq.com</b> → API Keys (free, no card). Keys stored locally only.</span>
+        <span style="color:var(--text3)">Groq keys: <b style="color:var(--accent)">console.groq.com</b> → API Keys (free, no card). &nbsp;&nbsp;OpenRouter keys: <b style="color:var(--gold)">openrouter.ai</b> → Keys (free tier available). Keys stored locally only.</span>
       </div>
       <div style="display:flex;gap:8px;margin-bottom:10px;align-items:center">
         <div style="font-size:10px;color:var(--text2);text-transform:uppercase;letter-spacing:.7px;font-weight:700;white-space:nowrap">Provider:</div>
         <select id="oracle-key-provider" class="fi" style="font-size:12px;padding:6px 10px;width:auto">
-          <option value="gemini">Gemini (recommended — free, smarter)</option>
-          <option value="groq">Groq (free fallback)</option>
+          <option value="groq">Groq (recommended)</option>
           <option value="openrouter">OpenRouter (fallback)</option>
         </select>
       </div>
       <div style="display:flex;gap:8px;margin-bottom:10px;align-items:center">
         <div style="font-size:10px;color:var(--text2);text-transform:uppercase;letter-spacing:.7px;font-weight:700;white-space:nowrap">Model:</div>
         <select id="oracle-model-select" class="fi" style="font-size:12px;padding:6px 10px" onchange="changeOracleModel(this.value)">
-          <optgroup label="── Gemini (free, recommended) ──">
-            <option value="gemini-2.0-flash" selected>Gemini 2.0 Flash — Best overall 🧠</option>
-            <option value="gemini-1.5-flash">Gemini 1.5 Flash — Stable fallback</option>
-          </optgroup>
-          <optgroup label="── Groq (free, fast) ──">
-            <option value="llama-3.3-70b-versatile">Llama 3.3 70B</option>
-            <option value="llama3-8b-8192">Llama 3 8B — Fastest ⚡</option>
-            <option value="mixtral-8x7b-32768">Mixtral 8x7B</option>
-          </optgroup>
+          <option value="llama-3.3-70b-versatile" selected>Llama 3.3 70B — Best quality 🧠 (recommended)</option>
+          <option value="llama3-8b-8192">Llama 3 8B — Fastest ⚡</option>
+          <option value="mixtral-8x7b-32768">Mixtral 8x7B — Long context 📄</option>
         </select>
       </div>
       <div style="display:flex;gap:8px;margin-bottom:14px">
@@ -8589,7 +8582,7 @@ function setActiveKey(idx){
 function renderKeyList(){
   const el=document.getElementById('oracle-key-list');if(!el)return;
   if(!_oracleKeys.length){
-    el.innerHTML='<div style="color:var(--text3);font-size:13px;padding:8px 0">No keys added yet. Recommended: get a free Gemini key at <b style="color:var(--green)">aistudio.google.com</b> → Get API Key (no card needed).</div>';
+    el.innerHTML='<div style="color:var(--text3);font-size:13px;padding:8px 0">No keys added yet. Get a free key at <b style="color:var(--accent)">console.groq.com</b> → API Keys (no credit card needed).</div>';
     const st=document.getElementById('oracle-key-status');
     if(st)st.innerHTML='<span style="color:var(--red)">⚠ Add your free Groq API key above to use Oracle</span>';
     return;
@@ -8598,7 +8591,7 @@ function renderKeyList(){
   _oracleKeys.forEach((k,i)=>{
     const masked='sk-...'+k.key.slice(-8);
     const bc=k.status==='active'?'oracle-key-active':k.status==='failed'?'oracle-key-failed':'oracle-key-waiting';
-    const provLabel=k.provider==='openrouter'?'<span style="font-size:9px;background:rgba(244,196,48,.15);color:var(--gold);border:1px solid rgba(244,196,48,.3);border-radius:4px;padding:1px 5px;margin-left:5px">OpenRouter</span>':k.provider==='gemini'?'<span style="font-size:9px;background:rgba(0,214,143,.15);color:var(--green);border:1px solid rgba(0,214,143,.3);border-radius:4px;padding:1px 5px;margin-left:5px">Gemini</span>':'<span style="font-size:9px;background:rgba(91,110,245,.15);color:var(--accent);border:1px solid rgba(91,110,245,.3);border-radius:4px;padding:1px 5px;margin-left:5px">Groq</span>';
+    const provLabel=k.provider==='openrouter'?'<span style="font-size:9px;background:rgba(244,196,48,.15);color:var(--gold);border:1px solid rgba(244,196,48,.3);border-radius:4px;padding:1px 5px;margin-left:5px">OpenRouter</span>':'<span style="font-size:9px;background:rgba(91,110,245,.15);color:var(--accent);border:1px solid rgba(91,110,245,.3);border-radius:4px;padding:1px 5px;margin-left:5px">Groq</span>';
     h+=`<div class="oracle-key-item">
       <span class="oracle-key-badge ${bc}">${k.status.toUpperCase()}</span>
       <span style="font-size:12px;font-weight:700;flex:1">${k.label}${provLabel}</span>
@@ -8613,10 +8606,10 @@ function renderKeyList(){
   const active=_oracleKeys.find(k=>k.status==='active');
   const st=document.getElementById('oracle-key-status');
   if(st)st.innerHTML=active
-    ?`<span style="color:var(--green)">✓ Active: ${active.label}</span> · ${primaryKeys.filter(k=>k.provider==='gemini').length} Gemini · ${groqKeys.length} Groq${orKeys.length?' · '+orKeys.length+' OpenRouter':''} · Auto-rotation ON`
+    ?`<span style="color:var(--green)">✓ Active: ${active.label}</span> · ${groqKeys.length} Groq${orKeys.length?' · '+orKeys.length+' OpenRouter (fallback)':''} · Auto-rotation ON`
     :'<span style="color:var(--red)">⚠ No active key — click Use</span>';
 }
-let ORACLE_MODEL=localStorage.getItem('oracle_model')||'gemini-2.0-flash';
+let ORACLE_MODEL=localStorage.getItem('oracle_model')||'llama-3.3-70b-versatile';
 
 function changeOracleModel(val){
   ORACLE_MODEL=val;
@@ -8629,9 +8622,8 @@ async function oracleCall(messages,systemMsg,maxTokens){
   if(!_oracleKeys.length){
     throw new Error('No API key found. Go to Oracle → Keys tab, add your free Groq key from console.groq.com');
   }
-  const primaryKeys=_oracleKeys.filter(k=>k.provider!=='openrouter');
+  const groqKeys=_oracleKeys.filter(k=>k.provider!=='openrouter');
   const orKeys=_oracleKeys.filter(k=>k.provider==='openrouter');
-  const groqKeys=_oracleKeys.filter(k=>k.provider==='groq'||!k.provider);
   let groqAllFailed=true;
   for(let attempt=0;attempt<_oracleKeys.length+1;attempt++){
     const idx=_oracleKeyIdx%_oracleKeys.length;
@@ -8671,19 +8663,10 @@ async function _oracleRaw(apiKey,messages,systemMsg,maxTokens,provider){
   messages.forEach(m=>oaiMessages.push({role:m.role,content:m.content}));
 
   const isOR=provider==='openrouter';
-  const isGemini=provider==='gemini';
-  let endpoint,model;
-  if(isGemini){
-    // Gemini OpenAI-compatible endpoint — works with the same request format
-    endpoint='https://generativelanguage.googleapis.com/v1beta/openai/chat/completions';
-    model=ORACLE_MODEL.startsWith('gemini')?ORACLE_MODEL:'gemini-2.0-flash';
-  } else if(isOR){
-    endpoint='https://openrouter.ai/api/v1/chat/completions';
-    model='meta-llama/llama-3.1-8b-instruct:free';
-  } else {
-    endpoint='https://api.groq.com/openai/v1/chat/completions';
-    model=ORACLE_MODEL;
-  }
+  const endpoint=isOR
+    ?'https://openrouter.ai/api/v1/chat/completions'
+    :'https://api.groq.com/openai/v1/chat/completions';
+  const model=isOR?'meta-llama/llama-3.1-8b-instruct:free':ORACLE_MODEL;
 
   const headers={'Content-Type':'application/json','Authorization':'Bearer '+apiKey};
   if(isOR){headers['HTTP-Referer']='https://shadowsystem.app';headers['X-Title']='Shadow System';}
