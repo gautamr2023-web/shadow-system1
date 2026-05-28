@@ -8692,7 +8692,11 @@ async function _oracleRaw(apiKey,messages,systemMsg,maxTokens,provider){
 
   const headers={'Content-Type':'application/json','Authorization':'Bearer '+apiKey};
   if(isOR){headers['HTTP-Referer']='https://shadowsystem.app';headers['X-Title']='Shadow System';}
-  const body={model,max_tokens:maxTokens,messages:oaiMessages,temperature:0.7};
+  // Gemini 2.0 requires max_completion_tokens; older models use max_tokens
+  // Send both so it works regardless of model version
+  const body=isGemini
+    ?{model,max_completion_tokens:maxTokens,messages:oaiMessages,temperature:0.7}
+    :{model,max_tokens:maxTokens,messages:oaiMessages,temperature:0.7};
   const resp=await fetch(endpoint,{method:'POST',headers,body:JSON.stringify(body)});
   if(!resp.ok){
     const errData=await resp.json().catch(()=>({}));
