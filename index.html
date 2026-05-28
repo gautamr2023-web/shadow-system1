@@ -8613,7 +8613,7 @@ function renderKeyList(){
   const active=_oracleKeys.find(k=>k.status==='active');
   const st=document.getElementById('oracle-key-status');
   if(st)st.innerHTML=active
-    ?`<span style="color:var(--green)">✓ Active: ${active.label}</span> · ${primaryKeys.filter(k=>k.provider==='gemini').length} Gemini · ${groqKeys.length} Groq${orKeys.length?' · '+orKeys.length+' OpenRouter':''} · Auto-rotation ON`
+    ?`<span style="color:var(--green)">✓ Active: ${active.label}</span> · ${_oracleKeys.filter(k=>k.provider==='gemini').length} Gemini · ${_oracleKeys.filter(k=>k.provider==='groq'||!k.provider).length} Groq${_oracleKeys.filter(k=>k.provider==='openrouter').length?' · '+_oracleKeys.filter(k=>k.provider==='openrouter').length+' OpenRouter':''} · Auto-rotation ON`
     :'<span style="color:var(--red)">⚠ No active key — click Use</span>';
 }
 let ORACLE_MODEL=localStorage.getItem('oracle_model')||'gemini-2.0-flash'; // stored as short name, versioned in _oracleRaw
@@ -8681,13 +8681,7 @@ async function _oracleRaw(apiKey,messages,systemMsg,maxTokens,provider){
   let endpoint,model;
   if(isGemini){
     endpoint='https://generativelanguage.googleapis.com/v1beta/openai/chat/completions';
-    // Use versioned model names — required by Gemini's OpenAI-compat endpoint
-    const geminiModelMap={
-      'gemini-2.0-flash':'gemini-2.0-flash-001',
-      'gemini-1.5-flash':'gemini-1.5-flash-latest',
-      'gemini-1.5-pro':'gemini-1.5-pro-latest',
-    };
-    model=geminiModelMap[ORACLE_MODEL]||ORACLE_MODEL;
+    model=ORACLE_MODEL; // use model name exactly as selected — Gemini accepts these directly
   } else if(isOR){
     endpoint='https://openrouter.ai/api/v1/chat/completions';
     model='meta-llama/llama-3.1-8b-instruct:free';
