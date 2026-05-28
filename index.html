@@ -2170,7 +2170,7 @@ input.fi:focus,select.fi:focus{
       </div>
       <div style="display:flex;gap:8px;margin-bottom:10px;align-items:center">
         <div style="font-size:10px;color:var(--text2);text-transform:uppercase;letter-spacing:.7px;font-weight:700;white-space:nowrap">Provider:</div>
-        <select id="oracle-key-provider" class="fi" style="font-size:12px;padding:6px 10px;width:auto">
+        <select id="oracle-key-provider" class="fi" style="font-size:12px;padding:6px 10px;width:auto" onchange="updateKeyPlaceholder(this.value)">
           <option value="gemini">Gemini (recommended — free, smarter)</option>
           <option value="groq">Groq (free fallback)</option>
           <option value="openrouter">OpenRouter (fallback)</option>
@@ -2191,10 +2191,11 @@ input.fi:focus,select.fi:focus{
         </select>
       </div>
       <div style="display:flex;gap:8px;margin-bottom:14px">
-        <input id="oracle-key-input" type="password" class="fi" placeholder="sk-ant-api03-..." style="flex:1;font-family:var(--mono);font-size:12px">
+        <input id="oracle-key-input" type="password" class="fi" placeholder="AIzaSy... (Gemini key)" style="flex:1;font-family:var(--mono);font-size:12px" oninput="validateKeyFormat(this.value)">
         <input id="oracle-key-label" type="text" class="fi" placeholder="Label (e.g. Key 1)" style="width:100px">
         <button class="btn btn-primary btn-sm" onclick="addOracleKey()" style="flex-shrink:0">Add Key</button>
       </div>
+      <div id="oracle-key-format-warn" style="font-size:11px;margin:-8px 0 10px 0;display:none"></div>
       <div id="oracle-key-list"></div>
       <div id="oracle-key-status" style="margin-top:10px;font-size:11px;color:var(--text2)"></div>
     </div>
@@ -8618,6 +8619,32 @@ function renderKeyList(){
 }
 let ORACLE_MODEL=localStorage.getItem('oracle_model')||'gemini-2.0-flash'; // stored as short name, versioned in _oracleRaw
 
+function updateKeyPlaceholder(provider){
+  var inp=document.getElementById('oracle-key-input');
+  var warn=document.getElementById('oracle-key-format-warn');
+  if(!inp)return;
+  if(provider==='gemini'){inp.placeholder='AIzaSy... (Gemini key from aistudio.google.com)';}
+  else if(provider==='groq'){inp.placeholder='gsk_... (Groq key from console.groq.com)';}
+  else{inp.placeholder='sk-or-... (OpenRouter key from openrouter.ai)';}
+  if(warn)warn.style.display='none';
+  validateKeyFormat(inp.value,provider);
+}
+function validateKeyFormat(val,provider){
+  var warn=document.getElementById('oracle-key-format-warn');
+  if(!warn||!val)return;
+  var prov=provider||document.getElementById('oracle-key-provider')?.value||'gemini';
+  var ok=false;
+  if(prov==='gemini')ok=val.startsWith('AIza');
+  else if(prov==='groq')ok=val.startsWith('gsk_')||val.length>20;
+  else ok=val.startsWith('sk-or-')||val.length>20;
+  if(!ok&&val.length>5){
+    var hint=prov==='gemini'?'Gemini keys start with <b>AIza</b> — get yours at aistudio.google.com':prov==='groq'?'Groq keys start with <b>gsk_</b> — get yours at console.groq.com':'OpenRouter keys start with <b>sk-or-</b>';
+    warn.innerHTML='⚠ Wrong key format — '+hint;
+    warn.style.cssText='font-size:11px;margin:-8px 0 10px 0;display:block;color:#f87171;padding:4px 8px;background:rgba(248,113,113,.1);border-radius:6px;border:1px solid rgba(248,113,113,.3)';
+  } else {
+    warn.style.display='none';
+  }
+}
 function changeOracleModel(val){
   ORACLE_MODEL=val;
   try{localStorage.setItem('oracle_model',val);}catch(e){}
@@ -8680,7 +8707,7 @@ async function _oracleRaw(apiKey,messages,systemMsg,maxTokens,provider){
 
   // ── GEMINI: use native API (not OpenAI-compat — too many breaking differences) ──
   if(isGemini){
-    const gemModel=ORACLE_MODEL||'gemini-2.0-flash';
+    const gemModel=(ORACLE_MODEL&&ORACLE_MODEL.startsWith('gemini'))?ORACLE_MODEL:'gemini-2.0-flash';
     const gemEndpoint='https://generativelanguage.googleapis.com/v1beta/models/'+gemModel+':generateContent';
     // Convert OpenAI-style messages to Gemini contents format
     // Gemini uses role:'model' instead of role:'assistant'
