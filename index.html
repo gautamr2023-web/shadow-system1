@@ -8676,27 +8676,49 @@ async function _oracleRaw(apiKey,messages,systemMsg,maxTokens,provider){
   messages.forEach(m=>oaiMessages.push({role:m.role,content:m.content}));
 
   const isOR=provider==='openrouter';
-  // If the selected model is a Gemini model, always use Gemini endpoint — even if key was saved as 'groq'
   const isGemini=provider==='gemini'||ORACLE_MODEL.startsWith('gemini');
-  let endpoint,model;
+
+  // ── GEMINI: use native API (not OpenAI-compat — too many breaking differences) ──
   if(isGemini){
-    endpoint='https://generativelanguage.googleapis.com/v1beta/openai/chat/completions';
-    model=ORACLE_MODEL; // use model name exactly as selected — Gemini accepts these directly
-  } else if(isOR){
+    const gemModel=ORACLE_MODEL||'gemini-2.0-flash';
+    const gemEndpoint='https://generativelanguage.googleapis.com/v1beta/models/'+gemModel+':generateContent';
+    // Convert OpenAI-style messages to Gemini contents format
+    // Gemini uses role:'model' instead of role:'assistant'
+    const gemContents=messages.map(function(m){
+      return {role:m.role==='assistant'?'model':'user',parts:[{text:m.content||''}]};
+    });
+    const gemBody={
+      contents:gemContents,
+      generationConfig:{maxOutputTokens:maxTokens,temperature:0.7}
+    };
+    // System instruction goes in its own field, not as a message
+    if(systemMsg)gemBody.systemInstruction={parts:[{text:systemMsg}]};
+    const gemResp=await fetch(gemEndpoint,{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-goog-api-key':apiKey},
+      body:JSON.stringify(gemBody)
+    });
+    if(!gemResp.ok){
+      const errData=await gemResp.json().catch(()=>({}));
+      const msg=errData?.error?.message||'Gemini error '+gemResp.status;
+      const e=new Error(msg);e.status=gemResp.status;throw e;
+    }
+    const gemData=await gemResp.json();
+    return gemData.candidates?.[0]?.content?.parts?.[0]?.text||'';
+  }
+
+  // ── GROQ / OPENROUTER: OpenAI-compatible ──
+  let endpoint,model;
+  if(isOR){
     endpoint='https://openrouter.ai/api/v1/chat/completions';
     model='meta-llama/llama-3.1-8b-instruct:free';
   } else {
     endpoint='https://api.groq.com/openai/v1/chat/completions';
     model=ORACLE_MODEL;
   }
-
   const headers={'Content-Type':'application/json','Authorization':'Bearer '+apiKey};
   if(isOR){headers['HTTP-Referer']='https://shadowsystem.app';headers['X-Title']='Shadow System';}
-  // Gemini 2.0 requires max_completion_tokens; older models use max_tokens
-  // Send both so it works regardless of model version
-  const body=isGemini
-    ?{model,max_completion_tokens:maxTokens,messages:oaiMessages,temperature:0.7}
-    :{model,max_tokens:maxTokens,messages:oaiMessages,temperature:0.7};
+  const body={model,max_tokens:maxTokens,messages:oaiMessages,temperature:0.7};
   const resp=await fetch(endpoint,{method:'POST',headers,body:JSON.stringify(body)});
   if(!resp.ok){
     const errData=await resp.json().catch(()=>({}));
