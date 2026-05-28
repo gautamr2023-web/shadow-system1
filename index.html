@@ -8572,6 +8572,13 @@ function addOracleKey(){
   const label=(lblEl&&lblEl.value||'Key '+(_oracleKeys.length+1)).trim();
   const provider=(provEl&&provEl.value)||'groq';
   if(!key||key.length<10){showToast('Paste your full API key first');return;}
+  // Hard block wrong-format Gemini keys before they waste an API call
+  if(provider==='gemini'&&!key.startsWith('AIza')){
+    showToast('❌ Not a Gemini key — Gemini keys start with AIza. Get yours at aistudio.google.com');
+    const w=document.getElementById('oracle-key-format-warn');
+    if(w){w.innerHTML='❌ Gemini keys start with <b>AIza</b> — this key will not work. Go to <b>aistudio.google.com</b> → Get API Key.';w.style.cssText='font-size:11px;margin:-8px 0 10px 0;display:block;color:#f87171;padding:4px 8px;background:rgba(248,113,113,.1);border-radius:6px;border:1px solid rgba(248,113,113,.3)';}
+    return;
+  }
   _oracleKeys.push({label,key,provider,status:_oracleKeys.length===0?'active':'waiting'});
   saveOracleKeys();if(keyEl)keyEl.value='';if(lblEl)lblEl.value='';
   renderKeyList();showToast('Key added: '+label+' ('+provider+') ⚡');
@@ -8674,9 +8681,14 @@ async function oracleCall(messages,systemMsg,maxTokens){
       k.status='active';_oracleKeys.forEach((x,i)=>{if(x!==k&&x.status==='active')x.status='waiting';});
       saveOracleKeys();renderKeyList();return r;
     }catch(e){
-      if(e.status===429||e.status===403||e.status===503||e.status===529){
+      if(e.status===401||e.status===403){
+        // Invalid key — mark failed, show clear error, do NOT silently rotate
+        k.status='failed';saveOracleKeys();renderKeyList();
+        throw new Error('Invalid API key for '+( k.provider||'this provider')+'. Check the key format and make sure it matches the provider.');
+      }
+      if(e.status===429||e.status===503||e.status===529){
         k.status='failed';saveOracleKeys();
-        showToast('Key issue — rotating to next key ↺');
+        showToast('Rate limit hit — rotating to next key ↺');
         continue;
       }
       throw e;
