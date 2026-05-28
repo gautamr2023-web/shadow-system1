@@ -2396,7 +2396,9 @@ function applyXPDecay(){
   const todayStr=today();
   if(lastStudyDate===todayStr)return; // studied today — no decay
   const lastDecay=S.hunter.lastDecayDate||lastStudyDate;
-  const daysToApply=Math.floor((new Date(todayStr)-new Date(lastDecay))/86400000);
+  // DST-safe: compute days via date string arithmetic, not ms division
+  const _decayD1=new Date(lastDecay+'T12:00:00'),_decayD2=new Date(todayStr+'T12:00:00');
+  const daysToApply=Math.round((_decayD2-_decayD1)/86400000);
   if(daysToApply<=0)return;
   const decayPerDay=200;
   const totalDecay=daysToApply*decayPerDay;
@@ -2706,17 +2708,19 @@ function checkStreak(){
         setTimeout(()=>{
           const fo=document.getElementById('fail-overlay');
           const fm=document.getElementById('fail-msg');
-          if(fm)fm.textContent=`Yesterday: ${(yMins/60).toFixed(1)}h studied / minimum 1h required. Streak reset.`;
+          if(fm)fm.textContent=`Yesterday: ${(yMins/60).toFixed(1)}h / ${DAILY_MIN.hours}h min or ${DAILY_MIN.sessions} sessions not met. Streak reset.`;
           if(fo)fo.classList.add('show');
         },1200);
       } else {
         S.dailyStatus[last]='valid';
         S.consecutiveFailures=0;
-        const diff=Math.floor((new Date(t)-new Date(last))/86400000);
+        // DST-safe streak diff
+        const _sd1=new Date(last+'T12:00:00'),_sd2=new Date(t+'T12:00:00');
+        const diff=Math.round((_sd2-_sd1)/86400000);
         S.hunter.streak=diff===1?S.hunter.streak+1:1;
         if(S.hunter.streak>0&&S.hunter.streak%7===0){
-          S.hunter.xp+=50;
-          setTimeout(()=>showToast('🔥 '+S.hunter.streak+'-day streak bonus! +50 XP'),1500);
+          addXP(50); // uses central helper — caps to rank ceiling
+          setTimeout(()=>{checkRankUp();showToast('🔥 '+S.hunter.streak+'-day streak bonus! +50 XP');},400);
         }
       }
 
@@ -2735,7 +2739,10 @@ function checkStreak(){
 
       if(S.consecutiveFailures>=2)checkRankDown();
     }
-    S.hunter.mana=Math.max(0,Math.min(100,(S.hunter.mana||0)+30));
+    // Mana recovery: full +30 for a valid day, +10 for failed/zero (partial — the system remembers)
+    var lastStatus=S.dailyStatus&&S.dailyStatus[last];
+    var manaRecovery=(lastStatus==='valid')?30:(lastStatus==='failed'||lastStatus==='zero')?10:30;
+    S.hunter.mana=Math.max(0,Math.min(100,(S.hunter.mana||0)+manaRecovery));
   } else {
     S.hunter.streak=1;
   }
@@ -6744,11 +6751,7 @@ function renderNextRankProgress(){
   const pctEl = document.getElementById('sw-rank-prog-pct');
   if(!wrap||!fill) return;
 
-  const RANKS=[
-    {r:'E',min:0,max:500},{r:'D',min:500,max:1500},{r:'C',min:1500,max:3500},
-    {r:'B',min:3500,max:7000},{r:'A',min:7000,max:13000},{r:'S',min:13000,max:22000},
-    {r:'SS',min:22000,max:35000},{r:'SSS',min:35000,max:999999}
-  ];
+  // Use the global RANKS array — not a local copy with different thresholds
   const xp = S.hunter.xp||0;
   const cur = RANKS.findIndex(rk=>xp>=rk.min&&xp<rk.max);
   if(cur===-1||cur===RANKS.length-1){ wrap.style.display='none'; return; }
@@ -7101,10 +7104,10 @@ function detectBurnout(){
   if(!card||!reasons)return;
   var signals=[];
   // Signal 1: Declining session ratings over last 7 sessions
-  var rated=S.sessions.filter(function(s){return !s.paused&&s.stars&&s.stars>0;}).slice(-7);
+  var rated=S.sessions.filter(function(s){return !s.paused&&(s.stars||s.rating)>0;}).slice(-7);
   if(rated.length>=5){
-    var first=rated.slice(0,3).reduce(function(a,s){return a+s.stars;},0)/3;
-    var last=rated.slice(-3).reduce(function(a,s){return a+s.stars;},0)/3;
+    var first=rated.slice(0,3).reduce(function(a,s){return a+(s.stars||s.rating);},0)/3;
+    var last=rated.slice(-3).reduce(function(a,s){return a+(s.stars||s.rating);},0)/3;
     if(last<first-0.8)signals.push('Session ratings have dropped '+Math.round((first-last)*10)/10+' points over the last 7 sessions');
   }
   // Signal 2: Poor sleep average
@@ -7723,6 +7726,7 @@ function parseAyanoActions(rawText){
           // Replace same-day sleep entry rather than duplicate
           S.lifeTracking.sleepLog=S.lifeTracking.sleepLog.filter(function(s){return s.date!==today();});
           S.lifeTracking.sleepLog.unshift({date:today(),hours:parseFloat(act.hours)||7,quality:act.quality||'ok',note:act.note||''});
+          if(typeof detectBurnout==='function')setTimeout(detectBurnout,300);
           if(S.lifeTracking.sleepLog.length>90)S.lifeTracking.sleepLog.length=90;
           applied.push('Sleep logged: '+act.hours+'h ('+act.quality+')');
           break;
@@ -7805,12 +7809,17 @@ function parseAyanoActions(rawText){
           var existingSubs=S.sessions.filter(function(s){return s.date===lDate&&s.sub===lSub&&!s.paused;});
           var existingMins=existingSubs.reduce(function(a,s){return a+s.min;},0);
           var allTodayMins=S.sessions.filter(function(s){return s.date===lDate&&!s.paused;}).reduce(function(a,s){return a+s.min;},0);
-          var isDuplicate=Math.abs(existingMins-lMin)<=10||(existingMins>=lMin&&existingMins>0);
+          var isDuplicate=existingMins>0&&Math.abs(existingMins-lMin)<=10;
           if(isDuplicate){
             // Don't log — just confirm existing data
             applied.push('Session already recorded: '+lSub+' has '+existingMins+'min today (requested '+lMin+'min — skipped)');
           } else {
             var lXP=Math.round(lMin*1.5);
+            // Enforce daily XP cap — consistent with timer sessions
+            if(!S.dailyXPCap)S.dailyXPCap={};
+            var lCapUsed=S.dailyXPCap[today()]||0;
+            lXP=Math.min(lXP,Math.max(0,500-lCapUsed));
+            if(lXP>0)S.dailyXPCap[today()]=(lCapUsed+lXP);
             var lNowTime=new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',hour12:true});
             var lStartMs=Date.now()-lMin*60000;
             var lStartTime=new Date(lStartMs).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',hour12:true});
@@ -7821,19 +7830,6 @@ function parseAyanoActions(rawText){
             S.activityLog.unshift({type:'session',date:lDate,time:lNowTime,subject:lSub,minutes:lMin,taskType:lTask,startTime:lSess.startTime,endTime:lSess.time});
             if(S.activityLog.length>100)S.activityLog=S.activityLog.slice(0,100);
             applied.push(lMin+'min '+lSub+' logged ('+lSess.startTime+' → '+lSess.time+')');
-          }
-          break;
-        case 'REMOVE_LAST_SESSION':
-          var rmSub2=(act.subject||'').toLowerCase();
-          var rmDate2=act.date||today();
-          var rmIdx2=-1;
-          for(var ri2=S.sessions.length-1;ri2>=0;ri2--){
-            if(S.sessions[ri2].date===rmDate2&&(!rmSub2||S.sessions[ri2].sub===rmSub2)){rmIdx2=ri2;break;}
-          }
-          if(rmIdx2>-1){
-            var rmSess2=S.sessions.splice(rmIdx2,1)[0];
-            S.hunter.xp=Math.max(0,(S.hunter.xp||0)-(rmSess2.xp||0));
-            applied.push('Session removed: '+(rmSess2.min)+'min '+rmSess2.sub);
           }
           break;
         case 'LOG_CHAPTER':
@@ -7861,9 +7857,11 @@ function parseAyanoActions(rawText){
               var nudge=Math.round((ldrScore-curScore)*0.15); // 15% movement per session
               if(nudge!==0&&S.dimensionScores){S.dimensionScores[ldrKey]=Math.max(0,Math.min(100,curScore+nudge));}
             }
+            S.dimTrainingLog[ldrKey].lastDate=today(); // stamp when the response was given
             applied.push('Dim response logged: '+ldrKey);
           }
           break;
+        case 'CREATE_PLAN':
           // Build pinnedPlan items from blocks array
           var planBlocks=Array.isArray(act.blocks)?act.blocks:[];
           if(planBlocks.length){
@@ -8045,7 +8043,8 @@ function buildAnalyticsLayer(){
   if(sleepLog.length>=3&&rated.length>=3){
     var goodSleepSess=[];var poorSleepSess=[];
     sleepLog.forEach(function(sl){
-      var nextDaySess=rated.filter(function(s){return s.date===sl.date||(new Date(s.date)-new Date(sl.date)===86400000);});
+      var slNext=(function(d){var dt=new Date(d+'T12:00:00');dt.setDate(dt.getDate()+1);return dt.toISOString().split('T')[0];})(sl.date);
+      var nextDaySess=rated.filter(function(s){return s.date===sl.date||s.date===slNext;});
       nextDaySess.forEach(function(s){(sl.hours>=7?goodSleepSess:poorSleepSess).push(s.stars||s.rating);});
     });
     if(goodSleepSess.length>=2&&poorSleepSess.length>=2){
@@ -8056,8 +8055,9 @@ function buildAnalyticsLayer(){
   }
 
   // ── 6. MANA EFFICIENCY ──────────────────────────────────────────
-  var freshSess=sAll.filter(function(s){return s.date===t&&(S.dailyMana&&S.dailyMana[s.date]&&S.dailyMana[s.date].energy==='fresh');});
-  var tiredSess=sAll.filter(function(s){return s.date===t&&(S.dailyMana&&S.dailyMana[s.date]&&S.dailyMana[s.date].energy==='tired');});
+  // Look across ALL days with a declared energy level — not just today
+  var freshSess=sAll.filter(function(s){return S.dailyMana&&S.dailyMana[s.date]&&S.dailyMana[s.date].energy==='fresh';});
+  var tiredSess=sAll.filter(function(s){return S.dailyMana&&S.dailyMana[s.date]&&S.dailyMana[s.date].energy==='tired';});
   if(freshSess.length||tiredSess.length){
     var fRated=freshSess.filter(function(s){return s.stars||s.rating;});
     var tRated=tiredSess.filter(function(s){return s.stars||s.rating;});
@@ -8100,17 +8100,31 @@ function buildAnalyticsLayer(){
   var remaining=Math.max(0,goalH-parseFloat(todayStudied));
   var nowH=new Date().getHours();
   var bestNextSub=neglected[0];
-  if(critGaps.length){var cgSub=critGaps[0].name.toLowerCase();if(cgSub.includes('electrostatics')||cgSub.includes('mechanics')||cgSub.includes('optics')||cgSub.includes('waves'))bestNextSub='physics';else if(cgSub.includes('organic')||cgSub.includes('inorganic')||cgSub.includes('physical'))bestNextSub='chemistry';else bestNextSub='maths';}
+  if(critGaps.length){
+    // Determine subject from the critGap topic by matching against the known JEE topic lists
+    var cgName=critGaps[0].name;
+    var cgFoundSub=null;
+    ['physics','chemistry','maths'].forEach(function(sub){
+      ['11','12'].forEach(function(yr){
+        var list=S.topics[sub+yr]||[];
+        if(list.some(function(t){return t.name===cgName;}))cgFoundSub=sub;
+      });
+    });
+    if(cgFoundSub)bestNextSub=cgFoundSub;
+  }
   insights.push('TODAY OPTIMAL: '+remaining.toFixed(1)+'h remaining toward '+goalH+'h goal | Best next subject: '+bestNextSub+' (most neglected + critical gaps) | Current time: '+nowH+':00');
 
   return insights.length?'\n=== AYANOKOJI INTELLIGENCE LAYER (pre-computed) ===\n'+insights.join('\n')+'\n=== USE THESE INSIGHTS IN EVERY DECISION ===':'';
 }
 
+let _ayanoStreaming=false;
 async function _sendAyano(inputId){
   if(!_oracleKeys||!_oracleKeys.length){showToast('Add Oracle API key → Oracle → Keys');return;}
+  if(_ayanoStreaming)return; // prevent double-send
   const input=document.getElementById(inputId);
   const msg=(input&&input.value.trim())||'';
   if(!msg)return;
+  _ayanoStreaming=true;
   if(input)input.value='';
   _analyzeMessagePattern(msg); // behavioral intelligence — track how they communicate
   _ayanoHistory.push({role:'user',content:msg});
@@ -8149,6 +8163,7 @@ async function _sendAyano(inputId){
     _ayanoHistory.push({role:'assistant',content:errTxt});
     renderAyanoChat();
   }
+  _ayanoStreaming=false;
   if(sendBtn){sendBtn.disabled=false;sendBtn.textContent='Send';}
 }
 function sendAyanoChat(){_sendAyano('ayano-input');}
@@ -8162,9 +8177,10 @@ async function autoAssessDimensions(){
   // Check if all dims are 0 (never assessed) or last assessment was > 3 days ago
   var dimValues=Object.values(S.dimensionScores);
   var allZero=dimValues.every(function(v){return v===0;});
-  var lastAssess=S.lastDimAssessDate||null;
-  var stale=!lastAssess||(Math.floor((new Date()-new Date(lastAssess))/86400000)>=3);
-  if(!allZero&&!stale)return; // up to date, skip
+  // Only auto-assess when ALL dims are zero (first run ever).
+  // Never overwrite on "stale" timer — LOG_DIM_RESPONSE training sessions build these scores
+  // and a blind 3-day re-assessment would erase earned progress.
+  if(!allZero)return; // dims already have data — do not overwrite with inferences
   // Build a lean silent prompt — no chat message shown to user
   var ctx=buildFullContext();
   var silentPrompt='Based on this hunter\'s data, infer scores for ALL 12 dimensions (0-100). Respond ONLY with an [ACTION] block — no text, no explanation.\n\n'+ctx+'\n\nEmit exactly 12 UPDATE_DIMENSION lines covering: selfMastery, strategic, communication, social, charisma, psychology, defense, intellectual, physical, pressure, emotional, identity.';
@@ -8516,10 +8532,10 @@ function checkAyanoProactiveNotification(){
   if(weakT.length&&hour>=10&&hour<=21&&todayMins===0){
     candidates.push({p:2,text:weakT[0].name+' sits at '+weakT[0].conf+'% confidence. Every day it goes unaddressed, the exam gap compounds. It is your lowest-confidence topic. What is stopping you from working on it today?',pre:'How should I approach '+weakT[0].name+'?'});
   }
-  var rated=S.sessions.filter(function(s){return !s.paused&&s.stars>0;}).slice(-6);
+  var rated=S.sessions.filter(function(s){return !s.paused&&(s.stars||s.rating)>0;}).slice(-6);
   if(rated.length>=4){
-    var rA=rated.slice(-3).reduce(function(a,s){return a+s.stars;},0)/3;
-    var pA=rated.slice(0,3).reduce(function(a,s){return a+s.stars;},0)/3;
+    var rA=rated.slice(-3).reduce(function(a,s){return a+(s.stars||s.rating);},0)/3;
+    var pA=rated.slice(0,3).reduce(function(a,s){return a+(s.stars||s.rating);},0)/3;
     if(rA<pA-0.9)candidates.push({p:3,text:'Session quality has dropped from '+Math.round(pA*10)/10+' to '+Math.round(rA*10)/10+' across the last 6 sessions. This is a measurable decline, not a feeling. Something needs to change.',pre:'My session quality is declining. What is happening?'});
   }
   if(todayMins>=goalMins&&hour>=17){
@@ -9126,7 +9142,7 @@ function buildFullContext(){
   const nowDay=new Date().toLocaleDateString('en-IN',{weekday:'long'});
   const sub={physics:0,chemistry:0,maths:0};
   weekSess.forEach(s=>{if(sub[s.sub]!==undefined)sub[s.sub]+=s.min;});
-  const avgRating=S.sessions.filter(s=>s.stars>0).length?(S.sessions.filter(s=>s.stars>0).reduce((a,s)=>a+s.stars,0)/S.sessions.filter(s=>s.stars>0).length).toFixed(1):'N/A';
+  const avgRating=S.sessions.filter(s=>(s.stars||s.rating)>0).length?(S.sessions.filter(s=>(s.stars||s.rating)>0).reduce((a,s)=>a+(s.stars||s.rating),0)/S.sessions.filter(s=>(s.stars||s.rating)>0).length).toFixed(1):'N/A';
   const recentTests=S.tests.slice(-5);
   const avgTest=recentTests.length?Math.round(recentTests.reduce((a,t)=>a+(t.total/(t.max||300)*100),0)/recentTests.length):0;
   const allT=[...(S.topics.physics11||[]),...(S.topics.physics12||[]),...(S.topics.chemistry11||[]),...(S.topics.chemistry12||[]),...(S.topics.maths11||[]),...(S.topics.maths12||[])];
@@ -9302,9 +9318,15 @@ ${(function(){
     var daySess=S.sessions.filter(function(s){return s.date===d&&!s.paused;});
     var dayMins=daySess.reduce(function(a,s){return a+s.min;},0);
     var dn=new Date(d+'T12:00:00').toLocaleDateString('en-IN',{weekday:'short'});
-    if(!dayMins){lines.push('  '+d+' ('+dn+'): No sessions');return;}
-    var detail=daySess.map(function(s){return s.sub+' '+(s.min)+'min';}).join(', ');
-    lines.push('  '+d+' ('+dn+'): '+(dayMins/60).toFixed(1)+'h — '+detail);
+    // Add sleep + energy context for this day
+    var daySleep=(S.lifeTracking&&S.lifeTracking.sleepLog||[]).find(function(s){return s.date===d;});
+    var dayEnergy=S.dailyMana&&S.dailyMana[d]&&S.dailyMana[d].energy;
+    var dayMeta='';
+    if(daySleep)dayMeta+=' sleep:'+daySleep.hours+'h('+daySleep.quality+')';
+    if(dayEnergy)dayMeta+=' energy:'+dayEnergy;
+    if(!dayMins){lines.push('  '+d+' ('+dn+'): No sessions'+dayMeta);return;}
+    var detail=daySess.map(function(s){return s.sub+' '+(s.min)+'min'+(s.stars||s.rating?' ★'+(s.stars||s.rating):'');}).join(', ');
+    lines.push('  '+d+' ('+dn+'): '+(dayMins/60).toFixed(1)+'h — '+detail+dayMeta);
   });
   // Peak study hour analysis
   var hourBuckets={};
@@ -9384,19 +9406,35 @@ ${(function(){
   var lt=S.lifeTracking||{};
   var lines=[];
   var recentSleep=(lt.sleepLog||[]).slice(0,7);
-  if(recentSleep.length){var avgH=Math.round(recentSleep.reduce(function(a,s){return a+s.hours;},0)/recentSleep.length*10)/10;lines.push('Sleep (7d avg): '+avgH+'h | Last: '+recentSleep[0].hours+'h ('+recentSleep[0].quality+')');}
+  if(recentSleep.length){
+    var avgH=Math.round(recentSleep.reduce(function(a,s){return a+s.hours;},0)/recentSleep.length*10)/10;
+    var below7=recentSleep.filter(function(s){return s.hours<7;}).length;
+    var sleepHeader='Sleep (7d avg): '+avgH+'h | Below 7h: '+below7+'/'+recentSleep.length+' days | Last: '+recentSleep[0].hours+'h ('+recentSleep[0].quality+')';
+    if(recentSleep[0].sleepStart||recentSleep[0].wakeTime)sleepHeader+=' bed:'+( recentSleep[0].sleepStart||'?')+' wake:'+(recentSleep[0].wakeTime||'?');
+    lines.push(sleepHeader);
+    var sleepDays=recentSleep.map(function(s){
+      var timing='';
+      if(s.sleepStart||s.wakeTime)timing=' ('+( s.sleepStart||'?')+' → '+(s.wakeTime||'?')+')';
+      return '  '+s.date+': '+s.hours+'h '+s.quality+timing+(s.note?' "'+s.note+'"':'');
+    });
+    lines.push('Sleep log:');
+    sleepDays.forEach(function(l){lines.push(l);});
+  }
   var recentMood=(lt.moodLog||[]).slice(0,5);
   if(recentMood.length){lines.push('Recent mood: '+recentMood.map(function(m){return (m.date||'')+' '+m.mood+' energy:'+m.energy+'/10';}).join(' | '));}
-  var recentWake=(lt.wakeLog||[]).slice(0,5);
-  if(recentWake.length){lines.push('Wake times: '+recentWake.map(function(w){return (w.date||'')+' '+w.time;}).join(', '));}
+  // Merge wake times from both sources: explicit wakeLog (AI) + wakeTime field on sleepLog (manual)
+  var wakeFromSleep=(lt.sleepLog||[]).filter(function(s){return s.wakeTime;}).slice(0,5).map(function(s){return {date:s.date,time:s.wakeTime};});
+  var wakeFromLog=(lt.wakeLog||[]).slice(0,5);
+  var allWakes=wakeFromSleep.concat(wakeFromLog).sort(function(a,b){return (b.date||'').localeCompare(a.date||'');}).slice(0,7);
+  if(allWakes.length){lines.push('Wake times (last 7): '+allWakes.map(function(w){return (w.date||'')+' '+w.time;}).join(', '));}
   var socialLog=(lt.socialLog||[]).slice(0,5);
   if(socialLog.length){lines.push('Social situations: '+socialLog.map(function(s){return s.date+' — '+s.situation+' → '+s.outcome;}).join(' | '));}
   var pressureLog=(lt.pressureLog||[]).slice(0,5);
-  if(pressureLog.length){lines.push('Pressure sessions: '+pressureLog.map(function(p){return p.date+' '+p.session_type+' score:'+p.score+'/10';}).join(' | '));}
-  var ratedSess=S.sessions.filter(function(s){return s.stars>0;}).slice(-14);
+  if(pressureLog.length){lines.push('Pressure sessions: '+pressureLog.map(function(p){return p.date+' '+(p.type||p.session_type||'general')+' score:'+p.score+'/10';}).join(' | '));}
+  var ratedSess=S.sessions.filter(function(s){return (s.stars||s.rating)>0;}).slice(-14);
   if(ratedSess.length){
     var subR={physics:[],chemistry:[],maths:[]};
-    ratedSess.forEach(function(s){if(subR[s.sub])subR[s.sub].push(s.stars);});
+    ratedSess.forEach(function(s){if(subR[s.sub])subR[s.sub].push(s.stars||s.rating);});
     var rl=Object.entries(subR).filter(function(e){return e[1].length;}).map(function(e){return e[0]+' avg:'+(e[1].reduce(function(a,v){return a+v;},0)/e[1].length).toFixed(1)+'/5 ('+e[1].length+' rated)';}).join(' | ');
     if(rl)lines.push('Session quality by subject: '+rl);
   }
@@ -9688,7 +9726,7 @@ function deletePinnedItem(idx){
   if(item&&!item.done){
     // Avoidance signal — user deleted an incomplete task
     _trackBehavior('plan_delete',{task:item.text,date:t});
-    var subMatch=item.text.toLowerCase().match(/physics|chemistry|maths|math/);
+    var subMatch=item.text.toLowerCase().match(/physics|chemistry|maths/); // 'maths' before 'math' — no split key
     if(subMatch){
       if(!S.avoidanceMap)S.avoidanceMap={};
       S.avoidanceMap[subMatch[0]]=(S.avoidanceMap[subMatch[0]]||0)+1;
