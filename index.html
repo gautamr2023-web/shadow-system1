@@ -2170,7 +2170,7 @@ input.fi:focus,select.fi:focus{
       </div>
       <div style="display:flex;gap:8px;margin-bottom:10px;align-items:center">
         <div style="font-size:10px;color:var(--text2);text-transform:uppercase;letter-spacing:.7px;font-weight:700;white-space:nowrap">Provider:</div>
-        <select id="oracle-key-provider" class="fi" style="font-size:12px;padding:6px 10px;width:auto">
+        <select id="oracle-key-provider" class="fi" style="font-size:12px;padding:6px 10px;width:auto" onchange="updateKeyPlaceholder(this.value)">
           <option value="gemini">Gemini (recommended — free, smarter)</option>
           <option value="groq">Groq (free fallback)</option>
           <option value="openrouter">OpenRouter (fallback)</option>
@@ -2191,10 +2191,11 @@ input.fi:focus,select.fi:focus{
         </select>
       </div>
       <div style="display:flex;gap:8px;margin-bottom:14px">
-        <input id="oracle-key-input" type="password" class="fi" placeholder="sk-ant-api03-..." style="flex:1;font-family:var(--mono);font-size:12px">
+        <input id="oracle-key-input" type="password" class="fi" placeholder="AIzaSy... (Gemini key)" style="flex:1;font-family:var(--mono);font-size:12px" oninput="validateKeyFormat(this.value)">
         <input id="oracle-key-label" type="text" class="fi" placeholder="Label (e.g. Key 1)" style="width:100px">
         <button class="btn btn-primary btn-sm" onclick="addOracleKey()" style="flex-shrink:0">Add Key</button>
       </div>
+      <div id="oracle-key-format-warn" style="font-size:11px;margin:-8px 0 10px 0;display:none"></div>
       <div id="oracle-key-list"></div>
       <div id="oracle-key-status" style="margin-top:10px;font-size:11px;color:var(--text2)"></div>
     </div>
@@ -8571,6 +8572,13 @@ function addOracleKey(){
   const label=(lblEl&&lblEl.value||'Key '+(_oracleKeys.length+1)).trim();
   const provider=(provEl&&provEl.value)||'groq';
   if(!key||key.length<10){showToast('Paste your full API key first');return;}
+  // Hard block wrong-format Gemini keys before they waste an API call
+  if(provider==='gemini'&&!key.startsWith('AIza')){
+    showToast('❌ Not a Gemini key — Gemini keys start with AIza. Get yours at aistudio.google.com');
+    const w=document.getElementById('oracle-key-format-warn');
+    if(w){w.innerHTML='❌ Gemini keys start with <b>AIza</b> — this key will not work. Go to <b>aistudio.google.com</b> → Get API Key.';w.style.cssText='font-size:11px;margin:-8px 0 10px 0;display:block;color:#f87171;padding:4px 8px;background:rgba(248,113,113,.1);border-radius:6px;border:1px solid rgba(248,113,113,.3)';}
+    return;
+  }
   _oracleKeys.push({label,key,provider,status:_oracleKeys.length===0?'active':'waiting'});
   saveOracleKeys();if(keyEl)keyEl.value='';if(lblEl)lblEl.value='';
   renderKeyList();showToast('Key added: '+label+' ('+provider+') ⚡');
@@ -8613,11 +8621,37 @@ function renderKeyList(){
   const active=_oracleKeys.find(k=>k.status==='active');
   const st=document.getElementById('oracle-key-status');
   if(st)st.innerHTML=active
-    ?`<span style="color:var(--green)">✓ Active: ${active.label}</span> · ${primaryKeys.filter(k=>k.provider==='gemini').length} Gemini · ${groqKeys.length} Groq${orKeys.length?' · '+orKeys.length+' OpenRouter':''} · Auto-rotation ON`
+    ?`<span style="color:var(--green)">✓ Active: ${active.label}</span> · ${_oracleKeys.filter(k=>k.provider==='gemini').length} Gemini · ${_oracleKeys.filter(k=>k.provider==='groq'||!k.provider).length} Groq${_oracleKeys.filter(k=>k.provider==='openrouter').length?' · '+_oracleKeys.filter(k=>k.provider==='openrouter').length+' OpenRouter':''} · Auto-rotation ON`
     :'<span style="color:var(--red)">⚠ No active key — click Use</span>';
 }
 let ORACLE_MODEL=localStorage.getItem('oracle_model')||'gemini-2.0-flash'; // stored as short name, versioned in _oracleRaw
 
+function updateKeyPlaceholder(provider){
+  var inp=document.getElementById('oracle-key-input');
+  var warn=document.getElementById('oracle-key-format-warn');
+  if(!inp)return;
+  if(provider==='gemini'){inp.placeholder='AIzaSy... (Gemini key from aistudio.google.com)';}
+  else if(provider==='groq'){inp.placeholder='gsk_... (Groq key from console.groq.com)';}
+  else{inp.placeholder='sk-or-... (OpenRouter key from openrouter.ai)';}
+  if(warn)warn.style.display='none';
+  validateKeyFormat(inp.value,provider);
+}
+function validateKeyFormat(val,provider){
+  var warn=document.getElementById('oracle-key-format-warn');
+  if(!warn||!val)return;
+  var prov=provider||document.getElementById('oracle-key-provider')?.value||'gemini';
+  var ok=false;
+  if(prov==='gemini')ok=val.startsWith('AIza');
+  else if(prov==='groq')ok=val.startsWith('gsk_')||val.length>20;
+  else ok=val.startsWith('sk-or-')||val.length>20;
+  if(!ok&&val.length>5){
+    var hint=prov==='gemini'?'Gemini keys start with <b>AIza</b> — get yours at aistudio.google.com':prov==='groq'?'Groq keys start with <b>gsk_</b> — get yours at console.groq.com':'OpenRouter keys start with <b>sk-or-</b>';
+    warn.innerHTML='⚠ Wrong key format — '+hint;
+    warn.style.cssText='font-size:11px;margin:-8px 0 10px 0;display:block;color:#f87171;padding:4px 8px;background:rgba(248,113,113,.1);border-radius:6px;border:1px solid rgba(248,113,113,.3)';
+  } else {
+    warn.style.display='none';
+  }
+}
 function changeOracleModel(val){
   ORACLE_MODEL=val;
   try{localStorage.setItem('oracle_model',val);}catch(e){}
@@ -8647,9 +8681,14 @@ async function oracleCall(messages,systemMsg,maxTokens){
       k.status='active';_oracleKeys.forEach((x,i)=>{if(x!==k&&x.status==='active')x.status='waiting';});
       saveOracleKeys();renderKeyList();return r;
     }catch(e){
-      if(e.status===429||e.status===403||e.status===503||e.status===529){
+      if(e.status===401||e.status===403){
+        // Invalid key — mark failed, show clear error, do NOT silently rotate
+        k.status='failed';saveOracleKeys();renderKeyList();
+        throw new Error('Invalid API key for '+( k.provider||'this provider')+'. Check the key format and make sure it matches the provider.');
+      }
+      if(e.status===429||e.status===503||e.status===529){
         k.status='failed';saveOracleKeys();
-        showToast('Key issue — rotating to next key ↺');
+        showToast('Rate limit hit — rotating to next key ↺');
         continue;
       }
       throw e;
@@ -8676,26 +8715,46 @@ async function _oracleRaw(apiKey,messages,systemMsg,maxTokens,provider){
   messages.forEach(m=>oaiMessages.push({role:m.role,content:m.content}));
 
   const isOR=provider==='openrouter';
-  // If the selected model is a Gemini model, always use Gemini endpoint — even if key was saved as 'groq'
   const isGemini=provider==='gemini'||ORACLE_MODEL.startsWith('gemini');
-  let endpoint,model;
+
+  // ── GEMINI: use native API (not OpenAI-compat — too many breaking differences) ──
   if(isGemini){
-    endpoint='https://generativelanguage.googleapis.com/v1beta/openai/chat/completions';
-    // Use versioned model names — required by Gemini's OpenAI-compat endpoint
-    const geminiModelMap={
-      'gemini-2.0-flash':'gemini-2.0-flash-001',
-      'gemini-1.5-flash':'gemini-1.5-flash-latest',
-      'gemini-1.5-pro':'gemini-1.5-pro-latest',
+    const gemModel=(ORACLE_MODEL&&ORACLE_MODEL.startsWith('gemini'))?ORACLE_MODEL:'gemini-2.0-flash';
+    const gemEndpoint='https://generativelanguage.googleapis.com/v1beta/models/'+gemModel+':generateContent';
+    // Convert OpenAI-style messages to Gemini contents format
+    // Gemini uses role:'model' instead of role:'assistant'
+    const gemContents=messages.map(function(m){
+      return {role:m.role==='assistant'?'model':'user',parts:[{text:m.content||''}]};
+    });
+    const gemBody={
+      contents:gemContents,
+      generationConfig:{maxOutputTokens:maxTokens,temperature:0.7}
     };
-    model=geminiModelMap[ORACLE_MODEL]||ORACLE_MODEL;
-  } else if(isOR){
+    // System instruction goes in its own field, not as a message
+    if(systemMsg)gemBody.systemInstruction={parts:[{text:systemMsg}]};
+    const gemResp=await fetch(gemEndpoint,{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-goog-api-key':apiKey},
+      body:JSON.stringify(gemBody)
+    });
+    if(!gemResp.ok){
+      const errData=await gemResp.json().catch(()=>({}));
+      const msg=errData?.error?.message||'Gemini error '+gemResp.status;
+      const e=new Error(msg);e.status=gemResp.status;throw e;
+    }
+    const gemData=await gemResp.json();
+    return gemData.candidates?.[0]?.content?.parts?.[0]?.text||'';
+  }
+
+  // ── GROQ / OPENROUTER: OpenAI-compatible ──
+  let endpoint,model;
+  if(isOR){
     endpoint='https://openrouter.ai/api/v1/chat/completions';
     model='meta-llama/llama-3.1-8b-instruct:free';
   } else {
     endpoint='https://api.groq.com/openai/v1/chat/completions';
     model=ORACLE_MODEL;
   }
-
   const headers={'Content-Type':'application/json','Authorization':'Bearer '+apiKey};
   if(isOR){headers['HTTP-Referer']='https://shadowsystem.app';headers['X-Title']='Shadow System';}
   const body={model,max_tokens:maxTokens,messages:oaiMessages,temperature:0.7};
