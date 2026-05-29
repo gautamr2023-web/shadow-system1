@@ -2180,7 +2180,7 @@ input.fi:focus,select.fi:focus{
         <div style="font-size:10px;color:var(--text2);text-transform:uppercase;letter-spacing:.7px;font-weight:700;white-space:nowrap">Model:</div>
         <select id="oracle-model-select" class="fi" style="font-size:12px;padding:6px 10px" onchange="changeOracleModel(this.value)">
           <optgroup label="── Gemini (free, recommended) ──">
-            <option value="gemini-2.0-flash" selected>Gemini 2.0 Flash — Best overall 🧠</option>
+            <option value="gemini-2.5-flash" selected>gemini 2.5 flash — Best overall 🧠</option>
             <option value="gemini-1.5-flash">Gemini 1.5 Flash — Stable fallback</option>
           </optgroup>
           <optgroup label="── Groq (free, fast) ──">
@@ -8624,7 +8624,7 @@ function renderKeyList(){
     ?`<span style="color:var(--green)">✓ Active: ${active.label}</span> · ${_oracleKeys.filter(k=>k.provider==='gemini').length} Gemini · ${_oracleKeys.filter(k=>k.provider==='groq'||!k.provider).length} Groq${_oracleKeys.filter(k=>k.provider==='openrouter').length?' · '+_oracleKeys.filter(k=>k.provider==='openrouter').length+' OpenRouter':''} · Auto-rotation ON`
     :'<span style="color:var(--red)">⚠ No active key — click Use</span>';
 }
-let ORACLE_MODEL=localStorage.getItem('oracle_model')||'gemini-2.0-flash'; // stored as short name, versioned in _oracleRaw
+let ORACLE_MODEL=localStorage.getItem('oracle_model')||'gemini-2.5-flash'; // stored as short name, versioned in _oracleRaw
 
 function updateKeyPlaceholder(provider){
   var inp=document.getElementById('oracle-key-input');
@@ -8719,7 +8719,7 @@ async function _oracleRaw(apiKey,messages,systemMsg,maxTokens,provider){
 
   // ── GEMINI: use native API (not OpenAI-compat — too many breaking differences) ──
   if(isGemini){
-    const gemModel=(ORACLE_MODEL&&ORACLE_MODEL.startsWith('gemini'))?ORACLE_MODEL:'gemini-2.0-flash';
+    const gemModel=(ORACLE_MODEL&&ORACLE_MODEL.startsWith('gemini'))?ORACLE_MODEL:'gemini-2.5-flash';
     const gemEndpoint='https://generativelanguage.googleapis.com/v1beta/models/'+gemModel+':generateContent';
     // Convert OpenAI-style messages to Gemini contents format
     // Gemini uses role:'model' instead of role:'assistant'
