@@ -2180,7 +2180,7 @@ input.fi:focus,select.fi:focus{
         <div style="font-size:10px;color:var(--text2);text-transform:uppercase;letter-spacing:.7px;font-weight:700;white-space:nowrap">Model:</div>
         <select id="oracle-model-select" class="fi" style="font-size:12px;padding:6px 10px" onchange="changeOracleModel(this.value)">
           <optgroup label="── Gemini (free, recommended) ──">
-            <option value="gemini-2.5-flash" selected>Gemini 2.5 Flash — Best overall 🧠</option>
+            <option value="gemini-2.0-flash" selected>Gemini 2.0 Flash — Best overall 🧠</option>
             <option value="gemini-1.5-flash">Gemini 1.5 Flash — Stable fallback</option>
           </optgroup>
           <optgroup label="── Groq (free, fast) ──">
@@ -8613,10 +8613,10 @@ function renderKeyList(){
   const active=_oracleKeys.find(k=>k.status==='active');
   const st=document.getElementById('oracle-key-status');
   if(st)st.innerHTML=active
-    ?`<span style="color:var(--green)">✓ Active: ${active.label}</span> · ${_oracleKeys.filter(k=>k.provider==='gemini').length} Gemini · ${_oracleKeys.filter(k=>k.provider==='groq'||!k.provider).length} Groq${_oracleKeys.filter(k=>k.provider==='openrouter').length?' · '+_oracleKeys.filter(k=>k.provider==='openrouter').length+' OpenRouter':''} · Auto-rotation ON`
+    ?`<span style="color:var(--green)">✓ Active: ${active.label}</span> · ${primaryKeys.filter(k=>k.provider==='gemini').length} Gemini · ${groqKeys.length} Groq${orKeys.length?' · '+orKeys.length+' OpenRouter':''} · Auto-rotation ON`
     :'<span style="color:var(--red)">⚠ No active key — click Use</span>';
 }
-let ORACLE_MODEL=localStorage.getItem('oracle_model')||'gemini-2.5-flash'; // stored as short name, versioned in _oracleRaw
+let ORACLE_MODEL=localStorage.getItem('oracle_model')||'gemini-2.0-flash'; // stored as short name, versioned in _oracleRaw
 
 function changeOracleModel(val){
   ORACLE_MODEL=val;
@@ -8681,7 +8681,13 @@ async function _oracleRaw(apiKey,messages,systemMsg,maxTokens,provider){
   let endpoint,model;
   if(isGemini){
     endpoint='https://generativelanguage.googleapis.com/v1beta/openai/chat/completions';
-    model=ORACLE_MODEL; // use model name exactly as selected — Gemini accepts these directly
+    // Use versioned model names — required by Gemini's OpenAI-compat endpoint
+    const geminiModelMap={
+      'gemini-2.0-flash':'gemini-2.0-flash-001',
+      'gemini-1.5-flash':'gemini-1.5-flash-latest',
+      'gemini-1.5-pro':'gemini-1.5-pro-latest',
+    };
+    model=geminiModelMap[ORACLE_MODEL]||ORACLE_MODEL;
   } else if(isOR){
     endpoint='https://openrouter.ai/api/v1/chat/completions';
     model='meta-llama/llama-3.1-8b-instruct:free';
@@ -8692,11 +8698,7 @@ async function _oracleRaw(apiKey,messages,systemMsg,maxTokens,provider){
 
   const headers={'Content-Type':'application/json','Authorization':'Bearer '+apiKey};
   if(isOR){headers['HTTP-Referer']='https://shadowsystem.app';headers['X-Title']='Shadow System';}
-  // Gemini 2.0 requires max_completion_tokens; older models use max_tokens
-  // Send both so it works regardless of model version
-  const body=isGemini
-    ?{model,max_completion_tokens:maxTokens,messages:oaiMessages,temperature:0.7}
-    :{model,max_tokens:maxTokens,messages:oaiMessages,temperature:0.7};
+  const body={model,max_tokens:maxTokens,messages:oaiMessages,temperature:0.7};
   const resp=await fetch(endpoint,{method:'POST',headers,body:JSON.stringify(body)});
   if(!resp.ok){
     const errData=await resp.json().catch(()=>({}));
