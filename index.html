@@ -2180,7 +2180,8 @@ input.fi:focus,select.fi:focus{
         <div style="font-size:10px;color:var(--text2);text-transform:uppercase;letter-spacing:.7px;font-weight:700;white-space:nowrap">Model:</div>
         <select id="oracle-model-select" class="fi" style="font-size:12px;padding:6px 10px" onchange="changeOracleModel(this.value)">
           <optgroup label="── Gemini (free, recommended) ──">
-            <option value="gemini-2.5-flash" selected>gemini 2.5 flash — Best overall 🧠</option>
+            <option value="gemini-2.5-flash" selected>Gemini 2.5 Flash — Best overall 🧠</option>
+            <option value="gemini-2.0-flash">Gemini 2.0 Flash</option>
             <option value="gemini-1.5-flash">Gemini 1.5 Flash — Stable fallback</option>
           </optgroup>
           <optgroup label="── Groq (free, fast) ──">
@@ -2611,6 +2612,7 @@ function ensureKeys(){
   if(!S.dimTrainingLog)S.dimTrainingLog={};
   if(!S.avoidanceMap)S.avoidanceMap={};
   if(!S.predictionLog)S.predictionLog=[]; // {date, prediction, outcome:'pending'|'confirmed'|'wrong'}
+  if(!S.chatIntentions)S.chatIntentions=[]; // {date, type:'promise'|'claim', subject, hours, msg, resolved}
   if(!S.msgPatterns)S.msgPatterns={totalMsgs:0,lateNight:0,shortMsgs:0,avoidTopics:{},lastMsgDate:null};
   if(!S.lifeTracking)S.lifeTracking={sleepLog:[],moodLog:[],wakeLog:[],socialLog:[],pressureLog:[]};
   if(!S.lifeTracking.sleepLog)S.lifeTracking.sleepLog=[];
@@ -7616,7 +7618,8 @@ ABSOLUTE RULES — LLAMA 3.3 70B
 16. [ACTION] block after text. Never before. Never mixed in.
 17. Every sentence earns its place. No padding. No transitions. No summaries. No filler.
 18. WEEKLY SCHEDULE is always in context. When building any plan, read it first. Do not put study blocks during school hours. Coaching slots are not free time — work around them. If today is a school day, the earliest study block starts at the freeAfter time. If tomorrow is also school, note it when setting expectations.
-19. STUDY RESOURCES are always in context. When giving study advice or building a plan, reference the specific book and its completion percentage. Any resource below 40% completion needs an explicit time block this week. Any resource above 85% is near-done — note it. When the hunter mentions a subject, cross-reference which of their resources covers it and what the current completion is.`;
+19. STUDY RESOURCES are always in context. When giving study advice or building a plan, reference the specific book and its completion percentage. Any resource below 40% completion needs an explicit time block this week. Any resource above 85% is near-done — note it. When the hunter mentions a subject, cross-reference which of their resources covers it and what the current completion is.
+20. CONTRADICTION SIGNALS — when present in context, these are verified data conflicts between what the hunter said and what the logs show. You MUST address them directly. State the evidence. Do not accept their framing if it conflicts with the data. "You said you would study Physics 3 times this week. Your logs show 0 minutes. That is not bad luck." A contradiction named precisely is more useful than ten study tips.`;
 
 
 
@@ -7960,6 +7963,129 @@ function _analyzeMessagePattern(msg){
   _trackBehavior('message',{len:msg.length,hour,preview:msg.slice(0,60)});
 }
 
+// ═══════════════════════════════════════════════════════════
+// CONTRADICTION DETECTOR — tracks promises/claims vs reality
+// ═══════════════════════════════════════════════════════════
+
+function _trackChatIntention(msg){
+  if(!msg||msg.length<10)return;
+  const lower=msg.toLowerCase();
+  const t=today();
+
+  // Detect intention type from message
+  const promisePatterns=[
+    'will study','going to study','gonna study','plan to study',
+    "i'll cover","i'll do","i'll finish","i'll complete","i'll start",
+    'will cover','will do','will finish','will complete','will start',
+    'starting today','today i will','tomorrow i will','planning to'
+  ];
+  const claimPatterns=[
+    'i studied','i did','i completed','i finished','i covered',
+    'just studied','just finished','just completed','just did',
+    'studied for','did for','spent on','hours on','hour on'
+  ];
+
+  const isPromise=promisePatterns.some(function(w){return lower.includes(w);});
+  const isClaim=claimPatterns.some(function(w){return lower.includes(w);});
+  if(!isPromise&&!isClaim)return;
+
+  // Extract subject
+  var subject=null;
+  if(lower.includes('physics'))subject='physics';
+  else if(lower.includes('chemistry')||lower.includes('chem'))subject='chemistry';
+  else if(lower.includes('maths')||lower.includes('math'))subject='maths';
+
+  // Extract hours/minutes
+  var hours=null;
+  var hm=lower.match(/(\d+(?:\.\d+)?)\s*hour/);
+  var mm=lower.match(/(\d+)\s*min/);
+  if(hm)hours=parseFloat(hm[1]);
+  else if(mm)hours=parseInt(mm[1])/60;
+
+  if(!S.chatIntentions)S.chatIntentions=[];
+  S.chatIntentions.unshift({
+    date:t,
+    type:isPromise?'promise':'claim',
+    subject:subject,
+    hours:hours,
+    msg:msg.slice(0,150),
+    resolved:false
+  });
+  if(S.chatIntentions.length>50)S.chatIntentions=S.chatIntentions.slice(0,50);
+  // No save() here — save happens in _sendAyano after this runs
+}
+
+function _detectContradictions(){
+  if(!S.chatIntentions||!S.chatIntentions.length)return[];
+  var contradictions=[];
+  var now=new Date();
+  var last7=[];
+  for(var di=0;di<7;di++){var d=new Date(now);d.setDate(d.getDate()-di);last7.push(d.toISOString().split('T')[0]);}
+  var subs=['physics','chemistry','maths'];
+
+  // ── SIGNAL 1: Repeated promises with no follow-through ──
+  subs.forEach(function(sub){
+    var subPromises=S.chatIntentions.filter(function(i){
+      return i.type==='promise'&&i.subject===sub&&last7.includes(i.date);
+    });
+    if(subPromises.length<2)return;
+    var earliestPromise=subPromises[subPromises.length-1].date;
+    var sessionsAfter=S.sessions.filter(function(s){
+      return s.sub===sub&&!s.paused&&s.date>=earliestPromise;
+    });
+    var totalMins=sessionsAfter.reduce(function(a,s){return a+s.min;},0);
+    if(totalMins<30){
+      contradictions.push({
+        severity:'HIGH',
+        signal:'REPEATED_PROMISE_BROKEN',
+        text:sub.toUpperCase()+' — promised '+subPromises.length+'x in last 7 days ('+subPromises.map(function(p){return p.date;}).join(', ')+').'
+          +' Actual sessions after first promise: '+totalMins+' min. Zero follow-through.'
+      });
+    }
+  });
+
+  // ── SIGNAL 2: Stated study time vs logged time ──
+  var claims=S.chatIntentions.filter(function(i){
+    return i.type==='claim'&&i.hours&&i.subject&&last7.includes(i.date);
+  });
+  claims.forEach(function(claim){
+    var loggedMins=S.sessions.filter(function(s){
+      return s.date===claim.date&&s.sub===claim.subject&&!s.paused;
+    }).reduce(function(a,s){return a+s.min;},0);
+    var claimedMins=Math.round(claim.hours*60);
+    var gap=claimedMins-loggedMins;
+    if(Math.abs(gap)>45&&claimedMins>0){
+      contradictions.push({
+        severity:'MEDIUM',
+        signal:'CLAIM_VS_LOG_GAP',
+        text:claim.date+' — said '+claimedMins+'min of '+claim.subject
+          +', logs show '+loggedMins+'min. Unlogged gap: '+Math.abs(gap)+'min.'
+          +(gap>0?' Either not logged or overstated.':' Logged more than claimed — possible miscount.')
+      });
+    }
+  });
+
+  // ── SIGNAL 3: Subject discussed repeatedly but actively avoided ──
+  subs.forEach(function(sub){
+    var mentioned=(S.msgPatterns&&S.msgPatterns.avoidTopics&&S.msgPatterns.avoidTopics[sub])||0;
+    var deletions=S.avoidanceMap&&S.avoidanceMap[sub]||0;
+    var studied7d=S.sessions.filter(function(s){
+      return s.sub===sub&&!s.paused&&last7.includes(s.date);
+    }).reduce(function(a,s){return a+s.min;},0);
+    if(mentioned>=3&&studied7d<30&&deletions>=1){
+      contradictions.push({
+        severity:'HIGH',
+        signal:'AVOIDANCE_CONFIRMED',
+        text:sub.toUpperCase()+' — mentioned in chat '+mentioned+'x, deleted from plan '+deletions+'x,'
+          +' studied only '+studied7d+'min in 7 days. This is not a scheduling conflict. This is avoidance.'
+      });
+    }
+  });
+
+  return contradictions;
+}
+
+
 function _buildBehaviorContext(){
   var lines=[];
   // Plan deletion avoidance map
@@ -8135,6 +8261,7 @@ async function _sendAyano(inputId){
   _ayanoStreaming=true;
   if(input)input.value='';
   _analyzeMessagePattern(msg); // behavioral intelligence — track how they communicate
+  _trackChatIntention(msg);      // contradiction detector — log intentions and claims
   _ayanoHistory.push({role:'user',content:msg});
   // Save to active thread immediately
   var cur=_getActiveThread();
@@ -8572,13 +8699,7 @@ function addOracleKey(){
   const label=(lblEl&&lblEl.value||'Key '+(_oracleKeys.length+1)).trim();
   const provider=(provEl&&provEl.value)||'groq';
   if(!key||key.length<10){showToast('Paste your full API key first');return;}
-  // Hard block wrong-format Gemini keys before they waste an API call
-  if(provider==='gemini'&&!key.startsWith('AIza')){
-    showToast('❌ Not a Gemini key — Gemini keys start with AIza. Get yours at aistudio.google.com');
-    const w=document.getElementById('oracle-key-format-warn');
-    if(w){w.innerHTML='❌ Gemini keys start with <b>AIza</b> — this key will not work. Go to <b>aistudio.google.com</b> → Get API Key.';w.style.cssText='font-size:11px;margin:-8px 0 10px 0;display:block;color:#f87171;padding:4px 8px;background:rgba(248,113,113,.1);border-radius:6px;border:1px solid rgba(248,113,113,.3)';}
-    return;
-  }
+
   _oracleKeys.push({label,key,provider,status:_oracleKeys.length===0?'active':'waiting'});
   saveOracleKeys();if(keyEl)keyEl.value='';if(lblEl)lblEl.value='';
   renderKeyList();showToast('Key added: '+label+' ('+provider+') ⚡');
@@ -8604,7 +8725,7 @@ function renderKeyList(){
   }
   let h='';
   _oracleKeys.forEach((k,i)=>{
-    const masked='sk-...'+k.key.slice(-8);
+    const masked=k.key.slice(0,6)+'...'+k.key.slice(-6);
     const bc=k.status==='active'?'oracle-key-active':k.status==='failed'?'oracle-key-failed':'oracle-key-waiting';
     const provLabel=k.provider==='openrouter'?'<span style="font-size:9px;background:rgba(244,196,48,.15);color:var(--gold);border:1px solid rgba(244,196,48,.3);border-radius:4px;padding:1px 5px;margin-left:5px">OpenRouter</span>':k.provider==='gemini'?'<span style="font-size:9px;background:rgba(0,214,143,.15);color:var(--green);border:1px solid rgba(0,214,143,.3);border-radius:4px;padding:1px 5px;margin-left:5px">Gemini</span>':'<span style="font-size:9px;background:rgba(91,110,245,.15);color:var(--accent);border:1px solid rgba(91,110,245,.3);border-radius:4px;padding:1px 5px;margin-left:5px">Groq</span>';
     h+=`<div class="oracle-key-item">
@@ -8624,7 +8745,7 @@ function renderKeyList(){
     ?`<span style="color:var(--green)">✓ Active: ${active.label}</span> · ${_oracleKeys.filter(k=>k.provider==='gemini').length} Gemini · ${_oracleKeys.filter(k=>k.provider==='groq'||!k.provider).length} Groq${_oracleKeys.filter(k=>k.provider==='openrouter').length?' · '+_oracleKeys.filter(k=>k.provider==='openrouter').length+' OpenRouter':''} · Auto-rotation ON`
     :'<span style="color:var(--red)">⚠ No active key — click Use</span>';
 }
-let ORACLE_MODEL=localStorage.getItem('oracle_model')||'gemini-2.5-flash'; // stored as short name, versioned in _oracleRaw
+let ORACLE_MODEL=localStorage.getItem('oracle_model')||'gemini-2.5-flash';
 
 function updateKeyPlaceholder(provider){
   var inp=document.getElementById('oracle-key-input');
@@ -8663,35 +8784,31 @@ async function oracleCall(messages,systemMsg,maxTokens){
   if(!_oracleKeys.length){
     throw new Error('No API key found. Go to Oracle → Keys tab, add your free Groq key from console.groq.com');
   }
-  const primaryKeys=_oracleKeys.filter(k=>k.provider!=='openrouter');
+  // Key counts for status bar
   const orKeys=_oracleKeys.filter(k=>k.provider==='openrouter');
   const groqKeys=_oracleKeys.filter(k=>k.provider==='groq'||!k.provider);
   // If the selected model is Gemini, reorder keys so Gemini keys are tried first
+  // Gemini keys first, then Groq fallback — OpenRouter handled separately after
   const needsGemini=ORACLE_MODEL.startsWith('gemini');
-  const orderedKeys=needsGemini
-    ? [..._oracleKeys.filter(k=>k.provider==='gemini'), ..._oracleKeys.filter(k=>k.provider!=='gemini')]
-    : _oracleKeys;
-  let groqAllFailed=true;
-  for(let attempt=0;attempt<orderedKeys.length+1;attempt++){
-    const idx=attempt%orderedKeys.length;
-    const k=orderedKeys[idx];
-    if(k.provider==='openrouter'){continue;}
+  const primaryKeys=needsGemini
+    ? [..._oracleKeys.filter(k=>k.provider==='gemini'), ..._oracleKeys.filter(k=>k.provider==='groq'||!k.provider)]
+    : _oracleKeys.filter(k=>k.provider!=='openrouter');
+  let lastErr=null;
+  for(let i=0;i<primaryKeys.length;i++){
+    const k=primaryKeys[i];
     try{
       const r=await _oracleRaw(k.key,messages,systemMsg,maxTokens,k.provider||'groq');
-      k.status='active';_oracleKeys.forEach((x,i)=>{if(x!==k&&x.status==='active')x.status='waiting';});
-      saveOracleKeys();renderKeyList();return r;
+      // Success — mark this key active, others waiting
+      k.status='active';
+      _oracleKeys.forEach(x=>{if(x!==k&&x.status==='active')x.status='waiting';});
+      saveOracleKeys();renderKeyList();
+      return r;
     }catch(e){
-      if(e.status===401||e.status===403){
-        // Invalid key — mark failed, show clear error, do NOT silently rotate
-        k.status='failed';saveOracleKeys();renderKeyList();
-        throw new Error('Invalid API key for '+( k.provider||'this provider')+'. Check the key format and make sure it matches the provider.');
-      }
-      if(e.status===429||e.status===503||e.status===529){
-        k.status='failed';saveOracleKeys();
-        showToast('Rate limit hit — rotating to next key ↺');
-        continue;
-      }
-      throw e;
+      // Any error — mark failed, save last error, try next key
+      k.status='failed';saveOracleKeys();
+      lastErr=e;
+      if(e.status===429||e.status===503)showToast('Key '+(i+1)+' rate limited — trying next ↺');
+      // Continue to next key regardless of error type
     }
   }
   if(orKeys.length>0){
@@ -8706,7 +8823,7 @@ async function oracleCall(messages,systemMsg,maxTokens){
       }
     }
   }
-  throw new Error('All keys rate limited. Try again in a minute, or add more keys in Oracle → Keys.');
+  throw new Error(lastErr?lastErr.message+' (all '+primaryKeys.length+' keys tried)':'All keys failed — add more keys in Oracle → Keys.');
 }
 
 async function _oracleRaw(apiKey,messages,systemMsg,maxTokens,provider){
@@ -8715,11 +8832,11 @@ async function _oracleRaw(apiKey,messages,systemMsg,maxTokens,provider){
   messages.forEach(m=>oaiMessages.push({role:m.role,content:m.content}));
 
   const isOR=provider==='openrouter';
-  const isGemini=provider==='gemini'||ORACLE_MODEL.startsWith('gemini');
+  const isGemini=provider==='gemini'; // ONLY provider determines endpoint — never model name
 
   // ── GEMINI: use native API (not OpenAI-compat — too many breaking differences) ──
   if(isGemini){
-    const gemModel=(ORACLE_MODEL&&ORACLE_MODEL.startsWith('gemini'))?ORACLE_MODEL:'gemini-2.5-flash';
+    const gemModel=(ORACLE_MODEL&&ORACLE_MODEL.startsWith('gemini'))?ORACLE_MODEL:'gemini-2.0-flash';
     const gemEndpoint='https://generativelanguage.googleapis.com/v1beta/models/'+gemModel+':generateContent';
     // Convert OpenAI-style messages to Gemini contents format
     // Gemini uses role:'model' instead of role:'assistant'
@@ -8753,7 +8870,8 @@ async function _oracleRaw(apiKey,messages,systemMsg,maxTokens,provider){
     model='meta-llama/llama-3.1-8b-instruct:free';
   } else {
     endpoint='https://api.groq.com/openai/v1/chat/completions';
-    model=ORACLE_MODEL;
+    // If Gemini model is selected but we're falling back to Groq, use a Groq-compatible model
+    model=ORACLE_MODEL.startsWith('gemini')?'llama-3.3-70b-versatile':ORACLE_MODEL;
   }
   const headers={'Content-Type':'application/json','Authorization':'Bearer '+apiKey};
   if(isOR){headers['HTTP-Referer']='https://shadowsystem.app';headers['X-Title']='Shadow System';}
@@ -9357,6 +9475,14 @@ Current time: ${nowTime} (${nowDay})
 
 === WEEKLY SCHEDULE ===
 ${weekSchedLines.join('\n')}
+
+=== CONTRADICTION SIGNALS ===
+${(function(){
+  var cons=_detectContradictions();
+  if(!cons.length)return 'No contradictions detected — stated intentions match logged behavior.';
+  return 'MANDATORY: Address these if relevant. Do not accept framing that conflicts with this data.\n'
+    +cons.map(function(con){return '['+con.severity+'] '+con.text;}).join('\n');
+})()}
 
 === STUDY RESOURCES ===
 ${srLines.length?srLines.join('\n'):'No resources configured yet'}
