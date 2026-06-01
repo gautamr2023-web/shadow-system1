@@ -9515,7 +9515,7 @@ ${todaySess.length?'Sessions today:\n'+todaySess.map(function(s){
   var st=s.startTime||(s.time&&s.min?'~'+(function(){try{var d=new Date();var t=s.time.match(/(\d+):(\d+)\s*(AM|PM)?/i);if(t){var h=parseInt(t[1])+(t[3]&&t[3].toUpperCase()==='PM'&&t[1]!=='12'?12:0)+(t[3]&&t[3].toUpperCase()==='AM'&&t[1]==='12'?-12:0);var m=parseInt(t[2]);var end=new Date();end.setHours(h,m,0,0);var start=new Date(end-s.min*60000);return start.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',hour12:true});}return '?';}catch(e){return '?'}}()):'?');
   var et=s.time||'?';
   var stars=s.stars||s.rating;
-  return '  '+st+' → '+et+' | '+s.sub+' '+s.min+'min ['+( s.taskType||'practice')+']'+(s.chapter?' ['+s.chapter+']':'')+(stars?' ★'+stars+'/5':'')+(s.manaDrain?' mana-'+s.manaDrain:'')+(s.eff&&s.eff!==1?' eff:'+s.eff:'')+(s.mode==='ayanokoji'?' (AI logged)':s.mode==='manual'?' (manual)':' (timer)');
+  return '  '+st+' → '+et+' | '+s.sub+' '+s.min+'min ['+(s.taskType||'practice')+']'+(s.resourceType?' [src:'+s.resourceType+']':'')+(s.chapter?' [ch:'+s.chapter+']':'')+(stars?' ★'+stars+'/5':'')+(s.manaDrain?' mana-'+s.manaDrain:'')+(s.eff&&s.eff!==1?' eff:'+s.eff+'%':'')+(s.breakActivity?' break:'+s.breakActivity:'')+(s.mode==='ayanokoji'?' (AI logged)':s.mode==='manual'?' (manual)':' (timer)');
 }).join('\n'):'No sessions logged today'}
 
 === THIS WEEK (day-by-day) ===
@@ -9538,7 +9538,7 @@ ${(function(){
     if(daySleep)dayMeta+=' sleep:'+daySleep.hours+'h('+daySleep.quality+')';
     if(dayEnergy)dayMeta+=' energy:'+dayEnergy;
     if(!dayMins){lines.push('  '+d+' ('+dn+'): No sessions'+dayMeta);return;}
-    var detail=daySess.map(function(s){return s.sub+' '+(s.min)+'min'+(s.stars||s.rating?' ★'+(s.stars||s.rating):'');}).join(', ');
+    var detail=daySess.map(function(s){return s.sub+' '+(s.min)+'min'+(s.taskType&&s.taskType!=='practice'?' ['+s.taskType+']':'')+(s.chapter?' ['+s.chapter.slice(0,20)+']':'')+(s.resourceType?' ['+s.resourceType+']':'')+(s.stars||s.rating?' ★'+(s.stars||s.rating):'');}).join(' | ');
     lines.push('  '+d+' ('+dn+'): '+(dayMins/60).toFixed(1)+'h — '+detail+dayMeta);
   });
   // Peak study hour analysis
