@@ -8284,7 +8284,7 @@ async function _sendAyano(inputId){
   if(sendBtn){sendBtn.disabled=true;sendBtn.textContent='···';}
   const systemMsg=AYANO_SYSTEM+'\n\n'+buildFullContext(); // analytics layer is already at top of buildFullContext
   try{
-    const raw=await oracleCall(_ayanoHistory.slice(-20),systemMsg,700);
+    const raw=await oracleCall(_ayanoHistory.slice(-20),systemMsg,2048);
     const text=parseAyanoActions(raw);
     _ayanoHistory.push({role:'assistant',content:text});
     // Save to active thread (not legacy S.ayanoChat)
@@ -8320,7 +8320,7 @@ async function autoAssessDimensions(){
   var ctx=buildFullContext();
   var silentPrompt='Based on this hunter\'s data, infer scores for ALL 12 dimensions (0-100). Respond ONLY with an [ACTION] block — no text, no explanation.\n\n'+ctx+'\n\nEmit exactly 12 UPDATE_DIMENSION lines covering: selfMastery, strategic, communication, social, charisma, psychology, defense, intellectual, physical, pressure, emotional, identity.';
   try{
-    var raw=await oracleCall([{role:'user',content:silentPrompt}],AYANO_SYSTEM,400);
+    var raw=await oracleCall([{role:'user',content:silentPrompt}],AYANO_SYSTEM,800);
     // Force-parse even if AI doesn't wrap in [ACTION]
     var withTag=raw.indexOf('[ACTION]')===-1?'[ACTION]\n'+raw:raw;
     parseAyanoActions(withTag);
@@ -9795,7 +9795,7 @@ One sentence. The single highest-leverage action right now.
 
 Under 220 words. Every sentence must reference their actual data.`;
   try{
-    const text=await oracleCall([{role:'user',content:prompt}],null,1200);
+    const text=await oracleCall([{role:'user',content:prompt}],null,2048);
     if(out)out.innerHTML=`<div class="oracle-section-chip">⚔ Ayanokoji Report · ${new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})}</div>${formatOracleMD(text)}`;
     addToMemory('Advisor: '+text.slice(0,120).replace(/\n/g,' ')+'…',true);
   }catch(e){if(out)out.innerHTML=`<div style="color:var(--red);font-size:13px;padding:6px 0">⚠ ${e.message||'Oracle offline. Add API keys in Keys tab.'}</div>`;}
@@ -9834,7 +9834,7 @@ Structure every solution as:
 5. **JEE Key Point:** [one line they must remember in the exam room]`;
   const messages=doubtHistory.slice(-10).map(m=>({role:m.role,content:m.content}));
   try{
-    const text=await oracleCall(messages,systemMsg,1200);
+    const text=await oracleCall(messages,systemMsg,2048);
     const te=document.getElementById(typingId);if(te)te.remove();
     doubtHistory.push({role:'assistant',content:text});
     if(!S.oracleDoubtHistory)S.oracleDoubtHistory={};
@@ -10042,7 +10042,7 @@ Generate the optimal plan for the remaining hours of TODAY. Target: ${goalH} hou
 
 Rules: Blocks start from ${timeStr}. Target weak topics first. Tasks must be specific (\"Solve 15 Kinematics PYQs\" not \"study physics\"). Total ≈ ${goalH}h.`;
   try{
-    const text=await oracleCall([{role:'user',content:prompt}],null,1200);
+    const text=await oracleCall([{role:'user',content:prompt}],null,2048);
     if(out){
       out.innerHTML=`<div class="oracle-section-chip">📅 ${dow} · ${timeStr}</div>${formatOracleMD(text)}`
         +`<button onclick="pinBattlePlan()" style="width:100%;margin-top:12px;padding:10px;background:rgba(0,214,143,.1);border:1px solid rgba(0,214,143,.3);border-radius:var(--radius-sm);color:var(--green);font-family:var(--font);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;cursor:pointer">📌 Pin to Dashboard</button>`;
