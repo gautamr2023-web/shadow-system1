@@ -9634,7 +9634,7 @@ ${(function(){
     sleepDays.forEach(function(l){lines.push(l);});
   }
   var recentMood=(lt.moodLog||[]).slice(0,5);
-  if(recentMood.length){lines.push('Recent mood: '+recentMood.map(function(m){return (m.date||'')+' '+m.mood+' energy:'+m.energy+'/10';}).join(' | '));}
+  if(recentMood.length){lines.push('Recent mood: '+recentMood.map(function(m){return (m.date||'')+(m.time?' '+m.time:'')+' '+m.mood+' energy:'+m.energy+'/10'+(m.note?' ('+m.note+')':'');}).join(' | '));}
   // Merge wake times from both sources: explicit wakeLog (AI) + wakeTime field on sleepLog (manual)
   var wakeFromSleep=(lt.sleepLog||[]).filter(function(s){return s.wakeTime;}).slice(0,5).map(function(s){return {date:s.date,time:s.wakeTime};});
   var wakeFromLog=(lt.wakeLog||[]).slice(0,5);
@@ -9643,7 +9643,7 @@ ${(function(){
   var socialLog=(lt.socialLog||[]).slice(0,5);
   if(socialLog.length){lines.push('Social situations: '+socialLog.map(function(s){return s.date+' — '+s.situation+' → '+s.outcome;}).join(' | '));}
   var pressureLog=(lt.pressureLog||[]).slice(0,5);
-  if(pressureLog.length){lines.push('Pressure sessions: '+pressureLog.map(function(p){return p.date+' '+(p.type||p.session_type||'general')+' score:'+p.score+'/10';}).join(' | '));}
+  if(pressureLog.length){lines.push('Pressure sessions: '+pressureLog.map(function(p){return p.date+' '+(p.type||p.session_type||'general')+' score:'+p.score+'/10'+(p.note?' — '+p.note:'');}).join(' | '));}
   var ratedSess=S.sessions.filter(function(s){return (s.stars||s.rating)>0;}).slice(-14);
   if(ratedSess.length){
     var subR={physics:[],chemistry:[],maths:[]};
@@ -9730,6 +9730,11 @@ ${(function(){
   var dnotes=S.dailyNotes||{};
   var noteKeys=Object.keys(dnotes).sort().slice(-5);
   if(noteKeys.length)lines.push('Recent notes: '+noteKeys.map(function(d){return d+': '+dnotes[d];}).join(' | '));
+  // Prediction log — AI-made predictions vs outcomes
+  var pLog=(S.predictionLog||[]).filter(function(p){return p.outcome!=='pending';}).slice(-5);
+  var pPending=(S.predictionLog||[]).filter(function(p){return p.outcome==='pending';}).slice(-3);
+  if(pLog.length)lines.push('Past predictions: '+pLog.map(function(p){return '['+p.outcome.toUpperCase()+'] '+p.date+': '+p.prediction.slice(0,80);}).join(' | '));
+  if(pPending.length)lines.push('Active predictions (unresolved): '+pPending.map(function(p){return p.date+': '+p.prediction.slice(0,80);}).join(' | '));
   return lines.join('\n');
 })()}
 ${buildMemoryContext()}
