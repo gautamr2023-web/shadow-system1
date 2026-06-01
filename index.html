@@ -8286,6 +8286,7 @@ async function _sendAyano(inputId){
   try{
     const raw=await oracleCall(_ayanoHistory.slice(-20),systemMsg,2048);
     const text=parseAyanoActions(raw);
+    if(!text||!text.trim()){console.warn('Empty response from AI');_ayanoStreaming=false;if(sendBtn){sendBtn.disabled=false;sendBtn.textContent='Send';}return;}
     _ayanoHistory.push({role:'assistant',content:text});
     // Save to active thread (not legacy S.ayanoChat)
     var cur=_getActiveThread();
@@ -8840,9 +8841,24 @@ async function _oracleRaw(apiKey,messages,systemMsg,maxTokens,provider){
     const gemEndpoint='https://generativelanguage.googleapis.com/v1beta/models/'+gemModel+':generateContent';
     // Convert OpenAI-style messages to Gemini contents format
     // Gemini uses role:'model' instead of role:'assistant'
-    const gemContents=messages.map(function(m){
+    // Gemini requires strictly alternating user/model turns
+    // Merge consecutive same-role messages to prevent 400 errors
+    var rawContents=messages.map(function(m){
       return {role:m.role==='assistant'?'model':'user',parts:[{text:m.content||''}]};
     });
+    var gemContents=[];
+    rawContents.forEach(function(msg){
+      if(gemContents.length&&gemContents[gemContents.length-1].role===msg.role){
+        // Merge into previous message
+        gemContents[gemContents.length-1].parts[0].text+='\n'+msg.parts[0].text;
+      } else {
+        gemContents.push({role:msg.role,parts:[{text:msg.parts[0].text}]});
+      }
+    });
+    // Gemini requires first message to be 'user'
+    if(gemContents.length&&gemContents[0].role!=='user'){
+      gemContents.unshift({role:'user',parts:[{text:'(context)'}]});
+    }
     const gemBody={
       contents:gemContents,
       generationConfig:{maxOutputTokens:maxTokens,temperature:0.7}
@@ -10114,7 +10130,16 @@ function togglePlanCheck(el){
   }
 }
 function formatOracleMD(text){
+  // Strip [ACTION] blocks — never show raw JSON in chat
+  text=text.replace(/\[ACTION\][\s\S]*?(?=\n\n|\n[A-Z]|$)/g,'').trim();
+  // Code blocks — render with monospace background
+  text=text.replace(/```[\w]*\n?([\s\S]*?)```/g,'<div style="background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.08);border-radius:6px;padding:8px 10px;font-family:var(--mono);font-size:11px;color:var(--text2);white-space:pre-wrap;margin:4px 0">$1</div>');
+  // Inline code
+  text=text.replace(/`([^`]+)`/g,'<code style="background:rgba(0,0,0,.3);padding:1px 5px;border-radius:3px;font-family:var(--mono);font-size:11px;color:var(--accent)">$1</code>');
   return text
+    .replace(/^###\s+(.+)$/gm,'<div style="font-size:11px;font-weight:800;color:var(--accent);text-transform:uppercase;letter-spacing:.8px;margin:8px 0 2px">$1</div>')
+    .replace(/^##\s+(.+)$/gm,'<div class="o-heading">$1</div>')
+    .replace(/^#\s+(.+)$/gm,'<div class="o-heading" style="font-size:14px">$1</div>')
     .replace(/^\*\*(.+?)\*\*$/gm,'<div class="o-heading">$1</div>')
     .replace(/\*\*(.+?)\*\*/g,'<strong style="color:var(--text)">$1</strong>')
     .replace(/\*(.+?)\*/g,'<em style="color:var(--text2)">$1</em>')
