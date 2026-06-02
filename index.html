@@ -4198,15 +4198,11 @@ async function _upgradeSecAdviceAI(mins,sub,taskType,manaAfter,staticAdvice,stat
   const weakT=allT.filter(t=>t.conf>0&&t.conf<40).sort((a,b)=>a.conf-b.conf).slice(0,3);
   const todayTotal=S.sessions.filter(s=>s.date===today()&&!s.paused).reduce((a,s)=>a+s.min,0);
   const subLabel={physics:'Physics',chemistry:'Chemistry',maths:'Maths',other:'Other'}[sub]||sub;
-  const prompt=buildAyanoVoice('session')+`
-
-Session just completed: ${mins}min ${taskType} on ${subLabel}. Mana=${manaAfter}/100. Days to exam=${daysLeft}. Today total=${Math.round(todayTotal/60*10)/10}h. Weak topics: ${weakT.length?weakT.map(t=>t.name+' ('+t.conf+'%)').join(', '):'not set yet'}.
-
-Respond in EXACTLY this format — no preamble, no extra text:
-ADVICE: [one sharp observation from the data, max 22 words]
-NEXT: [specific next session directive, max 18 words]`;
+  const sessData=`Session: ${mins}min ${taskType} on ${subLabel}. Mana=${manaAfter}/100. Days to exam=${daysLeft}. Today total=${Math.round(todayTotal/60*10)/10}h. Weak topics: ${weakT.length?weakT.map(t=>t.name+' ('+t.conf+'%)').join(', '):'not set'}.`;
+  const advSystemMsg=buildAyanoVoice('session');
+  const advUserMsg=sessData+'\n\nNo preamble. No explanation. Begin immediately with ADVICE:.\n\nADVICE: [one sharp observation, max 22 words]\nNEXT: [specific next session directive, max 18 words]';
   try{
-    const text=await oracleCall([{role:'user',content:prompt}],null,300);
+    const text=await oracleCall([{role:'user',content:advUserMsg}],advSystemMsg,400);
     if(!document.getElementById('sec-modal').classList.contains('show'))return;
     const advMatch=text.match(/ADVICE:\s*(.+)/i);
     const nextMatch=text.match(/NEXT:\s*(.+)/i);
@@ -7381,6 +7377,24 @@ let oracleTab='advisor';
 let doubtHistory=[];
 let doubtSubject='physics';
 let oracleStreaming=false;
+let _oracleStreamingTimer=null;
+function setOracleStreaming(val){
+  oracleStreaming=val;
+  if(_oracleStreamingTimer){clearTimeout(_oracleStreamingTimer);_oracleStreamingTimer=null;}
+  if(val){
+    // Safety net: force-reset after 45s in case API hangs silently
+    _oracleStreamingTimer=setTimeout(function(){
+      if(oracleStreaming){
+        setOracleStreaming(false);_oracleStreamingTimer=null;
+        // Re-enable all oracle buttons
+        ['oracle-analyze-btn','oracle-plan-btn','doubt-send-btn','wo-oracle-btn'].forEach(function(id){
+          var el=document.getElementById(id);if(el){el.disabled=false;}
+        });
+        console.warn('oracleStreaming force-reset after 45s timeout');
+      }
+    },45000);
+  }
+}
 let _oracleKeys=[];
 let _oracleKeyIdx=0;
 function initOracleSection(){
@@ -9810,40 +9824,34 @@ function renderAdvisorContext(){
   </div>`;
 }
 async function runAdvisor(){
-  if(oracleStreaming)return;oracleStreaming=true;
+  if(oracleStreaming)return;setOracleStreaming(true);
   const btn=document.getElementById('oracle-analyze-btn');const out=document.getElementById('oracle-advisor-out');
   if(btn){btn.disabled=true;btn.textContent='⏳ Ayanokoji analyzing...';}
   if(out){out.style.display='block';out.innerHTML='<div class="oracle-typing"><span></span><span></span><span></span></div>';}
   const context=buildFullContext();
   const sprintNote=isSprintMode()?'\n\n⚠ FINAL SPRINT MODE: Under 30 days to exam. Recommendations must focus ONLY on PYQs, mock tests, and revision of weak topics. No new topic introduction. Prioritize exam strategy and time management.':'';
   const ayanoVoice=buildAyanoVoice('advisor');
-  const prompt=ayanoVoice+`
-
-${context}${sprintNote}
-
-Respond in this exact structure:
-
-**ASSESSMENT**
-2 sentences. Current trajectory, no filler.
-
-**THE THREE MOVES**
-1. [Specific action — use their real numbers]
-2. [Specific action]
-3. [Specific action]
-
-**WHAT YOU'RE AVOIDING**
-One sentence. The pattern in their data they may not want to see.
-
-**48-HOUR DIRECTIVE**
-One sentence. The single highest-leverage action right now.
-
-Under 220 words. Every sentence must reference their actual data.`;
+  // Context to systemMsg — prevents Gemini preamble that burns output tokens
+  const advisorSystemMsg=ayanoVoice+'\n\n'+context+sprintNote;
+  const advisorUserMsg='No preamble. No intro. Begin immediately with **ASSESSMENT**.\n\n'
+    +'Respond in this exact structure:\n\n'
+    +'**ASSESSMENT**\n'
+    +'2 sentences. Current trajectory based on their actual data.\n\n'
+    +'**THE THREE MOVES**\n'
+    +'1. [Specific action — name the exact topic and number]\n'
+    +'2. [Specific action]\n'
+    +'3. [Specific action]\n\n'
+    +'**WHAT YOU\'RE AVOIDING**\n'
+    +'One sentence. The pattern in their data they may not want to see.\n\n'
+    +'**48-HOUR DIRECTIVE**\n'
+    +'One sentence. The single highest-leverage action right now.\n\n'
+    +'Under 220 words. Every sentence must reference their actual logged data.';
   try{
-    const text=await oracleCall([{role:'user',content:prompt}],null,2048);
+    const text=await oracleCall([{role:'user',content:advisorUserMsg}],advisorSystemMsg,2048);
     if(out)out.innerHTML=`<div class="oracle-section-chip">⚔ Ayanokoji Report · ${new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})}</div>${formatOracleMD(text)}`;
     addToMemory('Advisor: '+text.slice(0,120).replace(/\n/g,' ')+'…',true);
   }catch(e){if(out)out.innerHTML=`<div style="color:var(--red);font-size:13px;padding:6px 0">⚠ ${e.message||'Oracle offline. Add API keys in Keys tab.'}</div>`;}
-  oracleStreaming=false;if(btn){btn.disabled=false;btn.textContent='⚔ Analyze My Progress';}
+  setOracleStreaming(false);if(btn){btn.disabled=false;btn.textContent='⚔ Analyze My Progress';}
 }
 function setDoubtSubject(sub,btn){
   if(!S.oracleDoubtHistory)S.oracleDoubtHistory={};
@@ -9892,7 +9900,7 @@ Structure every solution as:
     const te=document.getElementById(typingId);
     if(te){te.className='oracle-bubble assistant';te.innerHTML=`<span style="color:var(--red)">⚠ ${e.message||'Error. Check API keys.'}</span>`;}
   }
-  oracleStreaming=false;if(sendBtn){sendBtn.disabled=false;sendBtn.textContent='Send ⚡';}
+  setOracleStreaming(false);if(sendBtn){sendBtn.disabled=false;sendBtn.textContent='Send ⚡';}
 }
 function _appendConfidenceNudge(chat){
   if(!chat||!doubtSubject||doubtSubject==='general')return;
@@ -10053,7 +10061,7 @@ function pinBattlePlan(){
   goTo('dashboard',null);
 }
 async function generateDailyPlan(){
-  if(oracleStreaming)return;oracleStreaming=true;
+  if(oracleStreaming)return;setOracleStreaming(true);
   const btn=document.getElementById('oracle-plan-btn');const out=document.getElementById('oracle-plan-out');
   if(btn){btn.disabled=true;btn.textContent='⏳ Ayanokoji building plan...';}
   if(out){out.style.display='block';out.innerHTML='<div class="oracle-typing"><span></span><span></span><span></span></div>';}
@@ -10063,30 +10071,25 @@ async function generateDailyPlan(){
   const timeStr=new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
   const sprintRule=isSprintMode()?'\n⚠ SPRINT MODE: Only PYQs, mock tests, and weak topic revision. No new chapters.':'';
   const ayanoVoice=buildAyanoVoice('planner');
-  const prompt=ayanoVoice+`
-
-Current time: ${timeStr} (${dow}).
-
-${context}${sprintRule}
-
-Generate the optimal plan for the remaining hours of TODAY. Target: ${goalH} hours total.
-
-**BATTLE PLAN — ${dow.toUpperCase()}**
-
-**[Block Name]** [time range]
-- [Subject]: [specific chapter/topic] — [exact task] — [duration]
-
-**Checkpoints**
-- [ ] [measurable goal 1]
-- [ ] [measurable goal 2]
-- [ ] [measurable goal 3]
-
-**Oracle's Assessment**
-[1 sentence — what this plan demands and why]
-
-Rules: Blocks start from ${timeStr}. Target weak topics first. Tasks must be specific (\"Solve 15 Kinematics PYQs\" not \"study physics\"). Total ≈ ${goalH}h.`;
+  // Context goes to systemMsg (Gemini systemInstruction) — keeps user message lean
+  // This stops Gemini from re-summarising context before the plan (wastes tokens)
+  const planSystemMsg=ayanoVoice+'\n\n'+context;
+  const sprintLine=sprintRule?'\n'+sprintRule:'';
+  const userMsg='Current time: '+timeStr+' ('+dow+').'+sprintLine+'\n\n'
+    +'Generate the optimal plan for TODAY\'s remaining hours. Target: '+goalH+'h total.\n'
+    +'No preamble. No intro sentence. Begin immediately with the plan.\n\n'
+    +'**BATTLE PLAN — '+dow.toUpperCase()+'**\n\n'
+    +'**[Block Name]** [time range]\n'
+    +'- [Subject]: [specific chapter/topic] — [exact task] — [duration]\n\n'
+    +'**Checkpoints**\n'
+    +'- [ ] [measurable goal 1]\n'
+    +'- [ ] [measurable goal 2]\n'
+    +'- [ ] [measurable goal 3]\n\n'
+    +'**Oracle\'s Assessment**\n'
+    +'[1 sentence — what this plan demands and why]\n\n'
+    +'Rules: Blocks start from '+timeStr+'. Weak topics before revision. Every task must name the exact chapter and number of problems.';
   try{
-    const text=await oracleCall([{role:'user',content:prompt}],null,2048);
+    const text=await oracleCall([{role:'user',content:userMsg}],planSystemMsg,3500);
     if(out){
       out.innerHTML=`<div class="oracle-section-chip">📅 ${dow} · ${timeStr}</div>${formatOracleMD(text)}`
         +`<button onclick="pinBattlePlan()" style="width:100%;margin-top:12px;padding:10px;background:rgba(0,214,143,.1);border:1px solid rgba(0,214,143,.3);border-radius:var(--radius-sm);color:var(--green);font-family:var(--font);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;cursor:pointer">📌 Pin to Dashboard</button>`;
@@ -10094,7 +10097,7 @@ Rules: Blocks start from ${timeStr}. Target weak topics first. Tasks must be spe
     }
     addToMemory(`Plan generated: ${today()}, ${dow}, ${goalH}h goal`,true);
   }catch(e){if(out)out.innerHTML=`<div style="color:var(--red);font-size:13px;padding:6px 0">⚠ ${e.message||'Oracle offline.'}</div>`;}
-  oracleStreaming=false;if(btn){btn.disabled=false;btn.textContent='📅 Generate Today\'s Battle Plan';}
+  setOracleStreaming(false);if(btn){btn.disabled=false;btn.textContent='📅 Generate Today\'s Battle Plan';}
 }
 async function oracleWorkoutCoach(){
   if(!_oracleKeys||!_oracleKeys.length){showToast('Add an Oracle API key first → Oracle → Keys');return;}
