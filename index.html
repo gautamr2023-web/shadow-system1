@@ -4181,7 +4181,8 @@ function showSecModal(sessInfo){
         `<div class="sec-micro-def" style="margin-top:4px">${item.fact}</div>`;
     }
     if(_oracleKeys&&_oracleKeys.length>0&&sub&&sub!=='other'){
-      _upgradeLearnThisAI(sub);
+      // Stagger 2.5s after advice call to avoid simultaneous rate limit hits
+      setTimeout(function(){_upgradeLearnThisAI(sub);},2500);
     }
   }
 
@@ -4205,7 +4206,7 @@ Respond in EXACTLY this format — no preamble, no extra text:
 ADVICE: [one sharp observation from the data, max 22 words]
 NEXT: [specific next session directive, max 18 words]`;
   try{
-    const text=await oracleCall([{role:'user',content:prompt}],null,180);
+    const text=await oracleCall([{role:'user',content:prompt}],null,300);
     if(!document.getElementById('sec-modal').classList.contains('show'))return;
     const advMatch=text.match(/ADVICE:\s*(.+)/i);
     const nextMatch=text.match(/NEXT:\s*(.+)/i);
@@ -4228,25 +4229,35 @@ async function _upgradeLearnThisAI(sub){
   const allT=[].concat(S.topics[sub+'11']||[],S.topics[sub+'12']||[]);
   const weakT=allT.filter(function(t){return t.conf>0&&t.conf<50;}).sort(function(a,b){return a.conf-b.conf;}).slice(0,2);
   const focusHint=weakT.length?' Focus on '+weakT.map(function(t){return t.name;}).join(' or ')+' if possible.':'';
-  const prompt=buildAyanoVoice('doubt')+`
+  const allTopics=[].concat(S.topics[sub+'11']||[],S.topics[sub+'12']||[]);
+  const zeroConf=allTopics.filter(function(t){return t.conf===0;}).slice(0,3).map(function(t){return t.name;});
+  const focusTopic=weakT.length?weakT[0].name:zeroConf.length?zeroConf[0]:'any high-weightage JEE topic';
+  const prompt=`You are a JEE expert. The student just studied ${subLabel}. Focus on: ${focusTopic}.
 
-${S.hunter&&S.hunter.name||'Hunter'} just studied ${subLabel}.${focusHint}
+Give a precise, exam-relevant micro-lesson for JEE Advanced/Mains. Be specific — name exact formulas, numbers, or conditions. This should be content a student can actually use.
 
-Identify ONE specific JEE concept, formula, or cognitive trap in this subject that most students overlook. The kind of insight that separates the top 1% in the exam.
-
-Respond EXACTLY in this format — no preamble, no extra text:
+Respond in EXACTLY this format — no preamble, no extra lines:
 CONCEPT: [topic name, 3-6 words]
-FACT: [the precise insight, max 28 words]`;
+INSIGHT: [the core idea most students miss — 2-3 sentences max, be specific]
+FORMULA: [exact formula, rule, or key condition — use proper notation]
+TRAP: [the most common JEE mistake on this topic — 1 sentence]`;
   try{
-    const text=await oracleCall([{role:'user',content:prompt}],null,120);
+    const text=await oracleCall([{role:'user',content:prompt}],null,500);
     if(!document.getElementById('sec-modal').classList.contains('show'))return;
     const cMatch=text.match(/CONCEPT:\s*(.+)/i);
-    const fMatch=text.match(/FACT:\s*(.+)/i);
+    const iMatch=text.match(/INSIGHT:\s*([\s\S]+?)(?=\nFORMULA:|\nTRAP:|$)/i);
+    const foMatch=text.match(/FORMULA:\s*(.+)/i);
+    const tMatch=text.match(/TRAP:\s*(.+)/i);
     const micEl2=document.getElementById('sec-micro');
-    if(micEl2&&cMatch&&fMatch){
+    if(micEl2&&cMatch){
+      const insight=iMatch?iMatch[1].trim():'';
+      const formula=foMatch?foMatch[1].trim():'';
+      const trap=tMatch?tMatch[1].trim():'';
       micEl2.innerHTML='<div class="sec-learn-tag" style="background:rgba(0,180,216,.12);color:var(--mana);border-color:rgba(0,180,216,.3)">⚡ Oracle · '+subLabel+'</div>'
         +'<div class="sec-micro-word">'+escHtml(cMatch[1].trim())+'</div>'
-        +'<div class="sec-micro-def">'+escHtml(fMatch[1].trim())+'</div>';
+        +(insight?'<div class="sec-micro-def" style="margin-bottom:8px">'+escHtml(insight)+'</div>':'')
+        +(formula?'<div style="background:rgba(91,110,245,.1);border:1px solid rgba(91,110,245,.25);border-radius:6px;padding:6px 10px;font-family:var(--mono);font-size:12px;color:var(--accent);margin-bottom:6px">'+escHtml(formula)+'</div>':'')
+        +(trap?'<div style="font-size:11px;color:var(--gold);margin-top:4px">⚠ Common trap: '+escHtml(trap)+'</div>':'');
     }
   }catch(e){/* silently keep static fallback */}
 }
@@ -4648,8 +4659,10 @@ function getSessionsForPeriod(period, weekOffset){
     return S.sessions.filter(s=>days.includes(s.date));
   }
   if(period==='month'){
-    const yr=now.getFullYear(),mo=now.getMonth();
-    return S.sessions.filter(s=>{const d=new Date(s.date);return d.getFullYear()===yr&&d.getMonth()===mo;});
+    // Last 30 days — NOT calendar month (calendar month shows 1-5 days early in month)
+    const cutoff=new Date();cutoff.setDate(cutoff.getDate()-29);
+    const cutoffStr=cutoff.toISOString().split('T')[0];
+    return S.sessions.filter(s=>s.date>=cutoffStr);
   }
   return S.sessions;
 }
@@ -4841,14 +4854,17 @@ function renderFocusStats(){
             const dt=new Date(d);
             const lbl=dt.toLocaleDateString('en-IN',{weekday:'short'});
             const dateStr=dt.getDate()+'/'+(dt.getMonth()+1);
-            let segs='';
-            subKeys.forEach(k=>{
-              if(dayData[k]>0){
-                const h=Math.round((dayData[k]/maxM)*BAR_H);
-                segs=`<div style="width:100%;height:${h}px;background:${subColors[k]};display:block;transition:height .4s"></div>`+segs;
-              }
-            });
             const totalH=Math.max(total>0?3:0,Math.round((total/maxM)*BAR_H));
+            // Calculate segment heights proportionally from totalH to avoid rounding gaps
+            let segs='';
+            let usedH=0;
+            const subWithData=subKeys.filter(k=>dayData[k]>0);
+            subWithData.forEach((k,idx)=>{
+              const isLast=idx===subWithData.length-1;
+              const h=isLast?Math.max(1,totalH-usedH):Math.round((dayData[k]/total)*totalH);
+              usedH+=h;
+              segs=`<div style="width:100%;height:${h}px;background:${subColors[k]};display:block"></div>`+segs;
+            });
             return `<div style="flex:1;min-width:${days>7?'18px':'28px'};display:flex;flex-direction:column;align-items:center;position:relative">
               ${total>0?`<div style="font-size:7px;color:var(--text2);margin-bottom:2px;font-family:var(--mono);white-space:nowrap">${(total/60).toFixed(1)}h</div>`:'<div style="font-size:7px;margin-bottom:2px">&nbsp;</div>'}
               <div style="width:100%;height:${totalH}px;border-radius:3px 3px 0 0;overflow:hidden;display:flex;flex-direction:column-reverse;${isToday?'outline:2px solid var(--accent);outline-offset:1px':''}" title="${d}: ${fmtHM(total)}">
@@ -8691,7 +8707,19 @@ function loadOracleKeys(){
   try{const raw=localStorage.getItem('oracle_keys');if(raw)_oracleKeys=JSON.parse(raw);}catch(e){_oracleKeys=[];}
   _oracleKeys.forEach(k=>{if(k.status==='failed')k.status='waiting';});
 }
-function saveOracleKeys(){try{localStorage.setItem('oracle_keys',JSON.stringify(_oracleKeys));}catch(e){}}
+function saveOracleKeys(){
+  try{localStorage.setItem('oracle_keys',JSON.stringify(_oracleKeys));}catch(e){}
+  // Auto-reset rate-limited keys after 65s — Gemini free tier resets per minute
+  _oracleKeys.forEach(function(k){
+    if(k.status==='failed'&&!k._resetTimer){
+      k._resetTimer=setTimeout(function(){
+        k.status='waiting';delete k._resetTimer;
+        try{localStorage.setItem('oracle_keys',JSON.stringify(_oracleKeys));}catch(e){}
+        renderKeyList();
+      },65000);
+    }
+  });
+}
 function addOracleKey(){
   const keyEl=document.getElementById('oracle-key-input');
   const lblEl=document.getElementById('oracle-key-label');
@@ -9337,7 +9365,7 @@ async function oracleResourceAnalysis(){
     +'PACE CHECK: [are they on track? what chapter speed do they need?]\n'
     +'Use their actual resource names and percentages. Be direct, specific, max 220 words.';
   try{
-    var text=await oracleCall([{role:'user',content:prompt}],null,400);
+    var text=await oracleCall([{role:'user',content:prompt}],null,600);
     if(out){
       out.innerHTML='<div style="font-size:9px;color:var(--mana);text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-bottom:8px">⚔ Ayanokoji Resource Analysis</div>'+formatOracleMD(text);
     }
