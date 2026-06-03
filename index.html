@@ -1500,9 +1500,6 @@ input.fi:focus,select.fi:focus{
         <div class="fg full"><label class="fl">Notes <span style="color:var(--text3);font-weight:400;text-transform:none;letter-spacing:0">(optional)</span></label>
           <input type="text" class="fi" id="t-notes" placeholder="e.g. ran out of time in maths, silly mistakes…">
         </div>
-        <div class="fg full"><label class="fl">Class Rank <span style="color:var(--text3);font-weight:400;text-transform:none;letter-spacing:0">(optional — leave blank for class tests, NCERT, chapter tests, etc.)</span></label>
-          <input type="number" class="fi" id="t-rank" placeholder="e.g. 3 — skip if this test has no ranking" min="1">
-        </div>
         <div class="fg full">
           <label class="fl">Where did you lose marks? <span style="color:var(--text3);font-weight:400;text-transform:none;letter-spacing:0">(tap topics — confidence drops -10%)</span></label>
           <div id="test-weak-chips" style="display:flex;flex-wrap:wrap;gap:5px;margin-top:7px;max-height:130px;overflow-y:auto;padding:2px 0"></div>
@@ -5013,8 +5010,6 @@ function openTestEdit(id){
     +'</select></div>'
     +'<div class="fg full"><label class="fl">Chapters</label><input type="text" class="fi" id="te-chapters" value="'+escHtml(t.chapters||'')+'"></div>'
     +'<div class="fg full"><label class="fl">Notes</label><input type="text" class="fi" id="te-notes" value="'+escHtml(t.notes||'')+'"></div>'
-    +'<div class="fg full"><label class="fl">Class Rank <span style="color:var(--text3);font-weight:400;font-size:10px">(optional — leave blank if no ranking)</span></label>'
-    +'<input type="number" class="fi" id="te-rank" value="'+(t.classRank||'')+'" placeholder="e.g. 3 — blank if not applicable" min="1"></div>'
     +'</div>'
     +'<button class="btn btn-primary" onclick="saveTestEdit('+id+')" style="width:100%;margin-top:12px">Save Changes</button>'
     +'</div>';
@@ -5033,7 +5028,6 @@ function saveTestEdit(id){
   t.type=document.getElementById('te-type').value||t.type;
   t.chapters=document.getElementById('te-chapters').value||'';
   t.notes=document.getElementById('te-notes').value||'';
-  t.classRank=parseInt(document.getElementById('te-rank').value)||null;
   S.tests.sort(function(a,b){return new Date(a.date)-new Date(b.date);});
   save();
   document.getElementById('test-edit-modal').style.display='none';
@@ -5081,7 +5075,6 @@ function addTest(){
   const type=document.getElementById('t-type').value;
   const chapters=(document.getElementById('t-chapters').value||'').trim();
   const notes=(document.getElementById('t-notes').value||'').trim();
-  const classRankVal=parseInt(document.getElementById('t-rank').value)||null;
   const subjects=[];
   if(!document.getElementById('ts-phy')||document.getElementById('ts-phy').checked)subjects.push('physics');
   if(!document.getElementById('ts-che')||document.getElementById('ts-che').checked)subjects.push('chemistry');
@@ -5092,7 +5085,7 @@ function addTest(){
   const total=phyF+cheF+matF;
   const weakChipEls=[...document.querySelectorAll('.twc.twc-on')];
   const weakTopics=weakChipEls.map(el=>({name:el.dataset.topic,subject:el.dataset.subject}));
-  S.tests.push({id:Date.now(),date,phy:phyF,che:cheF,mat:matF,total,max,type,chapters,notes,classRank:classRankVal,weakTopics,subjects});
+  S.tests.push({id:Date.now(),date,phy:phyF,che:cheF,mat:matF,total,max,type,chapters,notes,weakTopics,subjects});
   S.tests.sort((a,b)=>new Date(a.date)-new Date(b.date));
   if(weakTopics.length){
     weakTopics.forEach(wt=>{
@@ -5114,7 +5107,7 @@ function addTest(){
       setTimeout(()=>showToast('⚔ Weekly Boss Defeated! +200 XP 🏆🔥'),700);
     } else if(S.weeklyBoss[wk]){showToast('Boss already defeated this week. +'+xp+' XP');}
   }
-  ['t-phy','t-che','t-mat','t-chapters','t-notes','t-rank'].forEach(id=>{const el2=document.getElementById(id);if(el2)el2.value='';});
+  ['t-phy','t-che','t-mat','t-chapters','t-notes'].forEach(id=>{const el2=document.getElementById(id);if(el2)el2.value='';});
   document.querySelectorAll('.twc.twc-on').forEach(el=>{
     el.classList.remove('twc-on');el.style.background='transparent';
     el.style.borderColor=el.dataset.color;el.style.color=el.dataset.color;
@@ -5150,7 +5143,6 @@ function renderTests(){
       +'<div style="font-size:12px;color:var(--text2);margin-top:5px;display:flex;gap:10px;flex-wrap:wrap">'+subParts.join(' ')+'</div>'
       +(t.chapters?'<div style="font-size:11px;color:var(--text2);margin-top:3px"><span style="color:var(--accent)">📚</span> '+escHtml(t.chapters)+'</div>':'')
       +(t.notes?'<div style="font-size:11px;color:var(--text3);font-style:italic;margin-top:2px">💬 '+escHtml(t.notes)+'</div>':'')
-      +(t.classRank?'<div style="font-size:11px;color:var(--gold);margin-top:3px;font-weight:700">🏆 Rank '+t.classRank+' in class</div>':'')
       +'</div>';
   });
   document.getElementById('test-hist').innerHTML=h;
@@ -9607,7 +9599,6 @@ ${recentTests.slice(-5).map(function(t){
   var line='  '+t.date+' ['+( t.type||'test')+']: PHY '+t.phy+' CHE '+t.che+' MAT '+t.mat+' = '+t.total+'/'+(t.max||300)+' ('+pct+'%)';
   if(t.chapters)line+=' chapters:'+t.chapters;
   if(t.notes)line+=' note:'+t.notes;
-  if(t.classRank)line+=' | Class rank: '+t.classRank;
   if(t.weakTopics&&t.weakTopics.length)line+='\n    Weak from test: '+t.weakTopics.map(function(w){return w.name+'('+w.subject+')';}).join(', ');
   return line;
 }).join('\n')||'  No tests yet'}
