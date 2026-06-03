@@ -2673,14 +2673,6 @@ auth.onAuthStateChanged(async user=>{
 });
 
 function today(){return new Date().toISOString().split('T')[0];}
-function nowTimeIST(){
-  // Single canonical time string used everywhere — consistent format for AI
-  return new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',hour12:true,timeZone:'Asia/Kolkata'});
-}
-function nowHourIST(){
-  // Hour in IST (0-23) for analytics
-  return new Date(new Date().toLocaleString('en-US',{timeZone:'Asia/Kolkata'})).getHours();
-}
 function fmtDate(d){return new Date(d).toLocaleDateString('en-IN',{day:'numeric',month:'short'});}
 function el(id,v){const e=document.getElementById(id);if(e)e.textContent=v;}
 function setW(id,pct){const e=document.getElementById(id);if(e)e.style.width=pct+'%';}
@@ -3815,8 +3807,8 @@ function autoLog(mins,sub,mode,sid){
     mode, eff,
     xp:xp+starterBonus,
     taskType:_sessionTaskType||'practice',
-    startTime:new Date(Date.now()-mins*60000).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',hour12:true,timeZone:'Asia/Kolkata'}),
-    time:nowTimeIST(),
+    startTime:new Date(Date.now()-mins*60000).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',hour12:true}),
+    time:new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',hour12:true}),
     paused:paused||undefined,
     rating:null,
     resourceType:_sessionResource.type||undefined,
@@ -5410,7 +5402,7 @@ function togEx(i){
   // Track per-exercise completion time
   if(!log.exTimes)log.exTimes={};
   if(log.comp[i]){
-    log.exTimes[i]=nowTimeIST();
+    log.exTimes[i]=new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',hour12:true});
   } else {
     delete log.exTimes[i];
   }
@@ -5440,7 +5432,7 @@ function togEx(i){
         S.workout.woStreak=1; // streak broken, restart
       }
       S.workout.woLastDate=t;
-      log.endTime=nowTimeIST();
+      log.endTime=new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',hour12:true});
       log.durationMins=log.startTime?Math.round((Date.now()-log.startTime)/60000):null;
 
       S.workout.strengthStat=Math.min(100,(S.workout.strengthStat||0)+2);
@@ -7781,7 +7773,7 @@ function parseAyanoActions(rawText){
           break;
         case 'LOG_MOOD':
           if(!S.lifeTracking)S.lifeTracking={sleepLog:[],moodLog:[],wakeLog:[],socialLog:[],pressureLog:[]};
-          S.lifeTracking.moodLog.unshift({date:today(),time:nowTimeIST(),mood:act.mood||'neutral',energy:parseInt(act.energy)||5,note:act.note||''});
+          S.lifeTracking.moodLog.unshift({date:today(),time:new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',hour12:true}),mood:act.mood||'neutral',energy:parseInt(act.energy)||5,note:act.note||''});
           if(S.lifeTracking.moodLog.length>90)S.lifeTracking.moodLog.length=90;
           applied.push('Mood logged: '+act.mood+' energy:'+act.energy+'/10');
           break;
@@ -7839,13 +7831,13 @@ function parseAyanoActions(rawText){
             if(acSub&&s!==acSub)return;
             ['11','12'].forEach(function(yr){
               var arr=S.topics[s+yr]||[];
-              arr.forEach(function(t){if(t.name.toLowerCase().includes(acTopic)){t.conf=Math.max(0,Math.min(100,t.conf+acDelta));t.confUpdatedAt=today()+' '+nowTimeIST();acFound=true;}});
+              arr.forEach(function(t){if(t.name.toLowerCase().includes(acTopic)){t.conf=Math.max(0,Math.min(100,t.conf+acDelta));t.confUpdatedAt=today()+' '+new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',hour12:true});acFound=true;}});
             });
           });
           if(acFound){
             applied.push('Confidence '+(acDelta>0?'+':'')+acDelta+'% for '+act.topic);
             if(!S.activityLog)S.activityLog=[];
-            S.activityLog.unshift({type:'conf_update',date:today(),time:nowTimeIST(),topic:act.topic,subject:acSub,delta:acDelta});
+            S.activityLog.unshift({type:'conf_update',date:today(),time:new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',hour12:true}),topic:act.topic,subject:acSub,delta:acDelta});
             if(S.activityLog.length>100)S.activityLog=S.activityLog.slice(0,100);
           }
           break;
@@ -7869,9 +7861,9 @@ function parseAyanoActions(rawText){
             var lCapUsed=S.dailyXPCap[today()]||0;
             lXP=Math.min(lXP,Math.max(0,500-lCapUsed));
             if(lXP>0)S.dailyXPCap[today()]=(lCapUsed+lXP);
-            var lNowTime=nowTimeIST();
+            var lNowTime=new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',hour12:true});
             var lStartMs=Date.now()-lMin*60000;
-            var lStartTime=new Date(lStartMs).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',hour12:true,timeZone:'Asia/Kolkata'});
+            var lStartTime=new Date(lStartMs).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',hour12:true});
             var lSess={id:Date.now(),date:lDate,min:lMin,duration:lMin,sub:lSub,subject:lSub,mode:'ayanokoji',eff:1,xp:lXP,taskType:lTask,startTime:act.startTime||lStartTime,time:act.endTime||lNowTime,paused:false,stars:null,rating:null,note:'Ayanokoji: '+(act.note||'logged via chat')};
             S.sessions.push(lSess);
             addXP(lXP);
@@ -7896,7 +7888,7 @@ function parseAyanoActions(rawText){
           var ldrNote=act.note||'';
           if(ldrKey&&S.dimTrainingLog){
             if(!S.dimTrainingLog[ldrKey])S.dimTrainingLog[ldrKey]={totalSessions:0,responses:[]};
-            var ldrEntry={date:today(),time:nowTimeIST(),score:ldrScore,note:ldrNote};
+            var ldrEntry={date:today(),time:new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',hour12:true}),score:ldrScore,note:ldrNote};
             S.dimTrainingLog[ldrKey].responses=S.dimTrainingLog[ldrKey].responses||[];
             S.dimTrainingLog[ldrKey].responses.unshift(ldrEntry);
             if(S.dimTrainingLog[ldrKey].responses.length>20)S.dimTrainingLog[ldrKey].responses=S.dimTrainingLog[ldrKey].responses.slice(0,20);
@@ -7928,7 +7920,7 @@ function parseAyanoActions(rawText){
             applied.push('Study plan created ('+planBlocks.length+' blocks)');
             // Log to activity timeline
             if(!S.activityLog)S.activityLog=[];
-            S.activityLog.unshift({type:'plan_pin',date:today(),time:nowTimeIST(),blocks:planBlocks.length,note:act.note||''});
+            S.activityLog.unshift({type:'plan_pin',date:today(),time:new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',hour12:true}),blocks:planBlocks.length,note:act.note||''});
             if(S.activityLog.length>100)S.activityLog=S.activityLog.slice(0,100);
             // Update planner tab output
             var planOut=document.getElementById('oracle-plan-out');
@@ -7978,7 +7970,7 @@ function parseAyanoActions(rawText){
 // ── BEHAVIORAL INTELLIGENCE ENGINE ──────────────────────────────────────────
 function _trackBehavior(type,data){
   if(!S.behaviorLog)S.behaviorLog=[];
-  S.behaviorLog.push({type,date:today(),time:nowTimeIST(),data});
+  S.behaviorLog.push({type,date:today(),time:new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'}),data});
   if(S.behaviorLog.length>200)S.behaviorLog=S.behaviorLog.slice(-200);
   // No save() here — batched on next real save
 }
@@ -8270,7 +8262,7 @@ function buildAnalyticsLayer(){
   var todayStudied=(S.sessions.filter(function(s){return s.date===t&&!s.paused;}).reduce(function(a,s){return a+s.min;},0)/60).toFixed(1);
   var goalH=S.goals&&S.goals.studyHours||6;
   var remaining=Math.max(0,goalH-parseFloat(todayStudied));
-  var nowH=nowHourIST();
+  var nowH=new Date().getHours();
   var bestNextSub=neglected[0];
   if(critGaps.length){
     // Determine subject from the critGap topic by matching against the known JEE topic lists
@@ -8911,12 +8903,7 @@ async function _oracleRaw(apiKey,messages,systemMsg,maxTokens,provider){
     }
     const gemBody={
       contents:gemContents,
-      generationConfig:{
-        maxOutputTokens:65536,       // API max — never truncate mid-response
-        temperature:0.5,             // Recommended for reliable structured output
-        responseMimeType:'text/plain'
-      },
-      thinkingConfig:{thinkingBudget:0} // Disable thinking mode — faster, no token overhead
+      generationConfig:{maxOutputTokens:maxTokens,temperature:0.7}
     };
     // System instruction goes in its own field, not as a message
     if(systemMsg)gemBody.systemInstruction={parts:[{text:systemMsg}]};
@@ -8931,8 +8918,6 @@ async function _oracleRaw(apiKey,messages,systemMsg,maxTokens,provider){
       const e=new Error(msg);e.status=gemResp.status;throw e;
     }
     const gemData=await gemResp.json();
-    const finishReason=gemData.candidates?.[0]?.finishReason||'';
-    if(finishReason==='MAX_TOKENS')console.warn('Gemini: output hit MAX_TOKENS — check maxOutputTokens');
     return gemData.candidates?.[0]?.content?.parts?.[0]?.text||'';
   }
 
@@ -9134,9 +9119,9 @@ function updateResourcePct(type,id,pct,displayEl){
   var r=(S.studyResources[key]||[]).find(function(x){return x.id===id;});
   if(r){
     r.pct=parseInt(pct)||0;
-    r.updatedAt=today()+' '+nowTimeIST();
+    r.updatedAt=today()+' '+new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',hour12:true});
     if(!S.activityLog)S.activityLog=[];
-    S.activityLog.unshift({type:'resource_update',date:today(),time:nowTimeIST(),name:r.name,subject:r.subject||type,pct:r.pct});
+    S.activityLog.unshift({type:'resource_update',date:today(),time:new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',hour12:true}),name:r.name,subject:r.subject||type,pct:r.pct});
     if(S.activityLog.length>100)S.activityLog=S.activityLog.slice(0,100);
     save();if(displayEl)displayEl.textContent=r.pct+'%';var bar=document.getElementById('sr-bar-'+id);if(bar)bar.style.width=r.pct+'%';
   }
@@ -9416,7 +9401,7 @@ function buildFullContext(){
   const todaySess=S.sessions.filter(s=>s.date===t&&!s.paused);
   const todayMins=todaySess.reduce((a,s)=>a+s.min,0);
   const totalMins=S.sessions.filter(s=>!s.paused).reduce((a,s)=>a+s.min,0);
-  const nowTime=nowTimeIST();
+  const nowTime=new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',hour12:true});
   const nowDay=new Date().toLocaleDateString('en-IN',{weekday:'long'});
   const sub={physics:0,chemistry:0,maths:0};
   weekSess.forEach(s=>{if(sub[s.sub]!==undefined)sub[s.sub]+=s.min;});
@@ -9585,7 +9570,7 @@ ${(function(){
 })()}
 Studied: ${(todayMins/60).toFixed(1)}h | Sessions: ${todaySess.length} | Quests: ${Object.values(todayComp).filter(Boolean).length}/${activeQ.length}
 ${todaySess.length?'Sessions today:\n'+todaySess.map(function(s){
-  var st=s.startTime||(s.time&&s.min?'~'+(function(){try{var d=new Date();var t=s.time.match(/(\d+):(\d+)\s*(AM|PM)?/i);if(t){var h=parseInt(t[1])+(t[3]&&t[3].toUpperCase()==='PM'&&t[1]!=='12'?12:0)+(t[3]&&t[3].toUpperCase()==='AM'&&t[1]==='12'?-12:0);var m=parseInt(t[2]);var end=new Date();end.setHours(h,m,0,0);var start=new Date(end-s.min*60000);return start.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',hour12:true,timeZone:'Asia/Kolkata'});}return '?';}catch(e){return '?'}}()):'?');
+  var st=s.startTime||(s.time&&s.min?'~'+(function(){try{var d=new Date();var t=s.time.match(/(\d+):(\d+)\s*(AM|PM)?/i);if(t){var h=parseInt(t[1])+(t[3]&&t[3].toUpperCase()==='PM'&&t[1]!=='12'?12:0)+(t[3]&&t[3].toUpperCase()==='AM'&&t[1]==='12'?-12:0);var m=parseInt(t[2]);var end=new Date();end.setHours(h,m,0,0);var start=new Date(end-s.min*60000);return start.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',hour12:true});}return '?';}catch(e){return '?'}}()):'?');
   var et=s.time||'?';
   var stars=s.stars||s.rating;
   return '  '+st+' → '+et+' | '+s.sub+' '+s.min+'min ['+(s.taskType||'practice')+']'+(s.resourceType?' [src:'+s.resourceType+']':'')+(s.chapter?' [ch:'+s.chapter+']':'')+(stars?' ★'+stars+'/5':'')+(s.manaDrain?' mana-'+s.manaDrain:'')+(s.eff&&s.eff!==1?' eff:'+s.eff+'%':'')+(s.breakActivity?' break:'+s.breakActivity:'')+(s.mode==='ayanokoji'?' (AI logged)':s.mode==='manual'?' (manual)':' (timer)');
@@ -9658,7 +9643,7 @@ ${(function(){
   var lines=[];
   // Today's workout detail — every exercise with completion and time
   if(todayWoPlan&&todayWoPlan.active&&todayWoPlan.exercises&&todayWoPlan.exercises.length){
-    var startTs=todayWoLog&&todayWoLog.startTime?new Date(todayWoLog.startTime).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',hour12:true,timeZone:'Asia/Kolkata'}):'?';
+    var startTs=todayWoLog&&todayWoLog.startTime?new Date(todayWoLog.startTime).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',hour12:true}):'?';
     var endTs=todayWoLog&&todayWoLog.endTime?todayWoLog.endTime:'ongoing';
     var dur=todayWoLog&&todayWoLog.durationMins?todayWoLog.durationMins+'min':'?';
     lines.push('Today ('+todayDN+'): '+todayWoPlan.name+' | Started: '+startTs+' | '+endTs+(todayWoLog&&todayWoLog.durationMins?' | Duration: '+dur:''));
@@ -9863,7 +9848,7 @@ async function runAdvisor(){
     +'Under 220 words. Every sentence must reference their actual logged data.';
   try{
     const text=await oracleCall([{role:'user',content:advisorUserMsg}],advisorSystemMsg,2048);
-    if(out)out.innerHTML=`<div class="oracle-section-chip">⚔ Ayanokoji Report · ${nowTimeIST()}</div>${formatOracleMD(text)}`;
+    if(out)out.innerHTML=`<div class="oracle-section-chip">⚔ Ayanokoji Report · ${new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})}</div>${formatOracleMD(text)}`;
     addToMemory('Advisor: '+text.slice(0,120).replace(/\n/g,' ')+'…',true);
   }catch(e){if(out)out.innerHTML=`<div style="color:var(--red);font-size:13px;padding:6px 0">⚠ ${e.message||'Oracle offline. Add API keys in Keys tab.'}</div>`;}
   setOracleStreaming(false);if(btn){btn.disabled=false;btn.textContent='⚔ Analyze My Progress';}
@@ -10029,7 +10014,7 @@ function addPinnedItem(){
   if(!S.pinnedPlan[t])S.pinnedPlan[t]={date:t,items:[]};
   S.pinnedPlan[t].items.push({text:text,done:false,type:'task'});
   if(!S.activityLog)S.activityLog=[];
-  S.activityLog.unshift({type:'plan_manual_add',date:t,time:nowTimeIST(),task:text});
+  S.activityLog.unshift({type:'plan_manual_add',date:t,time:new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',hour12:true}),task:text});
   if(S.activityLog.length>100)S.activityLog=S.activityLog.slice(0,100);
   save();renderTodaysMission();
 }
@@ -10083,7 +10068,7 @@ async function generateDailyPlan(){
   const context=buildFullContext();
   const goalH=S.goals?.studyHours||6;
   const dow=new Date().toLocaleDateString('en-IN',{weekday:'long'});
-  const timeStr=nowTimeIST();
+  const timeStr=new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
   const sprintRule=isSprintMode()?'\n⚠ SPRINT MODE: Only PYQs, mock tests, and weak topic revision. No new chapters.':'';
   const ayanoVoice=buildAyanoVoice('planner');
   // Context goes to systemMsg (Gemini systemInstruction) — keeps user message lean
