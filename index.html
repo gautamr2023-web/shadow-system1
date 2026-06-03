@@ -8898,10 +8898,7 @@ async function _oracleRaw(apiKey,messages,systemMsg,maxTokens,provider){
       const e=new Error(msg);e.status=gemResp.status;throw e;
     }
     const gemData=await gemResp.json();
-    // Gemini 2.5 Flash returns thinking tokens as {text,thought:true} before the real answer.
-    // Filter those out, then join all remaining parts — long responses can span multiple parts.
-    const gemParts=gemData.candidates?.[0]?.content?.parts||[];
-    return gemParts.filter(p=>!p.thought).map(p=>p.text||'').join('')||'';
+    return gemData.candidates?.[0]?.content?.parts?.[0]?.text||'';
   }
 
   // ── GROQ / OPENROUTER: OpenAI-compatible ──
