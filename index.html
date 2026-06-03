@@ -1500,6 +1500,9 @@ input.fi:focus,select.fi:focus{
         <div class="fg full"><label class="fl">Notes <span style="color:var(--text3);font-weight:400;text-transform:none;letter-spacing:0">(optional)</span></label>
           <input type="text" class="fi" id="t-notes" placeholder="e.g. ran out of time in maths, silly mistakes…">
         </div>
+        <div class="fg full"><label class="fl">Class Rank <span style="color:var(--text3);font-weight:400;text-transform:none;letter-spacing:0">(optional — leave blank for class tests, NCERT, chapter tests, etc.)</span></label>
+          <input type="number" class="fi" id="t-rank" placeholder="e.g. 3 — skip if this test has no ranking" min="1">
+        </div>
         <div class="fg full">
           <label class="fl">Where did you lose marks? <span style="color:var(--text3);font-weight:400;text-transform:none;letter-spacing:0">(tap topics — confidence drops -10%)</span></label>
           <div id="test-weak-chips" style="display:flex;flex-wrap:wrap;gap:5px;margin-top:7px;max-height:130px;overflow-y:auto;padding:2px 0"></div>
@@ -1519,10 +1522,15 @@ input.fi:focus,select.fi:focus{
   <div id="tt-marks" style="display:none">
     <div class="card">
       <div class="card-hdr"><span class="hl">JEE Target</span></div>
-      <div style="display:flex;gap:10px;align-items:center;margin-bottom:12px">
-        <input type="number" class="fi" id="jee-tgt" placeholder="250" style="max-width:120px">
-        <button class="btn btn-ghost btn-sm" onclick="saveJeeTgt()">Set Target</button>
+      <div style="display:flex;gap:10px;align-items:center;margin-bottom:8px">
+        <input type="number" class="fi" id="jee-tgt" placeholder="250 marks" style="max-width:120px">
+        <span style="font-size:11px;color:var(--text3)">marks</span>
       </div>
+      <div style="display:flex;gap:10px;align-items:center;margin-bottom:12px">
+        <input type="text" class="fi" id="jee-rank-tgt" placeholder="e.g. under 500" style="max-width:150px">
+        <span style="font-size:11px;color:var(--text3)">rank / percentile goal</span>
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="saveJeeTgt()">Save Targets</button>
       <div id="jee-prog"></div>
     </div>
     <div class="card"><div class="card-hdr"><span class="hl">Subject Averages</span></div><div id="subj-avg"></div></div>
@@ -2454,7 +2462,7 @@ const DEF_PLAN={
   sunday:{name:'Rest',active:false,exercises:[]},
 };
 const DEF={
-  hunter:{xp:0,mana:100,streak:0,lastDate:null,startDate:new Date().toISOString().split('T')[0],name:'Gautam'},
+  hunter:{xp:0,mana:100,streak:0,lastDate:null,startDate:today(),name:'Gautam'},
   questComp:{},sessions:[],tests:[],
   topics:{
     physics11:JEE_TOPICS.physics11.map((n,i)=>({id:'p11_'+i,name:n,conf:0})),
@@ -2475,6 +2483,7 @@ const DEF={
     enduranceStat:0,     // 0-100 endurance stat
   },
   jeeTarget:250,
+  jeeRankTarget:'',
   examDate:'2026-05-18',
   examName:'JEE Advanced',
   classYear:'12',
@@ -2581,7 +2590,8 @@ function ensureKeys(){
   if(!S.workout.strengthHistory)S.workout.strengthHistory=[];
   if(S.workout.enduranceStat===undefined)S.workout.enduranceStat=0;
   if(!S.jeeTarget)S.jeeTarget=250;
-  if(!S.hunter.startDate)S.hunter.startDate=new Date().toISOString().split('T')[0];
+  if(S.jeeRankTarget===undefined)S.jeeRankTarget='';
+  if(!S.hunter.startDate)S.hunter.startDate=today();
   if(S.hunter.mana===undefined||S.hunter.mana===null||isNaN(S.hunter.mana))S.hunter.mana=100;
   S.hunter.mana=Math.min(100,Math.max(0,S.hunter.mana)); // clamp on every load
   if(!S.questComp)S.questComp={};
@@ -2672,7 +2682,8 @@ auth.onAuthStateChanged(async user=>{
   }
 });
 
-function today(){return new Date().toISOString().split('T')[0];}
+function today(){const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function localDateStr(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
 function fmtDate(d){return new Date(d).toLocaleDateString('en-IN',{day:'numeric',month:'short'});}
 function el(id,v){const e=document.getElementById(id);if(e)e.textContent=v;}
 function setW(id,pct){const e=document.getElementById(id);if(e)e.style.width=pct+'%';}
@@ -2811,7 +2822,7 @@ function checkRankUp(){
     }
     return;
   }
-  const last7=[];for(let i=6;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);last7.push(d.toISOString().split('T')[0]);}
+  const last7=[];for(let i=6;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);last7.push(localDateStr(d));}
   const QN=getActiveQuests().length;
   let qDone=0,qPoss=0;
   last7.forEach(d=>{const c=S.questComp[d]||{};qDone+=Object.values(c).filter(Boolean).length;qPoss+=QN;});
@@ -2847,7 +2858,9 @@ function updateHeader(){
   const cls='rank-'+rk.r,hc=getClass(rk.r);
   const rankData=RANKS.find(function(r){return r.r===rk.r;})||RANKS[0];
   const rankCeiling=rankData.max===Infinity?'∞':rankData.max;
-  const xpDisplay=xp+' / '+rankCeiling+' XP';
+  const xpToNext=rankData.max===Infinity?0:Math.max(0,rankData.max-xp);
+  const nextRank=RANK_ORDER[Math.min(RANK_ORDER.indexOf(rk.r)+1,RANK_ORDER.length-1)];
+  const xpDisplay=xp+' / '+rankCeiling+' XP'+(xpToNext>0?' ('+xpToNext+' to '+nextRank+' rank)':'');
   const start=new Date(S.hunter.startDate),now=new Date();
   const dayN=Math.max(1,Math.floor((now-start)/86400000)+1);
   const examD=new Date(S.examDate||'2026-05-18');
@@ -3874,25 +3887,15 @@ async function oracleSuggest(){
   const daysLeft=Math.max(0,Math.ceil((new Date(S.examDate||'2026-05-18')-new Date())/86400000));
   const todayMins=S.sessions.filter(s=>s.date===t&&!s.paused).reduce((a,s)=>a+s.min,0);
   const energy=(S.dailyMana&&S.dailyMana[t]&&S.dailyMana[t].energy)||'normal';
-  const hour=new Date().getHours();
+  const nowTime=new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',hour12:true});
   const allT=[...(S.topics.physics11||[]),...(S.topics.physics12||[]),...(S.topics.chemistry11||[]),...(S.topics.chemistry12||[]),...(S.topics.maths11||[]),...(S.topics.maths12||[])];
   const weakT=allT.filter(t2=>t2.conf>0&&t2.conf<40).sort((a,b)=>a.conf-b.conf).slice(0,4);
-  const last7=[];for(let i=6;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);last7.push(d.toISOString().split('T')[0]);}
+  const last7=[];for(let i=6;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);last7.push(d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'));}
   const wSess=S.sessions.filter(s=>last7.includes(s.date)&&!s.paused);
   const phyM=wSess.filter(s=>s.sub==='physics').reduce((a,s)=>a+s.min,0);
   const cheM=wSess.filter(s=>s.sub==='chemistry').reduce((a,s)=>a+s.min,0);
   const matM=wSess.filter(s=>s.sub==='maths').reduce((a,s)=>a+s.min,0);
-  const prompt=buildAyanoVoice('suggest')+`
-
-Hunter data: ${daysLeft} days to exam. Time: ${hour}:00. Energy today: ${energy}. Today studied: ${Math.round(todayMins/60*10)/10}h.
-This week — Physics: ${Math.round(phyM/60*10)/10}h | Chemistry: ${Math.round(cheM/60*10)/10}h | Maths: ${Math.round(matM/60*10)/10}h.
-Weak topics (confidence%): ${weakT.length?weakT.map(t=>t.name+' ('+t.conf+'%)').join(', '):'not set yet'}.
-
-Respond in EXACTLY this format — no preamble, no extra text:
-SUBJECT: [Physics/Chemistry/Maths]
-TASK: [Hard Problems/Practice/Revision/Theory]
-FOCUS: [specific topic, max 8 words]
-REASON: [why this, now — derived from their data, max 8 words]`;
+  const prompt=buildAyanoVoice('suggest')+`\n\nHunter data: ${daysLeft} days to exam. Time: ${nowTime}. Energy today: ${energy}. Today studied: ${Math.round(todayMins/60*10)/10}h.\nThis week — Physics: ${Math.round(phyM/60*10)/10}h | Chemistry: ${Math.round(cheM/60*10)/10}h | Maths: ${Math.round(matM/60*10)/10}h.\nWeak topics (confidence%): ${weakT.length?weakT.map(t=>t.name+' ('+t.conf+'%)').join(', '):'not set yet'}.\n\nRespond in EXACTLY this format — no preamble, no extra text:\nSUBJECT: [Physics/Chemistry/Maths]\nTASK: [Hard Problems/Practice/Revision/Theory]\nFOCUS: [specific topic, max 8 words]\nREASON: [why this, now — derived from their data, max 8 words]`;
   try{
     const text=await oracleCall([{role:'user',content:prompt}],null,160);
     const subM=text.match(/SUBJECT:\s*(.+)/i);
@@ -4632,7 +4635,7 @@ function getWeekDays(offsetWeeks){
   const days=[];
   for(let i=0;i<7;i++){
     const d=new Date(monday);d.setDate(monday.getDate()+i);
-    days.push(d.toISOString().split('T')[0]);
+    days.push(localDateStr(d));
   }
   return days;
 }
@@ -4657,7 +4660,7 @@ function getSessionsForPeriod(period, weekOffset){
   if(period==='month'){
     // Last 30 days — NOT calendar month (calendar month shows 1-5 days early in month)
     const cutoff=new Date();cutoff.setDate(cutoff.getDate()-29);
-    const cutoffStr=cutoff.toISOString().split('T')[0];
+    const cutoffStr=localDateStr(cutoff);
     return S.sessions.filter(s=>s.date>=cutoffStr);
   }
   return S.sessions;
@@ -4820,7 +4823,7 @@ function renderFocusStats(){
     if(statsPeriod==='week'){
       dayArr=getWeekDays(statsWeekOffset);
     } else {
-      for(let i=days-1;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);dayArr.push(d.toISOString().split('T')[0]);}
+      for(let i=days-1;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);dayArr.push(localDateStr(d));}
     }
     const byDaySub={};
     sess.forEach(s=>{
@@ -5030,6 +5033,8 @@ function openTestEdit(id){
     +'</select></div>'
     +'<div class="fg full"><label class="fl">Chapters</label><input type="text" class="fi" id="te-chapters" value="'+escHtml(t.chapters||'')+'"></div>'
     +'<div class="fg full"><label class="fl">Notes</label><input type="text" class="fi" id="te-notes" value="'+escHtml(t.notes||'')+'"></div>'
+    +'<div class="fg full"><label class="fl">Class Rank <span style="color:var(--text3);font-weight:400;font-size:10px">(optional — leave blank if no ranking)</span></label>'
+    +'<input type="number" class="fi" id="te-rank" value="'+(t.classRank||'')+'" placeholder="e.g. 3 — blank if not applicable" min="1"></div>'
     +'</div>'
     +'<button class="btn btn-primary" onclick="saveTestEdit('+id+')" style="width:100%;margin-top:12px">Save Changes</button>'
     +'</div>';
@@ -5048,6 +5053,7 @@ function saveTestEdit(id){
   t.type=document.getElementById('te-type').value||t.type;
   t.chapters=document.getElementById('te-chapters').value||'';
   t.notes=document.getElementById('te-notes').value||'';
+  t.classRank=parseInt(document.getElementById('te-rank').value)||null;
   S.tests.sort(function(a,b){return new Date(a.date)-new Date(b.date);});
   save();
   document.getElementById('test-edit-modal').style.display='none';
@@ -5095,6 +5101,7 @@ function addTest(){
   const type=document.getElementById('t-type').value;
   const chapters=(document.getElementById('t-chapters').value||'').trim();
   const notes=(document.getElementById('t-notes').value||'').trim();
+  const classRankVal=parseInt(document.getElementById('t-rank').value)||null;
   const subjects=[];
   if(!document.getElementById('ts-phy')||document.getElementById('ts-phy').checked)subjects.push('physics');
   if(!document.getElementById('ts-che')||document.getElementById('ts-che').checked)subjects.push('chemistry');
@@ -5105,7 +5112,7 @@ function addTest(){
   const total=phyF+cheF+matF;
   const weakChipEls=[...document.querySelectorAll('.twc.twc-on')];
   const weakTopics=weakChipEls.map(el=>({name:el.dataset.topic,subject:el.dataset.subject}));
-  S.tests.push({id:Date.now(),date,phy:phyF,che:cheF,mat:matF,total,max,type,chapters,notes,weakTopics,subjects});
+  S.tests.push({id:Date.now(),date,phy:phyF,che:cheF,mat:matF,total,max,type,chapters,notes,classRank:classRankVal,weakTopics,subjects});
   S.tests.sort((a,b)=>new Date(a.date)-new Date(b.date));
   if(weakTopics.length){
     weakTopics.forEach(wt=>{
@@ -5127,7 +5134,7 @@ function addTest(){
       setTimeout(()=>showToast('⚔ Weekly Boss Defeated! +200 XP 🏆🔥'),700);
     } else if(S.weeklyBoss[wk]){showToast('Boss already defeated this week. +'+xp+' XP');}
   }
-  ['t-phy','t-che','t-mat','t-chapters','t-notes'].forEach(id=>{const el2=document.getElementById(id);if(el2)el2.value='';});
+  ['t-phy','t-che','t-mat','t-chapters','t-notes','t-rank'].forEach(id=>{const el2=document.getElementById(id);if(el2)el2.value='';});
   document.querySelectorAll('.twc.twc-on').forEach(el=>{
     el.classList.remove('twc-on');el.style.background='transparent';
     el.style.borderColor=el.dataset.color;el.style.color=el.dataset.color;
@@ -5163,6 +5170,7 @@ function renderTests(){
       +'<div style="font-size:12px;color:var(--text2);margin-top:5px;display:flex;gap:10px;flex-wrap:wrap">'+subParts.join(' ')+'</div>'
       +(t.chapters?'<div style="font-size:11px;color:var(--text2);margin-top:3px"><span style="color:var(--accent)">📚</span> '+escHtml(t.chapters)+'</div>':'')
       +(t.notes?'<div style="font-size:11px;color:var(--text3);font-style:italic;margin-top:2px">💬 '+escHtml(t.notes)+'</div>':'')
+      +(t.classRank?'<div style="font-size:11px;color:var(--gold);margin-top:3px;font-weight:700">🏆 Rank '+t.classRank+' in class</div>':'')
       +'</div>';
   });
   document.getElementById('test-hist').innerHTML=h;
@@ -5290,6 +5298,8 @@ function upConf(s,i,v,sl){
 }
 function renderJeeMks(){
   document.getElementById('jee-tgt').value=S.jeeTarget;
+  var rankTgtEl=document.getElementById('jee-rank-tgt');
+  if(rankTgtEl)rankTgtEl.value=S.jeeRankTarget||'';
   const tests=S.tests;
   if(!tests.length){['jee-prog','subj-avg','weak-chapters'].forEach(id=>document.getElementById(id).innerHTML='<div class="empty">Log tests first.</div>');return;}
   const target=S.jeeTarget||250;
@@ -5309,7 +5319,12 @@ function renderJeeMks(){
   if(!weak.length){document.getElementById('weak-chapters').innerHTML='<div style="color:var(--green);font-size:13px">✓ No topics below 40%. Keep going!</div>';}
   else{let wh='<div style="font-size:12px;color:var(--text2);margin-bottom:10px">Prioritise these for quick score gains:</div>';weak.forEach(t=>{wh+=`<div style="display:flex;align-items:center;gap:9px;margin-bottom:9px"><div style="width:6px;height:6px;border-radius:50%;background:var(--red);flex-shrink:0"></div><span style="font-size:13px;flex:1">${t.name}</span><span style="font-family:var(--mono);font-size:11px;color:var(--red)">${t.conf}%</span></div>`;});document.getElementById('weak-chapters').innerHTML=wh;}
 }
-function saveJeeTgt(){const v=parseInt(document.getElementById('jee-tgt').value);if(v>0){S.jeeTarget=v;save();renderJeeMks();showToast('Target set: '+v+' marks');}}
+function saveJeeTgt(){
+  const v=parseInt(document.getElementById('jee-tgt').value);
+  if(v>0){S.jeeTarget=v;save();renderJeeMks();showToast('Target set: '+v+' marks');}
+  const rEl=document.getElementById('jee-rank-tgt');
+  if(rEl&&rEl.value.trim()){S.jeeRankTarget=rEl.value.trim();save();showToast('Rank target saved: '+S.jeeRankTarget);}
+}
 
 let selDay=DAYS_ORDER[new Date().getDay()===0?6:new Date().getDay()-1];
 let editMode=false;
@@ -5424,7 +5439,7 @@ function togEx(i){
 
       const lastWo=S.workout.woLastDate;
       const yesterday=new Date();yesterday.setDate(yesterday.getDate()-1);
-      const yStr=yesterday.toISOString().split('T')[0];
+      const yStr=localDateStr(yesterday);
       if(lastWo===t){
       } else if(lastWo===yStr){
         S.workout.woStreak=(S.workout.woStreak||0)+1;
@@ -5497,7 +5512,7 @@ function renderWorkoutSummary(){
   const t=today();
 
   const monday=new Date();monday.setDate(monday.getDate()-((monday.getDay()+6)%7));monday.setHours(0,0,0,0);
-  const weekStart=monday.toISOString().split('T')[0];
+  const weekStart=localDateStr(monday);
   const workoutsThisWeek=S.workout.logs.filter(l=>{
     if(l.date<weekStart)return false;
     return Object.values(l.comp||{}).some(Boolean);
@@ -5570,7 +5585,7 @@ function renderWorkoutConsistencyGraph(){
   const last7=[];
   for(let i=6;i>=0;i--){
     const d=new Date();d.setDate(d.getDate()-i);
-    last7.push(d.toISOString().split('T')[0]);
+    last7.push(localDateStr(d));
   }
   const t=today();
   const barData=last7.map(date=>{
@@ -5684,7 +5699,7 @@ function makeGradient(ctx,h,topColor,botColor){
 function renderCharts(){
   const totalMins=S.sessions.reduce((a,s)=>a+s.min,0);
   el('an-hrs',(totalMins/60).toFixed(1)+'h');
-  const last7=[];for(let i=6;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);last7.push(d.toISOString().split('T')[0]);}
+  const last7=[];for(let i=6;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);last7.push(localDateStr(d));}
   const avg7=last7.map(d=>S.sessions.filter(s=>s.date===d).reduce((a,s)=>a+s.min,0)/60);
   el('an-avg',(avg7.reduce((a,v)=>a+v,0)/7).toFixed(1)+'h');
   const QUESTS=getActiveQuests();
@@ -5692,7 +5707,7 @@ function renderCharts(){
   el('an-qr',qT>0?Math.round(qD/qT*100)+'%':'0%');
   el('an-streak',S.hunter.streak);
 
-  const last14=[];for(let i=13;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);last14.push(d.toISOString().split('T')[0]);}
+  const last14=[];for(let i=13;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);last14.push(localDateStr(d));}
   const prodScores=last14.map(d=>{
     const dayMins=S.sessions.filter(s=>s.date===d).reduce((a,s)=>a+s.min,0);
     const studyScore=Math.min(100,Math.round(dayMins/((S.goals&&S.goals.studyHours||6)*60)*60));
@@ -5830,8 +5845,8 @@ function renderCharts(){
   if(sortedSess.length>0){
     const first=sortedSess[0].date,lastDate=today();
     const d=new Date(first);
-    while(d.toISOString().split('T')[0]<=lastDate){
-      const ds=d.toISOString().split('T')[0];
+    while(localDateStr(d)<=lastDate){
+      const ds=localDateStr(d);
       running+=S.sessions.filter(s=>s.date===ds).reduce((a,s)=>a+s.min,0)/60;
       cumDates.push(new Date(d).getDate()+'/'+(new Date(d).getMonth()+1));
       cumHrs.push(+running.toFixed(1));
@@ -5972,7 +5987,7 @@ function renderHeatmap(){
   const todayStr=today();
   for(let i=TOTAL-1;i>=0;i--){
     const d=new Date();d.setDate(d.getDate()-i);
-    const ds=d.toISOString().split('T')[0];
+    const ds=localDateStr(d);
     const mins=S.sessions.filter(s=>s.date===ds&&!s.paused).reduce((a,s)=>a+s.min,0);
     const hrs=mins/60;
     const isToday=ds===todayStr;
@@ -6321,7 +6336,7 @@ function calcStats(){
   const workoutLogs=S.workout?.logs||[];
   const tests=S.tests||[];
   const questComp=S.questComp||{};
-  const last30=[];for(let i=29;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);last30.push(d.toISOString().split('T')[0]);}
+  const last30=[];for(let i=29;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);last30.push(localDateStr(d));}
   const last7=last30.slice(-7);
 
   const totalHrs=sessions.reduce((a,s)=>a+s.min,0)/60;
@@ -6433,7 +6448,7 @@ function renderStatusWindow(){
   const miniGraph=document.getElementById('sw-mini-graph');
   if(miniGraph){
     const days=[];
-    for(let i=6;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);days.push(d.toISOString().split('T')[0]);}
+    for(let i=6;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);days.push(localDateStr(d));}
     const goalMins=(S.goals&&S.goals.studyHours||6)*60;
     const DOW_NAMES=['Su','Mo','Tu','We','Th','Fr','Sa'];
     const todayDow=new Date().getDay();
@@ -6792,7 +6807,7 @@ function renderMiniConsistencyGraph(){
   const cont = document.getElementById('mini-consistency-graph');
   if(!cont) return;
   const days=[];
-  for(let i=6;i>=0;i--){ const d=new Date(); d.setDate(d.getDate()-i); days.push(d.toISOString().split('T')[0]); }
+  for(let i=6;i>=0;i--){ const d=new Date(); d.setDate(d.getDate()-i); days.push(localDateStr(d)); }
   const goal=(S.goals&&S.goals.studyHours||6)*60;
   const data = days.map(d=>{ const mins=S.sessions.filter(s=>s.date===d&&!s.paused).reduce((a,s)=>a+s.min,0); return{mins,pct:Math.min(1,mins/goal),isToday:d===today()}; });
   const max = Math.max(...data.map(d=>d.mins),1);
@@ -7145,7 +7160,7 @@ function detectBurnout(){
     if(avgEnergy<4)signals.push('Average energy: '+Math.round(avgEnergy*10)/10+'/10 across recent mood logs');
   }
   // Signal 4: Study hours dropping
-  var last7=[];for(var i=6;i>=0;i--){var d=new Date();d.setDate(d.getDate()-i);last7.push(d.toISOString().split('T')[0]);}
+  var last7=[];for(var i=6;i>=0;i--){var d=new Date();d.setDate(d.getDate()-i);last7.push(localDateStr(d));}
   var wkMins=S.sessions.filter(function(s){return last7.indexOf(s.date)>-1&&!s.paused;}).reduce(function(a,s){return a+s.min;},0);
   var goal=(S.goals&&S.goals.studyHours||6)*7*60;
   if(wkMins<goal*0.5&&wkMins>0)signals.push('This week: '+Math.round(wkMins/60*10)/10+'h — below 50% of your weekly goal');
@@ -7166,7 +7181,7 @@ function upgradeProdChart(){
 
   const QUESTS=getActiveQuests();
   const last14=[];
-  for(let i=13;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);last14.push(d.toISOString().split('T')[0]);}
+  for(let i=13;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);last14.push(localDateStr(d));}
   const prodScores=last14.map(d=>{
     const dayMins=S.sessions.filter(s=>s.date===d).reduce((a,s)=>a+s.min,0);
     const studyScore=Math.min(100,Math.round(dayMins/((S.goals&&S.goals.studyHours||6)*60)*60));
@@ -7253,8 +7268,8 @@ function upgradeCumChart(){
   if(sortedSess.length>0){
     const first=sortedSess[0].date,lastDate=today();
     const d=new Date(first);
-    while(d.toISOString().split('T')[0]<=lastDate){
-      const ds=d.toISOString().split('T')[0];
+    while(localDateStr(d)<=lastDate){
+      const ds=localDateStr(d);
       running+=S.sessions.filter(s=>s.date===ds).reduce((a,s)=>a+s.min,0)/60;
       cumDates.push(new Date(d).getDate()+'/'+(new Date(d).getMonth()+1));
       cumHrs.push(+running.toFixed(1));
@@ -8050,7 +8065,7 @@ function _detectContradictions(){
   var contradictions=[];
   var now=new Date();
   var last7=[];
-  for(var di=0;di<7;di++){var d=new Date(now);d.setDate(d.getDate()-di);last7.push(d.toISOString().split('T')[0]);}
+  for(var di=0;di<7;di++){var d=new Date(now);d.setDate(d.getDate()-di);last7.push(localDateStr(d));}
   var subs=['physics','chemistry','maths'];
 
   // ── SIGNAL 1: Repeated promises with no follow-through ──
@@ -8167,7 +8182,7 @@ function buildAnalyticsLayer(){
   var insights=[];
 
   // ── 1. SESSION CONSISTENCY ──────────────────────────────────────
-  var last14=[];for(var i=13;i>=0;i--){var d2=new Date();d2.setDate(d2.getDate()-i);last14.push(d2.toISOString().split('T')[0]);}
+  var last14=[];for(var i=13;i>=0;i--){var d2=new Date();d2.setDate(d2.getDate()-i);last14.push(localDateStr(d2));}
   var studiedDays=last14.filter(function(d){return sAll.some(function(s){return s.date===d;});});
   var consistencyPct=Math.round(studiedDays.length/14*100);
   insights.push('Study consistency (14d): '+consistencyPct+'% ('+studiedDays.length+'/14 days active)');
@@ -8207,7 +8222,7 @@ function buildAnalyticsLayer(){
   if(sleepLog.length>=3&&rated.length>=3){
     var goodSleepSess=[];var poorSleepSess=[];
     sleepLog.forEach(function(sl){
-      var slNext=(function(d){var dt=new Date(d+'T12:00:00');dt.setDate(dt.getDate()+1);return dt.toISOString().split('T')[0];})(sl.date);
+      var slNext=(function(d){var dt=new Date(d+'T12:00:00');dt.setDate(dt.getDate()+1);return localDateStr(dt);})(sl.date);
       var nextDaySess=rated.filter(function(s){return s.date===sl.date||s.date===slNext;});
       nextDaySess.forEach(function(s){(sl.hours>=7?goodSleepSess:poorSleepSess).push(s.stars||s.rating);});
     });
@@ -8276,7 +8291,7 @@ function buildAnalyticsLayer(){
     });
     if(cgFoundSub)bestNextSub=cgFoundSub;
   }
-  insights.push('TODAY OPTIMAL: '+remaining.toFixed(1)+'h remaining toward '+goalH+'h goal | Best next subject: '+bestNextSub+' (most neglected + critical gaps) | Current time: '+nowH+':00');
+  insights.push('TODAY OPTIMAL: '+remaining.toFixed(1)+'h remaining toward '+goalH+'h goal | Best next subject: '+bestNextSub+' (most neglected + critical gaps)');
 
   return insights.length?'\n=== AYANOKOJI INTELLIGENCE LAYER (pre-computed) ===\n'+insights.join('\n')+'\n=== USE THESE INSIGHTS IN EVERY DECISION ===':'';
 }
@@ -8918,7 +8933,10 @@ async function _oracleRaw(apiKey,messages,systemMsg,maxTokens,provider){
       const e=new Error(msg);e.status=gemResp.status;throw e;
     }
     const gemData=await gemResp.json();
-    return gemData.candidates?.[0]?.content?.parts?.[0]?.text||'';
+    // Gemini 2.5 Flash returns thinking tokens as {text,thought:true} before the real answer.
+    // Filter those out, then join all remaining parts — long responses can span multiple parts.
+    const gemParts=gemData.candidates?.[0]?.content?.parts||[];
+    return gemParts.filter(p=>!p.thought).map(p=>p.text||'').join('')||'';
   }
 
   // ── GROQ / OPENROUTER: OpenAI-compatible ──
@@ -9001,7 +9019,7 @@ async function extractWeeklyPatterns(){
   var banner=document.getElementById('pattern-stale-banner');
   if(btn){btn.disabled=true;btn.textContent='⏳ Extracting...';}
   if(status)status.textContent='Oracle is reading your last 7 days...';
-  var last7=[];for(var i=6;i>=0;i--){var dd=new Date();dd.setDate(dd.getDate()-i);last7.push(dd.toISOString().split('T')[0]);}
+  var last7=[];for(var i=6;i>=0;i--){var dd=new Date();dd.setDate(dd.getDate()-i);last7.push(localDateStr(dd));}
   var wSess=S.sessions.filter(function(s){return last7.indexOf(s.date)>-1&&!s.paused;});
   if(wSess.length<2){
     if(status)status.textContent='Not enough sessions this week. Study a few more days first.';
@@ -9395,7 +9413,7 @@ function buildFullContext(){
   const xp=S.hunter?.xp||0;
   const streak=S.hunter?.streak||0;
   const mana=S.hunter?.mana||100;
-  const last7=[];for(let i=6;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);last7.push(d.toISOString().split('T')[0]);}
+  const last7=[];for(let i=6;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);last7.push(localDateStr(d));}
   const weekSess=S.sessions.filter(s=>last7.includes(s.date)&&!s.paused);
   const weekMins=weekSess.reduce((a,s)=>a+s.min,0);
   const todaySess=S.sessions.filter(s=>s.date===t&&!s.paused);
@@ -9528,7 +9546,8 @@ function buildFullContext(){
 
 === SHADOW SYSTEM — FULL HUNTER PROFILE ===
 Hunter: ${name} | Rank: ${rank} | XP: ${xp} | Streak: ${streak}d | Mana: ${mana}/100
-Class: ${S.classYear||'12'} | Target: ${S.jeeTarget||250} marks | Exam: ${S.examName||'JEE Advanced'} in ${daysLeft} DAYS${examLine}${schedLine}${overrideLine}
+Class: ${S.classYear||'12'} | Target: ${S.jeeTarget||250} marks${S.jeeRankTarget?' | Rank goal: '+S.jeeRankTarget:''} | Exam: ${S.examName||'JEE Advanced'} in ${daysLeft} DAYS${examLine}${schedLine}${overrideLine}
+XP progress: ${xp} / ${rankCeiling} (${xpToNext>0?xpToNext+' XP to reach '+nextRank+' rank':'MAX for current rank — rank up ready'})
 Current time: ${nowTime} (${nowDay})
 
 === WEEKLY SCHEDULE ===
@@ -9616,6 +9635,7 @@ ${recentTests.slice(-5).map(function(t){
   var line='  '+t.date+' ['+( t.type||'test')+']: PHY '+t.phy+' CHE '+t.che+' MAT '+t.mat+' = '+t.total+'/'+(t.max||300)+' ('+pct+'%)';
   if(t.chapters)line+=' chapters:'+t.chapters;
   if(t.notes)line+=' note:'+t.notes;
+  if(t.classRank)line+=' | Class rank: '+t.classRank;
   if(t.weakTopics&&t.weakTopics.length)line+='\n    Weak from test: '+t.weakTopics.map(function(w){return w.name+'('+w.subject+')';}).join(', ');
   return line;
 }).join('\n')||'  No tests yet'}
@@ -9848,7 +9868,7 @@ async function runAdvisor(){
     +'Under 220 words. Every sentence must reference their actual logged data.';
   try{
     const text=await oracleCall([{role:'user',content:advisorUserMsg}],advisorSystemMsg,2048);
-    if(out)out.innerHTML=`<div class="oracle-section-chip">⚔ Ayanokoji Report · ${new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})}</div>${formatOracleMD(text)}`;
+    if(out)out.innerHTML=`<div class="oracle-section-chip">⚔ Ayanokoji Report · ${new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',hour12:true})}</div>${formatOracleMD(text)}`;
     addToMemory('Advisor: '+text.slice(0,120).replace(/\n/g,' ')+'…',true);
   }catch(e){if(out)out.innerHTML=`<div style="color:var(--red);font-size:13px;padding:6px 0">⚠ ${e.message||'Oracle offline. Add API keys in Keys tab.'}</div>`;}
   setOracleStreaming(false);if(btn){btn.disabled=false;btn.textContent='⚔ Analyze My Progress';}
@@ -10068,7 +10088,7 @@ async function generateDailyPlan(){
   const context=buildFullContext();
   const goalH=S.goals?.studyHours||6;
   const dow=new Date().toLocaleDateString('en-IN',{weekday:'long'});
-  const timeStr=new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+  const timeStr=new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',hour12:true});
   const sprintRule=isSprintMode()?'\n⚠ SPRINT MODE: Only PYQs, mock tests, and weak topic revision. No new chapters.':'';
   const ayanoVoice=buildAyanoVoice('planner');
   // Context goes to systemMsg (Gemini systemInstruction) — keeps user message lean
@@ -10120,7 +10140,7 @@ async function oracleWorkoutCoach(){
     var done=Object.values(l.comp||{}).filter(Boolean).length;
     return l.date+': '+(p&&p.name||l.day)+' — '+done+'/'+tot+' done';
   }).join('\n'):'No workout logs yet';
-  var last7=[];for(var i=6;i>=0;i--){var dd=new Date();dd.setDate(dd.getDate()-i);last7.push(dd.toISOString().split('T')[0]);}
+  var last7=[];for(var i=6;i>=0;i--){var dd=new Date();dd.setDate(dd.getDate()-i);last7.push(localDateStr(dd));}
   var studyMins=S.sessions.filter(function(s){return last7.indexOf(s.date)>-1&&!s.paused;}).reduce(function(a,s){return a+s.min;},0);
   var daysLeft=Math.max(0,Math.ceil((new Date(S.examDate||'2026-05-18')-new Date())/86400000));
   var prompt=buildAyanoVoice('workout')+'\n\nHunter training data:\nWorkout streak: '+streak+' days | Strength stat: '+strength+'/100\nDays to exam: '+daysLeft+'\nStudy load this week: '+Math.round(studyMins/60*10)/10+'h\n\nWeekly plan:\n'+planLines+'\n\nRecent logs:\n'+logLines+'\n\nRespond with exactly 3 directives:\n1. PROGRESS: One specific exercise or muscle group to intensify this week — exact reps/sets\n2. WATCH: One risk in their current pattern — overtraining, imbalance, or neglect\n3. ADJUST: One change for next week based on their study load and exam proximity\n\nEvery sentence uses their actual data. Under 120 words total.';
