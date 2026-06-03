@@ -8327,8 +8327,18 @@ async function _sendAyano(inputId){
   }
   const sendBtn=document.getElementById(isFl?'ayano-float-send':'ayano-send-btn');
   if(sendBtn){sendBtn.disabled=true;sendBtn.textContent='···';}
-  const systemMsg=AYANO_SYSTEM+'\n\n'+buildFullContext(); // analytics layer is already at top of buildFullContext
   try{
+    let systemMsg=AYANO_SYSTEM+'\n\n'+buildFullContext();
+    // Guard: if context is too large for the model, trim the full context
+    // Llama 3.3 70B context window is 32k tokens (~24k chars safe limit for system+history)
+    if(systemMsg.length>18000){
+      // Keep AYANO_SYSTEM + trimmed context (drop oldest sections first)
+      var trimCtx=buildFullContext();
+      // Remove the analytics layer (largest section) if over limit
+      var aiLayerEnd=trimCtx.indexOf('=== SHADOW SYSTEM');
+      if(aiLayerEnd>0)trimCtx=trimCtx.slice(aiLayerEnd);
+      systemMsg=AYANO_SYSTEM+'\n\n'+trimCtx;
+    }
     const raw=await oracleCall(_ayanoHistory.slice(-20),systemMsg,2048);
     const text=parseAyanoActions(raw);
     if(!text||!text.trim()){console.warn('Empty response from AI');_ayanoStreaming=false;if(sendBtn){sendBtn.disabled=false;sendBtn.textContent='Send';}return;}
@@ -8340,12 +8350,15 @@ async function _sendAyano(inputId){
     renderAyanoChat();
     if(!_ayanoFloatOpen){const badge=document.getElementById('ayano-float-badge');if(badge)badge.style.display='block';}
   }catch(e){
-    const errTxt='['+( e.message||'Oracle offline — check your API key')+']';
+    const errTxt='['+(e.message||'Oracle offline — check your API key')+']';
     _ayanoHistory.push({role:'assistant',content:errTxt});
     renderAyanoChat();
+  }finally{
+    _ayanoStreaming=false;
+    if(sendBtn){sendBtn.disabled=false;sendBtn.textContent='Send';}
+    var tid2=document.getElementById('ayano-typing-ind');
+    if(tid2)tid2.remove();
   }
-  _ayanoStreaming=false;
-  if(sendBtn){sendBtn.disabled=false;sendBtn.textContent='Send';}
 }
 function sendAyanoChat(){_sendAyano('ayano-input');}
 function sendAyanoFloat(){_sendAyano('ayano-float-input');}
@@ -8922,11 +8935,15 @@ async function _oracleRaw(apiKey,messages,systemMsg,maxTokens,provider){
     };
     // System instruction goes in its own field, not as a message
     if(systemMsg)gemBody.systemInstruction={parts:[{text:systemMsg}]};
+    const gemCtrl=new AbortController();
+    const gemTimeout=setTimeout(function(){gemCtrl.abort();},30000);
     const gemResp=await fetch(gemEndpoint,{
       method:'POST',
       headers:{'Content-Type':'application/json','x-goog-api-key':apiKey},
-      body:JSON.stringify(gemBody)
+      body:JSON.stringify(gemBody),
+      signal:gemCtrl.signal
     });
+    clearTimeout(gemTimeout);
     if(!gemResp.ok){
       const errData=await gemResp.json().catch(()=>({}));
       const msg=errData?.error?.message||'Gemini error '+gemResp.status;
@@ -8952,7 +8969,11 @@ async function _oracleRaw(apiKey,messages,systemMsg,maxTokens,provider){
   const headers={'Content-Type':'application/json','Authorization':'Bearer '+apiKey};
   if(isOR){headers['HTTP-Referer']='https://shadowsystem.app';headers['X-Title']='Shadow System';}
   const body={model,max_tokens:maxTokens,messages:oaiMessages,temperature:0.7};
-  const resp=await fetch(endpoint,{method:'POST',headers,body:JSON.stringify(body)});
+  // 30-second timeout — never hang the UI permanently
+  const controller=new AbortController();
+  const timeoutId=setTimeout(function(){controller.abort();},30000);
+  const resp=await fetch(endpoint,{method:'POST',headers,body:JSON.stringify(body),signal:controller.signal});
+  clearTimeout(timeoutId);
   if(!resp.ok){
     const errData=await resp.json().catch(()=>({}));
     const msg=errData?.error?.message||'API error '+resp.status;
