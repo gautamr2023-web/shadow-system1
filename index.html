@@ -5198,8 +5198,8 @@ function renderTests(){
       +'<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">'
       +'<span style="font-size:12px;font-weight:600;flex:1;min-width:80px">'+fmtDate(t.date)+'</span>'
       +'<span style="font-size:10px;color:var(--text3);background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:4px;padding:2px 6px">'+(typeLabels[t.type]||t.type||'Test')+'</span>'
-      +'<span style="font-size:12px;font-weight:700" class="'+cls+'">'+t.total+'/'+(t.max||300)+'</span>'\
-      +(rankHtml||'')\
+      +'<span style="font-size:12px;font-weight:700" class="'+cls+'">'+t.total+'/'+(t.max||300)+'</span>'
+      +(rankHtml||'')
       +'<button onclick="openTestEdit('+t.id+')" style="background:none;border:1px solid var(--border);border-radius:5px;color:var(--text2);cursor:pointer;font-size:10px;padding:3px 8px;font-family:var(--font)">✏ Edit</button>'
       +'<button onclick="deleteTest('+t.id+')" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:13px;padding:0 4px">✕</button>'
       +'</div>'
@@ -10125,10 +10125,10 @@ function renderStagingTasks(){
     cont.innerHTML='<div style="font-size:11px;color:var(--text3);padding:4px 0">No tasks yet — type above and press Enter or Add</div>';return;
   }
   cont.innerHTML=_stagingTasks.map(function(task,idx){
-    return '<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.04)">'\
-      +'<span style="width:14px;height:14px;border:1.5px solid var(--border2);border-radius:3px;flex-shrink:0;display:inline-block"></span>'\
-      +'<span style="flex:1;font-size:12px;color:var(--text)">'+escHtml(task.text)+'</span>'\
-      +'<button onclick="removeManualStagingTask('+idx+')" style="background:none;border:none;color:rgba(255,255,255,.25);cursor:pointer;font-size:12px;padding:0 3px;flex-shrink:0">✕</button>'\
+    return '<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.04)">'
+      +'<span style="width:14px;height:14px;border:1.5px solid var(--border2);border-radius:3px;flex-shrink:0;display:inline-block"></span>'
+      +'<span style="flex:1;font-size:12px;color:var(--text)">'+escHtml(task.text)+'</span>'
+      +'<button onclick="removeManualStagingTask('+idx+')" style="background:none;border:none;color:rgba(255,255,255,.25);cursor:pointer;font-size:12px;padding:0 3px;flex-shrink:0">✕</button>'
       +'</div>';
   }).join('');
 }
