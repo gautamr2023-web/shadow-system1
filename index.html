@@ -1280,6 +1280,27 @@ input.fi:focus,select.fi:focus{
     <div class="dstat"><div class="dstat-val" id="ds-sess">0</div><div class="dstat-lbl">🎯 Sessions</div></div>
   </div>
   <div id="todays-mission"></div>
+  <!-- DIRECT PLAN CREATOR — always visible on dashboard -->
+  <div id="plan-creator-card" class="card" style="margin-bottom:14px;border-color:rgba(0,180,216,.15)">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:var(--mana);font-weight:700">📋 Battle Plan</span>
+        <span id="plan-creator-status" style="font-size:10px;color:var(--text3)"></span>
+      </div>
+      <button onclick="togglePlanCreator()" id="plan-creator-toggle" style="background:rgba(0,180,216,.1);border:1px solid rgba(0,180,216,.25);border-radius:5px;color:var(--mana);font-size:10px;font-weight:700;padding:3px 10px;cursor:pointer;font-family:var(--font)">+ CREATE</button>
+    </div>
+    <div id="plan-creator-form" style="display:none">
+      <div style="display:flex;gap:6px;margin-bottom:8px">
+        <input type="text" id="plan-task-input" class="fi" style="flex:1;font-size:13px;padding:8px 10px" placeholder="Add a task (e.g. HC Verma Ch.5, Maths PYQ 2023)…" onkeydown="if(event.key==='Enter')addManualPlanTask()">
+        <button onclick="addManualPlanTask()" style="background:rgba(0,180,216,.15);border:1px solid rgba(0,180,216,.3);border-radius:6px;color:var(--mana);font-size:12px;font-weight:700;padding:8px 14px;cursor:pointer;font-family:var(--font);white-space:nowrap">Add</button>
+      </div>
+      <div id="plan-task-staging" style="min-height:30px;margin-bottom:8px"></div>
+      <div style="display:flex;gap:6px">
+        <button onclick="saveManualPlan()" style="flex:1;background:var(--mana);border:none;border-radius:6px;color:#000;font-size:12px;font-weight:700;padding:9px;cursor:pointer;font-family:var(--font);text-transform:uppercase;letter-spacing:.5px">📌 Pin to Dashboard</button>
+        <button onclick="cancelManualPlan()" style="background:none;border:1px solid var(--border2);border-radius:6px;color:var(--text2);font-size:12px;font-weight:700;padding:9px 14px;cursor:pointer;font-family:var(--font)">Cancel</button>
+      </div>
+    </div>
+  </div>
   <!-- Upcoming Exams mini-countdown — only shows if exams are set -->
   <div id="upcoming-exams-dash" style="display:none;margin-bottom:14px"></div>
   <div class="card">
@@ -1496,6 +1517,12 @@ input.fi:focus,select.fi:focus{
         </div>
         <div class="fg full"><label class="fl">Chapters Covered <span style="color:var(--text3);font-weight:400;text-transform:none;letter-spacing:0">(optional — e.g. Kinematics, Limits)</span></label>
           <input type="text" class="fi" id="t-chapters" placeholder="e.g. Kinematics, Thermodynamics, Integration…">
+        </div>
+        <div class="fg"><label class="fl">Class Rank <span style="color:var(--text3);font-weight:400;text-transform:none;letter-spacing:0">(optional)</span></label>
+          <input type="number" class="fi" id="t-rank" placeholder="e.g. 12" min="1">
+        </div>
+        <div class="fg"><label class="fl">Total Students <span style="color:var(--text3);font-weight:400;text-transform:none;letter-spacing:0">(optional)</span></label>
+          <input type="number" class="fi" id="t-rank-total" placeholder="e.g. 60" min="1">
         </div>
         <div class="fg full"><label class="fl">Notes <span style="color:var(--text3);font-weight:400;text-transform:none;letter-spacing:0">(optional)</span></label>
           <input type="text" class="fi" id="t-notes" placeholder="e.g. ran out of time in maths, silly mistakes…">
@@ -2981,7 +3008,7 @@ function renderDash(){
     }else{sb.style.display='none';}
   }
   renderStatusWindow();
-  renderQuests();renderGates();renderPenalty();renderTodaysMission();
+  renderQuests();renderGates();renderPenalty();renderTodaysMission();renderPlanCreatorStatus();
   renderFeedbackBanner();
   renderUpcomingExamsDash();
   // Ayanokoji notices
@@ -5030,6 +5057,8 @@ function openTestEdit(id){
     +'</select></div>'
     +'<div class="fg full"><label class="fl">Chapters</label><input type="text" class="fi" id="te-chapters" value="'+escHtml(t.chapters||'')+'"></div>'
     +'<div class="fg full"><label class="fl">Notes</label><input type="text" class="fi" id="te-notes" value="'+escHtml(t.notes||'')+'"></div>'
+    +'<div class="fg"><label class="fl">Class Rank</label><input type="number" class="fi" id="te-rank" value="'+(t.classRank&&t.classRank.pos||'')+'" placeholder="e.g. 12" min="1"></div>'
+    +'<div class="fg"><label class="fl">Total Students</label><input type="number" class="fi" id="te-rank-total" value="'+(t.classRank&&t.classRank.total||'')+'" placeholder="e.g. 60" min="1"></div>'
     +'</div>'
     +'<button class="btn btn-primary" onclick="saveTestEdit('+id+')" style="width:100%;margin-top:12px">Save Changes</button>'
     +'</div>';
@@ -5048,6 +5077,10 @@ function saveTestEdit(id){
   t.type=document.getElementById('te-type').value||t.type;
   t.chapters=document.getElementById('te-chapters').value||'';
   t.notes=document.getElementById('te-notes').value||'';
+  var teRankEl=document.getElementById('te-rank');var teRankTotEl=document.getElementById('te-rank-total');
+  var teRankPos=teRankEl?parseInt(teRankEl.value)||0:0;
+  var teRankTot=teRankTotEl?parseInt(teRankTotEl.value)||0:0;
+  t.classRank=teRankPos>0?{pos:teRankPos,total:teRankTot}:null;
   S.tests.sort(function(a,b){return new Date(a.date)-new Date(b.date);});
   save();
   document.getElementById('test-edit-modal').style.display='none';
@@ -5095,6 +5128,8 @@ function addTest(){
   const type=document.getElementById('t-type').value;
   const chapters=(document.getElementById('t-chapters').value||'').trim();
   const notes=(document.getElementById('t-notes').value||'').trim();
+  const rankPos=parseInt(document.getElementById('t-rank').value)||0;
+  const rankTotal=parseInt(document.getElementById('t-rank-total').value)||0;
   const subjects=[];
   if(!document.getElementById('ts-phy')||document.getElementById('ts-phy').checked)subjects.push('physics');
   if(!document.getElementById('ts-che')||document.getElementById('ts-che').checked)subjects.push('chemistry');
@@ -5105,7 +5140,7 @@ function addTest(){
   const total=phyF+cheF+matF;
   const weakChipEls=[...document.querySelectorAll('.twc.twc-on')];
   const weakTopics=weakChipEls.map(el=>({name:el.dataset.topic,subject:el.dataset.subject}));
-  S.tests.push({id:Date.now(),date,phy:phyF,che:cheF,mat:matF,total,max,type,chapters,notes,weakTopics,subjects});
+  S.tests.push({id:Date.now(),date,phy:phyF,che:cheF,mat:matF,total,max,type,chapters,notes,weakTopics,subjects,classRank:rankPos>0?{pos:rankPos,total:rankTotal}:null});
   S.tests.sort((a,b)=>new Date(a.date)-new Date(b.date));
   if(weakTopics.length){
     weakTopics.forEach(wt=>{
@@ -5127,7 +5162,7 @@ function addTest(){
       setTimeout(()=>showToast('⚔ Weekly Boss Defeated! +200 XP 🏆🔥'),700);
     } else if(S.weeklyBoss[wk]){showToast('Boss already defeated this week. +'+xp+' XP');}
   }
-  ['t-phy','t-che','t-mat','t-chapters','t-notes'].forEach(id=>{const el2=document.getElementById(id);if(el2)el2.value='';});
+  ['t-phy','t-che','t-mat','t-chapters','t-notes','t-rank','t-rank-total'].forEach(id=>{const el2=document.getElementById(id);if(el2)el2.value='';});
   document.querySelectorAll('.twc.twc-on').forEach(el=>{
     el.classList.remove('twc-on');el.style.background='transparent';
     el.style.borderColor=el.dataset.color;el.style.color=el.dataset.color;
@@ -5152,11 +5187,19 @@ function renderTests(){
     if(subjects.indexOf('physics')>-1)subParts.push('<span style="color:var(--accent)">P:'+t.phy+'</span>');
     if(subjects.indexOf('chemistry')>-1)subParts.push('<span style="color:var(--green)">C:'+t.che+'</span>');
     if(subjects.indexOf('maths')>-1)subParts.push('<span style="color:var(--gold)">M:'+t.mat+'</span>');
+    const rankHtml=t.classRank&&t.classRank.pos?(function(){
+      var rp=t.classRank.pos,rt=t.classRank.total||0;
+      var rpct=rt>0?Math.round(rp/rt*100):0;
+      var rc=rp<=3?'var(--gold)':rpct<=20?'var(--green)':rpct<=50?'var(--text)':'var(--text2)';
+      var medal=rp===1?'🥇 ':rp===2?'🥈 ':rp===3?'🥉 ':'';
+      return '<span style="font-size:10px;font-weight:700;color:'+rc+';background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:4px;padding:2px 7px">'+medal+'Rank '+rp+(rt?'/'+rt:'')+'</span>';
+    })():'';
     h+='<div style="padding:10px 0;border-bottom:1px solid var(--border)">'
       +'<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">'
       +'<span style="font-size:12px;font-weight:600;flex:1;min-width:80px">'+fmtDate(t.date)+'</span>'
       +'<span style="font-size:10px;color:var(--text3);background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:4px;padding:2px 6px">'+(typeLabels[t.type]||t.type||'Test')+'</span>'
-      +'<span style="font-size:12px;font-weight:700" class="'+cls+'">'+t.total+'/'+(t.max||300)+'</span>'
+      +'<span style="font-size:12px;font-weight:700" class="'+cls+'">'+t.total+'/'+(t.max||300)+'</span>'\
+      +(rankHtml||'')\
       +'<button onclick="openTestEdit('+t.id+')" style="background:none;border:1px solid var(--border);border-radius:5px;color:var(--text2);cursor:pointer;font-size:10px;padding:3px 8px;font-family:var(--font)">✏ Edit</button>'
       +'<button onclick="deleteTest('+t.id+')" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:13px;padding:0 4px">✕</button>'
       +'</div>'
@@ -9616,11 +9659,13 @@ ${recentTests.slice(-5).map(function(t){
   var line='  '+t.date+' ['+( t.type||'test')+']: PHY '+t.phy+' CHE '+t.che+' MAT '+t.mat+' = '+t.total+'/'+(t.max||300)+' ('+pct+'%)';
   if(t.chapters)line+=' chapters:'+t.chapters;
   if(t.notes)line+=' note:'+t.notes;
+  if(t.classRank&&t.classRank.pos)line+=' classRank:'+t.classRank.pos+(t.classRank.total?'/'+t.classRank.total:'')+(t.classRank.total?' (top '+Math.round(t.classRank.pos/t.classRank.total*100)+'%)':'');
   if(t.weakTopics&&t.weakTopics.length)line+='\n    Weak from test: '+t.weakTopics.map(function(w){return w.name+'('+w.subject+')';}).join(', ');
   return line;
 }).join('\n')||'  No tests yet'}
 ${Object.keys(boardAvg).length?'Board averages: '+Object.entries(boardAvg).map(function(e){return e[0]+' '+e[1]+'%';}).join(' | '):''}
-${(S.boardTests&&S.boardTests.length?'Recent board tests: '+S.boardTests.slice(-3).map(function(bt){return bt.date+' '+bt.subj+' '+bt.pct+'%';}).join(' | '):'')}
+${(S.boardTests&&S.boardTests.length?'Recent board tests: '+S.boardTests.slice(-3).map(function(bt){return bt.date+' '+bt.subj+' '+bt.pct+'%';}).join(' | '):'')}\
+${(function(){var ranked=S.tests.filter(function(t){return t.classRank&&t.classRank.pos;});if(!ranked.length)return '';var last=ranked.slice(-3);return '\nClass ranks (last '+last.length+'): '+last.map(function(t){var r=t.classRank;var pctile=r.total?Math.round(r.pos/r.total*100):null;return t.date+' ['+( t.type||'test')+']: '+r.pos+(r.total?'/'+r.total:'')+(pctile!==null?' (top '+pctile+'%)':'');}).join(' | ');})()}
 
 === TOPIC CONFIDENCE ===
 Overall avg: ${avgConf}% | Mastered: ${strongT}/${allT.length}
@@ -10016,7 +10061,7 @@ function addPinnedItem(){
   if(!S.activityLog)S.activityLog=[];
   S.activityLog.unshift({type:'plan_manual_add',date:t,time:new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',hour12:true}),task:text});
   if(S.activityLog.length>100)S.activityLog=S.activityLog.slice(0,100);
-  save();renderTodaysMission();
+  save();renderTodaysMission();renderPlanCreatorStatus();
 }
 function togglePinnedItem(idx){
   const t=today();
@@ -10032,14 +10077,101 @@ function togglePinnedItem(idx){
   } else {
     _trackBehavior('task_uncomplete',{task:item.text,date:t});
   }
-  save();renderTodaysMission();updateHeader();
+  save();renderTodaysMission();renderPlanCreatorStatus();updateHeader();
 }
 function clearPinnedPlan(){
   const t=today();
   if(S.pinnedPlan)delete S.pinnedPlan[t];
-  save();renderTodaysMission();
+  save();renderTodaysMission();renderPlanCreatorStatus();
   showToast('Battle plan cleared');
 }
+
+/* ── MANUAL PLAN CREATOR ── */
+var _stagingTasks=[];
+function togglePlanCreator(){
+  const form=document.getElementById('plan-creator-form');
+  const btn=document.getElementById('plan-creator-toggle');
+  const t=today();
+  const hasPlan=S.pinnedPlan&&S.pinnedPlan[t]&&S.pinnedPlan[t].items&&S.pinnedPlan[t].items.length;
+  if(hasPlan){
+    // If plan exists, clear it instead
+    if(!confirm('Clear today\'s battle plan?'))return;
+    clearPinnedPlan();return;
+  }
+  if(!form)return;
+  const isOpen=form.style.display==='block';
+  if(isOpen){cancelManualPlan();return;}
+  _stagingTasks=[];form.style.display='block';
+  if(btn){btn.textContent='Cancel';}
+  renderStagingTasks();
+  setTimeout(function(){var inp=document.getElementById('plan-task-input');if(inp)inp.focus();},100);
+}
+function addManualPlanTask(){
+  const inp=document.getElementById('plan-task-input');
+  if(!inp)return;
+  const text=inp.value.trim();
+  if(!text){showToast('Enter a task first');return;}
+  _stagingTasks.push({text:text,done:false,type:'task'});
+  inp.value='';inp.focus();
+  renderStagingTasks();
+}
+function removeManualStagingTask(idx){
+  _stagingTasks.splice(idx,1);
+  renderStagingTasks();
+}
+function renderStagingTasks(){
+  const cont=document.getElementById('plan-task-staging');if(!cont)return;
+  if(!_stagingTasks.length){
+    cont.innerHTML='<div style="font-size:11px;color:var(--text3);padding:4px 0">No tasks yet — type above and press Enter or Add</div>';return;
+  }
+  cont.innerHTML=_stagingTasks.map(function(task,idx){
+    return '<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.04)">'\
+      +'<span style="width:14px;height:14px;border:1.5px solid var(--border2);border-radius:3px;flex-shrink:0;display:inline-block"></span>'\
+      +'<span style="flex:1;font-size:12px;color:var(--text)">'+escHtml(task.text)+'</span>'\
+      +'<button onclick="removeManualStagingTask('+idx+')" style="background:none;border:none;color:rgba(255,255,255,.25);cursor:pointer;font-size:12px;padding:0 3px;flex-shrink:0">✕</button>'\
+      +'</div>';
+  }).join('');
+}
+function saveManualPlan(){
+  if(!_stagingTasks.length){showToast('Add at least one task');return;}
+  const t=today();
+  if(!S.pinnedPlan)S.pinnedPlan={};
+  S.pinnedPlan[t]={date:t,items:_stagingTasks.slice(),source:'user'};
+  _stagingTasks=[];
+  const form=document.getElementById('plan-creator-form');
+  if(form)form.style.display='none';
+  const btn=document.getElementById('plan-creator-toggle');
+  if(btn)btn.textContent='+ CREATE';
+  save();renderTodaysMission();renderPlanCreatorStatus();
+  showToast('📌 Battle Plan pinned! ('+S.pinnedPlan[t].items.length+' tasks)');
+}
+function cancelManualPlan(){
+  _stagingTasks=[];
+  const form=document.getElementById('plan-creator-form');
+  if(form)form.style.display='none';
+  const btn=document.getElementById('plan-creator-toggle');
+  if(btn)btn.textContent='+ CREATE';
+}
+function renderPlanCreatorStatus(){
+  const t=today();
+  const status=document.getElementById('plan-creator-status');
+  const btn=document.getElementById('plan-creator-toggle');
+  if(!status)return;
+  const hasPlan=S.pinnedPlan&&S.pinnedPlan[t]&&S.pinnedPlan[t].items&&S.pinnedPlan[t].items.length;
+  if(hasPlan){
+    const done=S.pinnedPlan[t].items.filter(function(i){return i.done;}).length;
+    const total=S.pinnedPlan[t].items.length;
+    const src=S.pinnedPlan[t].source||'manual';
+    status.textContent=done+'/'+total+' done · '+(src==='user'?'your plan':src==='ayanokoji'?'AI plan':'manual');
+    status.style.color=done===total?'var(--green)':'var(--text3)';
+    if(btn){btn.textContent='Clear';btn.style.background='rgba(255,59,92,.08)';btn.style.borderColor='rgba(255,59,92,.25)';btn.style.color='var(--red)';}
+  } else {
+    status.textContent='No plan set';
+    status.style.color='var(--text3)';
+    if(btn){btn.textContent='+ CREATE';btn.style.background='rgba(0,180,216,.1)';btn.style.borderColor='rgba(0,180,216,.25)';btn.style.color='var(--mana)';}
+  }
+}
+
 function pinBattlePlan(){
   const text=S._lastPlanText;
   if(!text){showToast('Generate a plan first');return;}
