@@ -2540,6 +2540,7 @@ const DEF={
   weeklyBoss:{},         // {weekKey: true}
   starterXPDates:{},     // starter trigger per date (prevent double)
   dailyXPCap:{},         // {date: total session XP earned (cap 500)}
+  taskXP:{},             // {date: total task-completion XP earned that day}
   boardTests:[],         // board performance tests
   dailyMana:{},          // {date: {energy, task}} — mana check per day
 };
@@ -2621,6 +2622,7 @@ function ensureKeys(){
   if(!S.weeklyBoss)S.weeklyBoss={};
   if(!S.starterXPDates)S.starterXPDates={};
   if(!S.dailyXPCap)S.dailyXPCap={};
+  if(!S.taskXP)S.taskXP={};
   if(!S.hunter.rank)S.hunter.rank=getRankByXPStatic(S.hunter.xp||0);
   if(S.hunter.focusStat===undefined)S.hunter.focusStat=50;
   if(S.hunter.disciplineStat===undefined)S.hunter.disciplineStat=50;
@@ -2912,7 +2914,8 @@ function getTotalXpToday(){
   const questXP=getActiveQuests().filter(q=>comp[q.id]).reduce((a,q)=>a+q.xp,0);
   const woXP=S.workout.logs.filter(l=>l.date===t).reduce((a,l)=>a+(l.xp||0),0);
   const testXP=S.tests.filter(t2=>t2.date===t).reduce((a,t2)=>a+Math.round((t2.total/(t2.max||300))*40),0);
-  return sessXP+questXP+woXP+testXP;
+  const taskXP=(S.taskXP&&S.taskXP[t])||0;
+  return sessXP+questXP+woXP+testXP+taskXP;
 }
 
 function isSprintMode(){
@@ -10127,12 +10130,23 @@ function togglePinnedItem(idx){
   const item=S.pinnedPlan[t].items[idx];
   if(!item)return;
   item.done=!item.done;
-  if(item.done){
+  if(!S.taskXP)S.taskXP={};
+  if(item.done&&!item.xpAwarded){
+    // Award XP only once per task
     S.hunter.xp=Math.max(0,S.hunter.xp+5);
     capXPToRank();
+    item.xpAwarded=true;
+    S.taskXP[t]=(S.taskXP[t]||0)+5;
     showToast('Task done ⚡ +5 XP');
     _trackBehavior('task_complete',{task:item.text,date:t});
-  } else {
+  } else if(!item.done&&item.xpAwarded){
+    // Refund XP when unticking
+    S.hunter.xp=Math.max(0,S.hunter.xp-5);
+    item.xpAwarded=false;
+    S.taskXP[t]=Math.max(0,(S.taskXP[t]||0)-5);
+    showToast('Task unchecked — -5 XP');
+    _trackBehavior('task_uncomplete',{task:item.text,date:t});
+  } else if(!item.done){
     _trackBehavior('task_uncomplete',{task:item.text,date:t});
   }
   save();renderTodaysMission();renderPlanCreatorStatus();updateHeader();
