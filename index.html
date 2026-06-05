@@ -1924,12 +1924,6 @@ input.fi:focus,select.fi:focus{
       <div class="fg"><label class="fl">Name / Title</label>
         <input type="text" class="fi" id="sr-name" placeholder="HC Verma Vol 1, ALLEN Physics, Marks App…">
       </div>
-      <div class="fg full"><label class="fl">% Completed right now</label>
-        <div style="display:flex;gap:10px;align-items:center">
-          <input type="range" id="sr-pct" min="0" max="100" value="0" style="flex:1;accent-color:var(--accent)" oninput="document.getElementById('sr-pct-val').textContent=this.value+'%'">
-          <span id="sr-pct-val" style="font-size:14px;font-weight:700;color:var(--accent);min-width:38px">0%</span>
-        </div>
-      </div>
     </div>
     <button class="btn btn-primary btn-sm" onclick="addStudyResource()" style="margin-bottom:20px">+ Add Resource</button>
 
@@ -4227,12 +4221,12 @@ async function _upgradeSecAdviceAI(mins,sub,taskType,manaAfter,staticAdvice,stat
   const subLabel={physics:'Physics',chemistry:'Chemistry',maths:'Maths',other:'Other'}[sub]||sub;
   const sessData=`Session: ${mins}min ${taskType} on ${subLabel}. Mana=${manaAfter}/100. Days to exam=${daysLeft}. Today total=${Math.round(todayTotal/60*10)/10}h. Weak topics: ${weakT.length?weakT.map(t=>t.name+' ('+t.conf+'%)').join(', '):'not set'}.`;
   const advSystemMsg=buildAyanoVoice('session');
-  const advUserMsg=sessData+'\n\nNo preamble. No explanation. Begin immediately with ADVICE:.\n\nADVICE: [one sharp observation, max 22 words]\nNEXT: [specific next session directive, max 18 words]';
+  const advUserMsg=sessData+'\n\nNo preamble. No filler. Respond with EXACTLY two lines, nothing else.\n\nADVICE: [one complete, sharp observation — end with a full stop. 15-25 words.]\nNEXT: [one specific, actionable next session directive — end with a full stop. 12-20 words.]';
   try{
-    const text=await oracleCall([{role:'user',content:advUserMsg}],advSystemMsg,400);
+    const text=await oracleCall([{role:'user',content:advUserMsg}],advSystemMsg,700);
     if(!document.getElementById('sec-modal').classList.contains('show'))return;
-    const advMatch=text.match(/ADVICE:\s*(.+)/i);
-    const nextMatch=text.match(/NEXT:\s*(.+)/i);
+    const advMatch=text.match(/ADVICE:\s*([\s\S]+?)(?=\nNEXT:|\n\n|$)/i);
+    const nextMatch=text.match(/NEXT:\s*([\s\S]+?)(?=\n[A-Z]+:|\n\n|$)/i);
     const advEl2=document.getElementById('sec-advice');
     if(advEl2&&advMatch){
       advEl2.innerHTML='<span style="font-size:9px;color:var(--accent);letter-spacing:.8px;text-transform:uppercase;font-weight:700;display:block;margin-bottom:4px">⚔ Ayanokoji</span>'+escHtml(advMatch[1].trim());
@@ -4265,12 +4259,12 @@ INSIGHT: [the core idea most students miss — 2-3 sentences max, be specific]
 FORMULA: [exact formula, rule, or key condition — use proper notation]
 TRAP: [the most common JEE mistake on this topic — 1 sentence]`;
   try{
-    const text=await oracleCall([{role:'user',content:prompt}],null,500);
+    const text=await oracleCall([{role:'user',content:prompt}],null,900);
     if(!document.getElementById('sec-modal').classList.contains('show'))return;
-    const cMatch=text.match(/CONCEPT:\s*(.+)/i);
-    const iMatch=text.match(/INSIGHT:\s*([\s\S]+?)(?=\nFORMULA:|\nTRAP:|$)/i);
-    const foMatch=text.match(/FORMULA:\s*(.+)/i);
-    const tMatch=text.match(/TRAP:\s*(.+)/i);
+    const cMatch=text.match(/CONCEPT:\s*([\s\S]+?)(?=\nINSIGHT:|\n\n|$)/i);
+    const iMatch=text.match(/INSIGHT:\s*([\s\S]+?)(?=\nFORMULA:|\nTRAP:|\n\n|$)/i);
+    const foMatch=text.match(/FORMULA:\s*([\s\S]+?)(?=\nTRAP:|\n\n|$)/i);
+    const tMatch=text.match(/TRAP:\s*([\s\S]+?)(?=\n[A-Z]+:|\n\n|$)/i);
     const micEl2=document.getElementById('sec-micro');
     if(micEl2&&cMatch){
       const insight=iMatch?iMatch[1].trim():'';
@@ -9106,13 +9100,11 @@ function addStudyResource(){
   var type=document.getElementById('sr-type').value;
   var subject=document.getElementById('sr-subject').value;
   var name=(document.getElementById('sr-name').value||'').trim();
-  var pct=parseInt(document.getElementById('sr-pct').value)||0;
   if(!name){showToast('Enter resource name');return;}
-  var entry={id:Date.now(),subject:subject,name:name,pct:pct,chapters:[]};
+  var entry={id:Date.now(),subject:subject,name:name,pct:0,completed:false,chapters:[]};
   var key=type==='ncert'?'ncert':type==='refBook'?'refBooks':type==='coaching'?'coaching':'pyqs';
   S.studyResources[key].push(entry);
-  save();document.getElementById('sr-name').value='';document.getElementById('sr-pct').value='0';
-  var pv=document.getElementById('sr-pct-val');if(pv)pv.textContent='0%';
+  save();document.getElementById('sr-name').value='';
   renderStudyResourcesList();populateChapterLogResourceSel();showToast(name+' added ⚡');
 }
 function removeStudyResource(type,id){
@@ -9161,12 +9153,23 @@ function updateResourcePct(type,id,pct,displayEl){
   var key=type==='ncert'?'ncert':type==='refBook'?'refBooks':type==='coaching'?'coaching':'pyqs';
   var r=(S.studyResources[key]||[]).find(function(x){return x.id===id;});
   if(r){
-    r.pct=parseInt(pct)||0;
+    r.pct=Math.min(100,parseInt(pct)||0);
     r.updatedAt=today()+' '+new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',hour12:true});
+    // Auto-complete when 100%
+    if(r.pct>=100&&!r.completed){
+      r.completed=true;r.completedAt=today();
+      showToast('🏆 '+r.name+' — Completed!');
+    } else if(r.pct<100){
+      r.completed=false;r.completedAt=null;
+    }
     if(!S.activityLog)S.activityLog=[];
     S.activityLog.unshift({type:'resource_update',date:today(),time:new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',hour12:true}),name:r.name,subject:r.subject||type,pct:r.pct});
     if(S.activityLog.length>100)S.activityLog=S.activityLog.slice(0,100);
-    save();if(displayEl)displayEl.textContent=r.pct+'%';var bar=document.getElementById('sr-bar-'+id);if(bar)bar.style.width=r.pct+'%';
+    save();
+    if(displayEl)displayEl.textContent=r.pct==='100'||r.pct===100?'100% ✓':r.pct+'%';
+    var bar=document.getElementById('sr-bar-'+id);if(bar){bar.style.width=r.pct+'%';bar.style.background=r.pct>=100?'var(--green)':'';}
+    // Re-render so completed badge appears without full reload
+    if(r.pct>=100)renderStudyResourcesList();
   }
 }
 function _recalcResourcePct(res){
@@ -9206,19 +9209,24 @@ function renderStudyResourcesList(){
       bySub[sub].forEach(function(r){
         var hasCh=r.chapters&&r.chapters.length>0;
         var chCompleted=hasCh?r.chapters.filter(function(c){return c.pct===100;}).length:0;
-        html+='<div style="background:'+g.bg+';border:1px solid '+g.border+';border-radius:10px;margin-bottom:9px;overflow:hidden">'
+        var isComplete=r.completed||r.pct>=100;
+        var cardBg=isComplete?'rgba(0,214,143,.04)':g.bg;
+        var cardBorder=isComplete?'rgba(0,214,143,.25)':g.border;
+        var barColor=isComplete?'var(--green)':g.col;
+        html+='<div style="background:'+cardBg+';border:1px solid '+cardBorder+';border-radius:10px;margin-bottom:9px;overflow:hidden">'
           +'<div style="padding:11px 13px;cursor:pointer" onclick="toggleSRResource('+r.id+')">'
           +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">'
           +'<span style="font-size:13px;font-weight:700;color:var(--text);flex:1">'+escHtml(r.name)+'</span>'
-          +(hasCh?'<span style="font-size:10px;color:var(--text3)">'+chCompleted+'/'+r.chapters.length+' ch</span>':'')
-          +'<span id="sr-pct-disp-'+r.id+'" style="font-size:15px;font-weight:700;color:'+g.col+'">'+r.pct+'%</span>'
+          +(isComplete?'<span style="font-size:10px;font-weight:700;color:var(--green);background:rgba(0,214,143,.1);border:1px solid rgba(0,214,143,.25);border-radius:4px;padding:1px 7px">✓ Done</span>':'')
+          +(hasCh&&!isComplete?'<span style="font-size:10px;color:var(--text3)">'+chCompleted+'/'+r.chapters.length+' ch</span>':'')
+          +'<span id="sr-pct-disp-'+r.id+'" style="font-size:15px;font-weight:700;color:'+barColor+'">'+r.pct+'%</span>'
           +'<span style="font-size:10px;color:var(--text3);padding:0 2px">▼</span>'
           +'<button onclick="event.stopPropagation();removeStudyResource(\''+g.key+'\','+r.id+')" style="background:none;border:none;color:rgba(255,255,255,.2);cursor:pointer;font-size:13px;padding:0">✕</button>'
           +'</div>'
           +'<div style="height:6px;background:rgba(255,255,255,.08);border-radius:3px">'
-          +'<div id="sr-bar-'+r.id+'" style="height:100%;width:'+r.pct+'%;background:'+g.col+';border-radius:3px;transition:width .3s"></div>'
+          +'<div id="sr-bar-'+r.id+'" style="height:100%;width:'+r.pct+'%;background:'+barColor+';border-radius:3px;transition:width .3s"></div>'
           +'</div>'
-          +(hasCh?'':'<div style="margin-top:7px"><input type="range" min="0" max="100" value="'+r.pct+'" style="width:100%;accent-color:'+g.col+';height:3px" oninput="updateResourcePct(\''+g.key+'\','+r.id+',this.value,document.getElementById(\'sr-pct-disp-'+r.id+'\'))"></div>')
+          +(hasCh||isComplete?'':'<div style="margin-top:7px"><input type="range" min="0" max="100" value="'+r.pct+'" style="width:100%;accent-color:'+g.col+';height:3px" oninput="updateResourcePct(\''+g.key+'\','+r.id+',this.value,document.getElementById(\'sr-pct-disp-'+r.id+'\'))"></div>')
           +'</div>'
           +'<div id="sr-res-ch-'+r.id+'" style="display:none;border-top:1px solid '+g.border+';padding:10px 13px">'
           +(r.chapters||[]).map(function(ch){
@@ -9588,6 +9596,29 @@ ${(function(){
 === STUDY RESOURCES ===
 ${srLines.length?srLines.join('\n'):'No resources configured yet'}
 ${recentChapters.length?'\nRecently studied:\n'+recentChapters.join('\n'):''}
+${(function(){
+  var allRes=[];
+  ['ncert','coaching','refBooks','pyqs'].forEach(function(k){(sr[k]||[]).forEach(function(r){allRes.push(r);});});
+  if(!allRes.length)return '';
+  var incomplete=allRes.filter(function(r){return !r.completed&&r.pct<100;}).sort(function(a,b){return a.pct-b.conf;});
+  var complete=allRes.filter(function(r){return r.completed||r.pct>=100;});
+  var notStarted=incomplete.filter(function(r){return r.pct===0;});
+  var inProg=incomplete.filter(function(r){return r.pct>0&&r.pct<100;});
+  var lines=['\nRESOURCE COVERAGE ANALYSIS (use this for study plan prioritisation):'];
+  if(complete.length)lines.push('Completed ('+complete.length+'): '+complete.map(function(r){return r.name;}).join(', '));
+  if(inProg.length)lines.push('In progress — PRIORITISE: '+inProg.map(function(r){return r.name+' ('+r.pct+'%)';}).join(', '));
+  if(notStarted.length)lines.push('Not started yet: '+notStarted.map(function(r){return r.name;}).join(', '));
+  // Per-subject coverage gap
+  var subjRes={physics:[],chemistry:[],maths:[],all:[]};
+  allRes.forEach(function(r){var s=r.subject||'all';if(subjRes[s])subjRes[s].push(r);else subjRes.all.push(r);});
+  ['physics','chemistry','maths'].forEach(function(s){
+    var rList=subjRes[s].concat(subjRes.all||[]);
+    if(!rList.length)return;
+    var avg=Math.round(rList.reduce(function(a,r){return a+r.pct;},0)/rList.length);
+    lines.push(s.charAt(0).toUpperCase()+s.slice(1)+' resource avg: '+avg+'%'+(avg<50?' ← UNDER-COVERED':''));
+  });
+  return lines.join('\n');
+})()}
 
 === USER SETTINGS ===
 Daily study goal: ${goalH}h | Quest study threshold: ${questGoalH}h
@@ -10007,6 +10038,32 @@ function renderPlannerContext(){
   const allT=[...(S.topics.physics11||[]),...(S.topics.physics12||[]),...(S.topics.chemistry11||[]),...(S.topics.chemistry12||[]),...(S.topics.maths11||[]),...(S.topics.maths12||[])];
   const weak=allT.filter(t=>t.conf>0&&t.conf<50).sort((a,b)=>a.conf-b.conf).slice(0,3);
   const t=today();const todayDone=S.sessions.filter(s=>s.date===t&&!s.paused).reduce((a,s)=>a+s.min,0);
+
+  // Build resource summary for planner
+  _initSR();const sr=S.studyResources;
+  const allRes=[];
+  ['ncert','coaching','refBooks','pyqs'].forEach(function(k){(sr[k]||[]).forEach(function(r){allRes.push({...r,_type:k});});});
+  const incomplete=allRes.filter(r=>!r.completed&&r.pct<100).sort((a,b)=>a.pct-b.pct);
+  const complete=allRes.filter(r=>r.completed||r.pct>=100);
+  const inProg=incomplete.filter(r=>r.pct>0);
+  const notStarted=incomplete.filter(r=>r.pct===0);
+  const resSummaryHtml=allRes.length?`
+    <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
+      <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.7px;margin-bottom:7px">📚 Resource Coverage</div>
+      <div style="display:flex;gap:14px;margin-bottom:8px">
+        <div style="text-align:center"><div style="font-size:16px;font-weight:700;color:var(--green)">${complete.length}</div><div style="font-size:9px;color:var(--text3)">Done</div></div>
+        <div style="text-align:center"><div style="font-size:16px;font-weight:700;color:var(--gold)">${inProg.length}</div><div style="font-size:9px;color:var(--text3)">In Progress</div></div>
+        <div style="text-align:center"><div style="font-size:16px;font-weight:700;color:var(--text3)">${notStarted.length}</div><div style="font-size:9px;color:var(--text3)">Not Started</div></div>
+      </div>
+      ${inProg.length?`<div style="font-size:10px;color:var(--text3);margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px">Needs completion:</div>
+      ${inProg.slice(0,3).map(r=>`<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
+        <div style="flex:1;font-size:11px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(r.name)}</div>
+        <div style="font-size:10px;font-weight:700;color:${r.pct<30?'var(--red)':r.pct<60?'var(--gold)':'var(--text2)'}">${r.pct}%</div>
+        <div style="width:50px;height:4px;background:rgba(255,255,255,.08);border-radius:2px;flex-shrink:0"><div style="height:100%;width:${r.pct}%;background:${r.pct<30?'var(--red)':r.pct<60?'var(--gold)':'var(--accent)'};border-radius:2px"></div></div>
+      </div>`).join('')}`:``}
+      ${notStarted.length?`<div style="font-size:10px;color:var(--text3);margin-top:5px">Not started: ${notStarted.slice(0,3).map(r=>escHtml(r.name)).join(', ')}${notStarted.length>3?' +more':''}</div>`:''}
+    </div>`:'';
+
   ctx.innerHTML=`<div class="card" style="margin-bottom:14px;border-color:rgba(0,180,216,.2)">
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
       <div><div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.7px">Today</div><div style="font-size:14px;font-weight:700;margin-top:2px">${dow}</div></div>
@@ -10015,6 +10072,7 @@ function renderPlannerContext(){
       <div><div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.7px">Done</div><div style="font-size:14px;font-weight:700;color:${todayDone>=goalH*60?'var(--green)':'var(--text)'};margin-top:2px">${(todayDone/60).toFixed(1)}h</div></div>
     </div>
     ${weak.length?`<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border)"><div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.7px;margin-bottom:6px">Oracle will prioritise these</div><div style="display:flex;gap:6px;flex-wrap:wrap">${weak.map(t=>`<span style="background:rgba(255,59,92,.08);border:1px solid rgba(255,59,92,.2);border-radius:5px;padding:2px 8px;font-size:11px;color:var(--red)">${t.name} ${t.conf}%</span>`).join('')}</div></div>`:''}
+    ${resSummaryHtml}
   </div>`;
 }
 function editPinnedItem(idx,el){
