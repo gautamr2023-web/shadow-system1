@@ -2718,7 +2718,7 @@ function checkStreak(){
       const yMins=ySess.reduce((a,s)=>a+s.min,0);
       const yCount=ySess.length;
       const isZero=yCount===0;
-      const isValid=yCount>=DAILY_MIN.sessions&&yMins>=DAILY_MIN.hours*60;
+      const isValid=yCount>=DAILY_MIN.sessions||yMins>=DAILY_MIN.hours*60;
 
       if(isZero){
         S.dailyStatus[last]='zero';
@@ -2739,7 +2739,7 @@ function checkStreak(){
         setTimeout(()=>{
           const fo=document.getElementById('fail-overlay');
           const fm=document.getElementById('fail-msg');
-          if(fm)fm.textContent=`Yesterday: ${(yMins/60).toFixed(1)}h / ${DAILY_MIN.hours}h min or ${DAILY_MIN.sessions} sessions not met. Streak reset.`;
+          if(fm)fm.textContent=`Yesterday: ${(yMins/60).toFixed(1)}h in ${yCount} session${yCount!==1?'s':''} — need ${DAILY_MIN.hours}h OR ${DAILY_MIN.sessions}+ sessions. Streak reset.`;
           if(fo)fo.classList.add('show');
         },1200);
       } else {
@@ -3164,7 +3164,7 @@ function renderPenalty(){
   const tSess=S.sessions.filter(s=>s.date===t&&!s.paused);
   const tMins=tSess.reduce((a,s)=>a+s.min,0);
   const tCount=tSess.length;
-  const isValid=tCount>=DAILY_MIN.sessions&&tMins>=DAILY_MIN.hours*60;
+  const isValid=tCount>=DAILY_MIN.sessions||tMins>=DAILY_MIN.hours*60;
 
   if(tCount===0&&hour>=8){
     showSLPenalty('danger','☠','ZERO DAY DETECTED — SYSTEM FAILURE','Start a session NOW. Streak reset + -20 XP incoming at midnight.');
