@@ -2424,11 +2424,15 @@ function applyXPDecay(){
   if(!allSess.length)return;
   const lastStudyDate=allSess.map(function(s){return s.date;}).sort().pop();
   const todayStr=today();
-  if(lastStudyDate===todayStr)return; // studied today — no decay
+  // Compute yesterday safely (DST-proof)
+  const _yd=new Date(todayStr+'T12:00:00');_yd.setDate(_yd.getDate()-1);
+  const yesterdayStr=_yd.toISOString().slice(0,10);
+  // No decay if studied today OR yesterday — today isn't over, yesterday was fine
+  if(lastStudyDate>=yesterdayStr)return;
+  // Only decay for days that are genuinely missed (between lastDecayDate and yesterday)
   const lastDecay=S.hunter.lastDecayDate||lastStudyDate;
-  // DST-safe: compute days via date string arithmetic, not ms division
-  const _decayD1=new Date(lastDecay+'T12:00:00'),_decayD2=new Date(todayStr+'T12:00:00');
-  const daysToApply=Math.round((_decayD2-_decayD1)/86400000);
+  const _d1=new Date(lastDecay+'T12:00:00'),_d2=new Date(yesterdayStr+'T12:00:00');
+  const daysToApply=Math.max(0,Math.round((_d2-_d1)/86400000));
   if(daysToApply<=0)return;
   const decayPerDay=200;
   const totalDecay=daysToApply*decayPerDay;
@@ -2443,7 +2447,7 @@ function applyXPDecay(){
   save();
   if(totalDecay>0){
     setTimeout(function(){
-      showToast('⚠ Decay: -'+totalDecay+' XP ('+daysToApply+' inactive day'+(daysToApply>1?'s':'')+') — study to stop the bleed!');
+      showToast('⚠ Decay: -'+totalDecay+' XP ('+daysToApply+' missed day'+(daysToApply>1?'s':'')+') — get back to work!');
     },2000);
   }
 }
