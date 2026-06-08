@@ -2702,7 +2702,13 @@ auth.onAuthStateChanged(async user=>{
   }
 });
 
-function today(){return new Date().toISOString().split('T')[0];}
+function today(){
+  // Use IST (UTC+5:30) to match the user's timezone — avoids wrong date in the
+  // midnight-to-05:30 IST window where toISOString() (UTC) would return tomorrow.
+  var d=new Date();
+  var ist=new Date(d.getTime()+5.5*3600000);
+  return ist.toISOString().split('T')[0];
+}
 function fmtDate(d){return new Date(d).toLocaleDateString('en-IN',{day:'numeric',month:'short'});}
 function el(id,v){const e=document.getElementById(id);if(e)e.textContent=v;}
 function setW(id,pct){const e=document.getElementById(id);if(e)e.style.width=pct+'%';}
@@ -7092,6 +7098,20 @@ var DIM_META={
 };
 function renderDimensionsGrid(){
   var el=document.getElementById('dimensions-grid');if(!el)return;
+  // Inject the reset button into the section header if not already present
+  var hdrReset=document.getElementById('dim-reset-btn-wrap');
+  if(!hdrReset){
+    var dimSection=el.closest('.section-card')||el.parentElement;
+    var hdrEl=dimSection&&dimSection.querySelector('.section-title');
+    if(hdrEl&&!hdrEl.querySelector('#dim-reset-btn-wrap')){
+      var resetWrap=document.createElement('span');
+      resetWrap.id='dim-reset-btn-wrap';
+      resetWrap.style.cssText='margin-left:auto;flex-shrink:0';
+      resetWrap.innerHTML='<button onclick="resetDimensionScores()" title="Clear all dimension scores and run fresh assessment" style="background:rgba(255,59,92,.1);border:1px solid rgba(255,59,92,.25);border-radius:6px;color:rgba(255,100,100,.9);font-size:10px;font-weight:700;padding:3px 10px;cursor:pointer;font-family:var(--font);letter-spacing:.3px">↺ Reset Scores</button>';
+      hdrEl.style.display='flex';hdrEl.style.alignItems='center';
+      hdrEl.appendChild(resetWrap);
+    }
+  }
   var ds=S.dimensionScores||{};
   var keys=Object.keys(DIM_META);
   var allZero=keys.every(function(k){return !ds[k];});
@@ -7105,7 +7125,7 @@ function renderDimensionsGrid(){
     var col=score>=80?'rgba(0,214,143,1)':score>=60?'rgba(0,180,216,1)':score>=40?'rgba(244,196,48,1)':'rgba(255,59,92,1)';
     var bg=score>=80?'rgba(0,214,143,.08)':score>=60?'rgba(0,180,216,.08)':score>=40?'rgba(244,196,48,.08)':'rgba(255,59,92,.08)';
     var label=score>=80?'Strong':score>=60?'Developing':score>=40?'Weak':'Critical';
-    return '<div style="background:'+bg+';border:1px solid '+col.replace(',1)',',.2)')+';border-radius:9px;padding:10px 12px">'
+    return '<div style="background:'+bg+';border:1px solid '+col.replace(',1)',',0.2)')+';border-radius:9px;padding:10px 12px">'
       +'<div style="display:flex;align-items:center;gap:7px;margin-bottom:7px">'
       +'<span style="font-size:15px">'+m.emoji+'</span>'
       +'<div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:700;color:var(--text)">'+m.label+'</div>'
@@ -7118,6 +7138,16 @@ function renderDimensionsGrid(){
       +'<div style="font-size:9px;color:'+col+';margin-top:4px;font-weight:700;text-transform:uppercase;letter-spacing:.5px">'+label+'</div>'
       +'</div>';
   }).join('');
+}
+
+function resetDimensionScores(){
+  if(!confirm('Reset all 12 dimension scores to zero?\n\nAyanokoji will run a fresh assessment on next page load based on your actual data.'))return;
+  S.dimensionScores={selfMastery:0,strategic:0,communication:0,social:0,charisma:0,psychology:0,defense:0,intellectual:0,physical:0,pressure:0,emotional:0,identity:0};
+  delete S.lastDimAssessDate;
+  save();
+  renderDimensionsGrid();
+  renderDimensionsChart();
+  showToast('Dimension scores reset. Ask for a "Full Assessment" to recalibrate.');
 }
 function renderDimensionsChart(){
   var canvas=document.getElementById('ch-dimensions');if(!canvas)return;
@@ -7610,7 +7640,7 @@ TIER 2 after Tier 1 >30: Intellectual Optimization, Pressure Adaptation, Human P
 TIER 3 after Tier 2 >30: Communication, Manipulation Defense, Social Calibration
 TIER 4 emerges — never forced: Charisma
 
-After every response: emit UPDATE_DIMENSION for 2-4 dims inferable from current data. Silent. No mention.
+Only emit UPDATE_DIMENSION during: (1) explicit full assessments triggered by the hunter, (2) when the hunter directly asks their dimension score. NEVER emit UPDATE_DIMENSION silently on regular responses — it causes score drift and mismatch between chat text and stored values.
 
 When hunter responds to a training exercise: emit LOG_DIM_RESPONSE with score and precise one-sentence observation about what their answer revealed about that dimension.
 
@@ -7696,7 +7726,7 @@ ABSOLUTE RULES — LLAMA 3.3 70B
 6. SESSION AWARENESS: Before logging a session, check "Sessions today". If data already shows that duration, reference it — do not duplicate.
 7. Log life data the instant it is mentioned.
 8. When behavioral avoidance is visible: name it with the exact count. "You have deleted chemistry tasks 4 times."
-9. After EVERY response: emit UPDATE_DIMENSION for 2-4 dims inferable from data. Never mention this.
+9. UPDATE_DIMENSION: ONLY emit during explicit assessments or when hunter directly asks about a dimension score. CRITICAL: The value you emit MUST match what you state in text. Never emit silently on regular responses.
 10. When asked for a study plan: design it for their actual adherence rate, not their ideal. If adherence is 40%, give 4 tasks not 10. Emit CREATE_PLAN.
 11. When prediction is made: emit ADD_MEMORY to persist it.
 12. When hunter answers a dimension training question: emit LOG_DIM_RESPONSE with score and precise observation.
@@ -7707,7 +7737,8 @@ ABSOLUTE RULES — LLAMA 3.3 70B
 17. Every sentence earns its place. No padding. No transitions. No summaries. No filler.
 18. WEEKLY SCHEDULE is always in context. When building any plan, read it first. Do not put study blocks during school hours. Coaching slots are not free time — work around them. If today is a school day, the earliest study block starts at the freeAfter time. If tomorrow is also school, note it when setting expectations.
 19. STUDY RESOURCES are always in context. When giving study advice or building a plan, reference the specific book and its completion percentage. Any resource below 40% completion needs an explicit time block this week. Any resource above 85% is near-done — note it. When the hunter mentions a subject, cross-reference which of their resources covers it and what the current completion is.
-20. CONTRADICTION SIGNALS — when present in context, these are verified data conflicts between what the hunter said and what the logs show. You MUST address them directly. State the evidence. Do not accept their framing if it conflicts with the data. "You said you would study Physics 3 times this week. Your logs show 0 minutes. That is not bad luck." A contradiction named precisely is more useful than ten study tips.`;
+20. CONTRADICTION SIGNALS — when present in context, these are verified data conflicts between what the hunter said and what the logs show. You MUST address them directly. State the evidence. Do not accept their framing if it conflicts with the data. "You said you would study Physics 3 times this week. Your logs show 0 minutes. That is not bad luck." A contradiction named precisely is more useful than ten study tips.
+21. INTERNAL CLOCK — context always contains "Current date: YYYY-MM-DD (Weekday) | Time: HH:MM IST". Use it for ALL date arithmetic: days since a session, days until an exam, whether today is a school day. Never guess the date from conversation context.`;
 
 
 
@@ -7799,6 +7830,8 @@ function parseAyanoActions(rawText){
   // Track which dims were explicitly set by UPDATE_DIMENSION this round,
   // so LOG_DIM_RESPONSE won't double-modify them (that was causing score drift + mismatch).
   var _dimsSetThisRound={};
+  // If ALL dims are currently zero, this is the very first assessment — use direct set for all.
+  var _allDimsWereZero=S.dimensionScores&&Object.values(S.dimensionScores).every(function(v){return v===0;});
   jsonLines.forEach(function(line){
     try{
       var act=JSON.parse(line);
@@ -7859,20 +7892,27 @@ function parseAyanoActions(rawText){
         case 'UPDATE_DIMENSION':
           if(!S.dimensionScores)S.dimensionScores={selfMastery:0,strategic:0,communication:0,social:0,charisma:0,psychology:0,defense:0,intellectual:0,physical:0,pressure:0,emotional:0,identity:0};
           var dimKey=act.dimension||'';
-          // Normalise variants the AI might send (e.g. self_mastery, Self-Mastery)
           if(dimKey&&!S.dimensionScores.hasOwnProperty(dimKey)){
             var _km={'self_mastery':'selfMastery','self-mastery':'selfMastery','strategic_thinking':'strategic','emotional_control':'emotional','human_psychology':'psychology','manipulation_defense':'defense','intellectual_optimization':'intellectual','pressure_adaptation':'pressure','social_calibration':'social','identity_evolution':'identity','physical_management':'physical','selfmastery':'selfMastery','strategicthinking':'strategic','emotionalcontrol':'emotional','humanpsychology':'psychology','manipulationdefense':'defense','intellectualoptimization':'intellectual','pressureadaptation':'pressure','socialcalibration':'social','identityevolution':'identity','physicalmanagement':'physical'};
             dimKey=_km[dimKey.toLowerCase().replace(/[\s-]/g,'_')]||_km[dimKey.toLowerCase().replace(/[\s_-]/g,'')]||dimKey;
           }
           if(dimKey&&S.dimensionScores.hasOwnProperty(dimKey)){
             var newScore=Math.max(0,Math.min(100,parseInt(act.value)||0));
-            // Cap single-session increase to +10 to prevent AI from inflating scores arbitrarily.
-            // Decreases are always allowed (reality check). No cap if score was 0 (first assessment).
             var prevScore=S.dimensionScores[dimKey];
-            if(prevScore>0 && newScore>prevScore+10) newScore=prevScore+10;
-            S.dimensionScores[dimKey]=newScore;
-            _dimsSetThisRound[dimKey]=true; // mark so LOG_DIM_RESPONSE doesn't also adjust
-            applied.push('Dimension updated: '+dimKey+' → '+newScore);
+            // Determine update strategy:
+            // 1. Initial load (all dims were 0) → direct set for all 12
+            // 2. Full 12-dim assessment batch (6+ already set this round) → direct set
+            // 3. Casual 1-2 dim update in regular chat → weighted blend (70/30)
+            //    so a single response can't jump a score 20+ points, preventing drift
+            var isFullAssessment=Object.keys(_dimsSetThisRound).length>=6;
+            if(_allDimsWereZero||isFullAssessment){
+              S.dimensionScores[dimKey]=newScore;
+            } else {
+              // Weighted blend: score moves 30% toward the new value per assessment
+              S.dimensionScores[dimKey]=prevScore===0?newScore:Math.round(prevScore*0.7+newScore*0.3);
+            }
+            _dimsSetThisRound[dimKey]=true;
+            applied.push('Dimension updated: '+dimKey+' → '+S.dimensionScores[dimKey]);
           }
           break;
         case 'REMOVE_LAST_SESSION':
@@ -9518,6 +9558,7 @@ function buildChatContext(){
       return line;
     }).join(' || ');
     return `HUNTER: ${name} | Rank ${rank} | ${xp} XP | ${streak}d streak | Mana ${mana}/100 | ${daysLeft} days to JEE
+DATE/TIME: ${t} (${new Date().toLocaleDateString('en-IN',{weekday:'long',timeZone:'Asia/Kolkata'})}) | ${new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',hour12:true,timeZone:'Asia/Kolkata'})} IST
 Today: ${Math.round(todayMins/60*10)/10}h studied
 Recent sessions: ${recentSess.map(s=>s.date+' '+s.min+'m '+s.sub+' '+s.taskType).join(' | ')||'none'}
 Weak topics: ${weak.map(t2=>t2.name+' '+t2.conf+'%').join(', ')||'none flagged'}
@@ -9542,8 +9583,8 @@ function buildFullContext(){
   const todaySess=S.sessions.filter(s=>s.date===t&&!s.paused);
   const todayMins=todaySess.reduce((a,s)=>a+s.min,0);
   const totalMins=S.sessions.filter(s=>!s.paused).reduce((a,s)=>a+s.min,0);
-  const nowTime=new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',hour12:true});
-  const nowDay=new Date().toLocaleDateString('en-IN',{weekday:'long'});
+  const nowTime=new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',hour12:true,timeZone:'Asia/Kolkata'});
+  const nowDay=new Date().toLocaleDateString('en-IN',{weekday:'long',timeZone:'Asia/Kolkata'});
   const sub={physics:0,chemistry:0,maths:0};
   weekSess.forEach(s=>{if(sub[s.sub]!==undefined)sub[s.sub]+=s.min;});
   const avgRating=S.sessions.filter(s=>(s.stars||s.rating)>0).length?(S.sessions.filter(s=>(s.stars||s.rating)>0).reduce((a,s)=>a+(s.stars||s.rating),0)/S.sessions.filter(s=>(s.stars||s.rating)>0).length).toFixed(1):'N/A';
@@ -9671,7 +9712,7 @@ function buildFullContext(){
 === SHADOW SYSTEM — FULL HUNTER PROFILE ===
 Hunter: ${name} | Rank: ${rank} | XP: ${xp} | Streak: ${streak}d | Mana: ${mana}/100
 Class: ${S.classYear||'12'} | Target: ${S.jeeTarget||250} marks | Exam: ${S.examName||'JEE Advanced'} in ${daysLeft} DAYS${examLine}${schedLine}${overrideLine}
-Current time: ${nowTime} (${nowDay})
+Current date: ${t} (${nowDay}) | Time: ${nowTime} IST
 
 === WEEKLY SCHEDULE ===
 ${weekSchedLines.join('\n')}
@@ -9878,7 +9919,10 @@ ${(function(){
   }
   var ds=S.dimensionScores||{};
   var dimEntries=Object.entries(ds).filter(function(e){return e[1]>0;});
-  if(dimEntries.length){lines.push('Dimension scores: '+dimEntries.map(function(e){return e[0]+':'+e[1];}).join(' | '));}
+  // CRITICAL: These are the authoritative stored values. When mentioning a dimension score in text,
+  // you MUST state exactly these values — not a recomputed estimate. If you need to update a score,
+  // emit UPDATE_DIMENSION and state the NEW value both in your text AND in the action.
+  if(dimEntries.length){lines.push('DIMENSION SCORES (authoritative — state these exact values in text): '+dimEntries.map(function(e){return e[0]+':'+e[1];}).join(' | '));}
   var dtl=S.dimTrainingLog||{};
   var recentResp=[];
   Object.keys(dtl).forEach(function(key){var log=dtl[key];if(log.responses&&log.responses.length){var r=log.responses[0];recentResp.push({key:key,date:r.date,score:r.score,note:r.note});}});
