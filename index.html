@@ -1704,10 +1704,17 @@ input.fi:focus,select.fi:focus{
     <div class="chart-wrap" style="height:200px"><canvas id="ch-split"></canvas></div>
   </div>
 
-  <!-- Test trend -->
+  <!-- Test trend — split by exam type -->
   <div class="card">
     <div class="card-hdr"><span class="hl">📝 Test Score Trend</span></div>
-    <div class="graph-scroll-wrap"><div class="graph-inner" style="min-width:420px"><div class="chart-wrap" style="height:200px"><canvas id="ch-tests"></canvas></div></div></div>
+    <div id="test-chart-mains-wrap">
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--accent);margin-bottom:6px;padding:0 2px">🔵 JEE Mains</div>
+      <div class="graph-scroll-wrap"><div class="graph-inner" style="min-width:420px"><div class="chart-wrap" style="height:190px"><canvas id="ch-tests-mains"></canvas></div></div></div>
+    </div>
+    <div id="test-chart-adv-wrap" style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border)">
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--gold);margin-bottom:6px;padding:0 2px">🟡 JEE Advanced</div>
+      <div class="graph-scroll-wrap"><div class="graph-inner" style="min-width:420px"><div class="chart-wrap" style="height:190px"><canvas id="ch-tests-adv"></canvas></div></div></div>
+    </div>
   </div>
 
   <!-- RPG STATS RADAR -->
@@ -5723,7 +5730,7 @@ function renderStrengthProgressionGraph(){
   });
 }
 
-let chS=null,chT=null,chProd=null,chCum=null,chSplit=null;
+let chS=null,chT=null,chTMains=null,chTAdv=null,chProd=null,chCum=null,chSplit=null;
 
 const SL_TOOLTIP={
   backgroundColor:'rgba(8,8,20,.96)',
@@ -5960,69 +5967,123 @@ function renderCharts(){
     }
   }else{const sp=document.getElementById('ch-split');if(sp)sp.parentElement.innerHTML='<div class="empty">No sessions logged yet.</div>';}
 
-  if(chT)chT.destroy();
-  const fullTests=S.tests.filter(function(t){
-    if(!t.subjects)return true; // legacy tests assumed full
-    return t.subjects.length===3;
-  });
-  const tests=fullTests.slice(-12);
-  if(tests.length>=2){
-    const tCanvas=document.getElementById('ch-tests');
-    if(tCanvas){
-      const tCtx=tCanvas.getContext('2d');
-      const phyGrad=makeGradient(tCtx,200,'rgba(91,110,245,0.25)','rgba(91,110,245,0.0)');
-      const cheGrad=makeGradient(tCtx,200,'rgba(0,214,143,0.20)','rgba(0,214,143,0.0)');
-      const matGrad=makeGradient(tCtx,200,'rgba(244,196,48,0.20)','rgba(244,196,48,0.0)');
-      chT=new Chart(tCtx,{
-        type:'line',
-        data:{
-          labels:tests.map(t=>fmtDate(t.date)),
-          datasets:[
-            {label:'Physics',data:tests.map(t=>t.phy),
-              borderColor:'#5b6ef5',borderWidth:2.5,backgroundColor:phyGrad,fill:true,
-              tension:0.45,pointRadius:5,pointBackgroundColor:'#5b6ef5',
-              pointBorderColor:'rgba(91,110,245,.3)',pointBorderWidth:3,pointHoverRadius:8},
-            {label:'Chemistry',data:tests.map(t=>t.che),
-              borderColor:'#00d68f',borderWidth:2.5,backgroundColor:cheGrad,fill:true,
-              tension:0.45,pointRadius:5,pointBackgroundColor:'#00d68f',
-              pointBorderColor:'rgba(0,214,143,.3)',pointBorderWidth:3,pointHoverRadius:8},
-            {label:'Maths',data:tests.map(t=>t.mat),
-              borderColor:'#f4c430',borderWidth:2.5,backgroundColor:matGrad,fill:true,
-              tension:0.45,pointRadius:5,pointBackgroundColor:'#f4c430',
-              pointBorderColor:'rgba(244,196,48,.3)',pointBorderWidth:3,pointHoverRadius:8},
-            {label:'Total',data:tests.map(t=>t.total),
-              borderColor:'rgba(255,255,255,.5)',borderWidth:2,backgroundColor:'transparent',
-              tension:0.35,pointRadius:3,pointBackgroundColor:'rgba(255,255,255,.7)',borderDash:[6,4]},
-          ]
-        },
-        options:{
-          responsive:true,maintainAspectRatio:false,
-          animation:{duration:1200,easing:'easeOutQuart'},
-          interaction:{mode:'index',intersect:false},
-          plugins:{
-            legend:{labels:{color:'rgba(224,227,244,.8)',font:{family:"'Rajdhani',sans-serif",size:12},padding:14,usePointStyle:true,pointStyleWidth:10}},
-            tooltip:{...SL_TOOLTIP,callbacks:{
-              title:c=>c[0].label,
-              label:c=>`${c.dataset.label}: ${c.raw}`,
-              afterBody:items=>{
-                const total=items.find(i=>i.dataset.label==='Total');
-                if(total){
-                  const idx=items[0].dataIndex;
-                  const max=(tests[idx]&&tests[idx].max)||300;
-                  return `Pct: ${Math.round(total.raw/max*100)}%`;
-                }
-              }
-            }}
-          },
-          scales:{
-            x:{ticks:{...SL_TICK},grid:{...SL_GRID},border:{color:'transparent'}},
-            y:{ticks:{...SL_TICK},grid:{...SL_GRID},border:{color:'transparent'},
-              title:{display:true,text:'Score',color:'rgba(200,203,220,.4)',font:{size:9}}}
+  // ── SPLIT TEST GRAPHS: JEE Mains + JEE Advanced ────────────────────────────
+  if(chTMains){chTMains.destroy();chTMains=null;}
+  if(chTAdv){chTAdv.destroy();chTAdv=null;}
+
+  // Helper that builds a tooltip callback set showing rank when clicking a point
+  function _buildTestTooltip(testArr){
+    return {
+      ...SL_TOOLTIP,
+      callbacks:{
+        title:function(ctx){return ctx[0].label;},
+        label:function(ctx){return ctx.dataset.label+': '+ctx.raw;},
+        afterBody:function(items){
+          const idx=items[0].dataIndex;
+          const t=testArr[idx];
+          if(!t)return [];
+          const max=t.max||300;
+          const pct=Math.round(t.total/max*100);
+          const lines=['Total: '+t.total+'/'+max+' ('+pct+'%)'];
+          if(t.classRank&&t.classRank.pos){
+            var r=t.classRank;
+            var pctile=r.total?Math.round(r.pos/r.total*100):null;
+            var medal=r.pos===1?' 🥇':r.pos===2?' 🥈':r.pos===3?' 🥉':'';
+            lines.push('Class Rank: '+r.pos+(r.total?'/'+r.total:'')+medal+(pctile!==null?' — top '+pctile+'%':''));
           }
+          return lines;
         }
-      });
+      }
+    };
+  }
+
+  function _buildSplitChart(canvasId, testsArr, accentColor, accentAlpha){
+    const canvas=document.getElementById(canvasId);
+    if(!canvas)return null;
+    const ctx=canvas.getContext('2d');
+    const phyGrad=makeGradient(ctx,190,'rgba(91,110,245,0.22)','rgba(91,110,245,0.0)');
+    const cheGrad=makeGradient(ctx,190,'rgba(0,214,143,0.18)','rgba(0,214,143,0.0)');
+    const matGrad=makeGradient(ctx,190,'rgba(244,196,48,0.18)','rgba(244,196,48,0.0)');
+    const totalGrad=makeGradient(ctx,190,accentAlpha,'rgba(0,0,0,0)');
+    return new Chart(ctx,{
+      type:'line',
+      data:{
+        labels:testsArr.map(function(t){return fmtDate(t.date);}),
+        datasets:[
+          {label:'Physics',data:testsArr.map(function(t){return t.phy;}),
+            borderColor:'#5b6ef5',borderWidth:2,backgroundColor:phyGrad,fill:true,
+            tension:0.42,pointRadius:5,pointBackgroundColor:'#5b6ef5',
+            pointBorderColor:'rgba(91,110,245,.25)',pointBorderWidth:2.5,pointHoverRadius:9},
+          {label:'Chemistry',data:testsArr.map(function(t){return t.che;}),
+            borderColor:'#00d68f',borderWidth:2,backgroundColor:cheGrad,fill:true,
+            tension:0.42,pointRadius:5,pointBackgroundColor:'#00d68f',
+            pointBorderColor:'rgba(0,214,143,.25)',pointBorderWidth:2.5,pointHoverRadius:9},
+          {label:'Maths',data:testsArr.map(function(t){return t.mat;}),
+            borderColor:'#f4c430',borderWidth:2,backgroundColor:matGrad,fill:true,
+            tension:0.42,pointRadius:5,pointBackgroundColor:'#f4c430',
+            pointBorderColor:'rgba(244,196,48,.25)',pointBorderWidth:2.5,pointHoverRadius:9},
+          {label:'Total',data:testsArr.map(function(t){return t.total;}),
+            borderColor:accentColor,borderWidth:2.5,backgroundColor:totalGrad,fill:true,
+            tension:0.35,pointRadius:6,pointBackgroundColor:accentColor,
+            pointBorderColor:'rgba(255,255,255,.15)',pointBorderWidth:2,pointHoverRadius:10,
+            borderDash:[]}
+        ]
+      },
+      options:{
+        responsive:true,maintainAspectRatio:false,
+        animation:{duration:1100,easing:'easeOutQuart'},
+        interaction:{mode:'index',intersect:false},
+        plugins:{
+          legend:{labels:{color:'rgba(224,227,244,.8)',font:{family:"'Rajdhani',sans-serif",size:11},padding:12,usePointStyle:true,pointStyleWidth:9}},
+          tooltip:_buildTestTooltip(testsArr)
+        },
+        scales:{
+          x:{ticks:{...SL_TICK},grid:{...SL_GRID},border:{color:'transparent'}},
+          y:{ticks:{...SL_TICK},grid:{...SL_GRID},border:{color:'transparent'},
+            title:{display:true,text:'Score',color:'rgba(200,203,220,.4)',font:{size:9}}}
+        }
+      }
+    });
+  }
+
+  // JEE Mains tests: type === 'jee-mains' | 'jee-main' | 'mock' (legacy full mocks count as mains-pattern)
+  var mainsTypes=['jee-mains','jee-main','mock'];
+  var advTypes=['advanced','jee-advanced','jee-adv'];
+
+  var mainsTests=S.tests.filter(function(t){
+    var sub=t.subjects;
+    var full=!sub||sub.length===3;
+    return full&&mainsTypes.indexOf(t.type)>-1;
+  }).slice(-12);
+
+  var advTests=S.tests.filter(function(t){
+    var sub=t.subjects;
+    var full=!sub||sub.length===3;
+    return full&&advTypes.indexOf(t.type)>-1;
+  }).slice(-12);
+
+  var mainsWrap=document.getElementById('test-chart-mains-wrap');
+  var advWrap=document.getElementById('test-chart-adv-wrap');
+
+  if(mainsTests.length>=2){
+    if(mainsWrap)mainsWrap.style.display='block';
+    chTMains=_buildSplitChart('ch-tests-mains',mainsTests,'rgba(91,110,245,1)','rgba(91,110,245,0.12)');
+  }else{
+    if(mainsWrap){
+      var mc=document.getElementById('ch-tests-mains');
+      if(mc)mc.parentElement.innerHTML='<div class="empty" style="font-size:12px;padding:18px 0">Log at least 2 JEE Mains pattern tests to see the trend.</div>';
     }
-  }else{const ce=document.getElementById('ch-tests');if(ce)ce.parentElement.innerHTML='<div class="empty">Log at least 2 full JEE mock tests (all 3 subjects) to see the trend.</div>';}
+  }
+
+  if(advTests.length>=2){
+    if(advWrap)advWrap.style.display='block';
+    chTAdv=_buildSplitChart('ch-tests-adv',advTests,'rgba(244,196,48,1)','rgba(244,196,48,0.10)');
+  }else{
+    if(advWrap){
+      var ac=document.getElementById('ch-tests-adv');
+      if(ac)ac.parentElement.innerHTML='<div class="empty" style="font-size:12px;padding:18px 0">Log at least 2 JEE Advanced pattern tests to see the trend.</div>';
+    }
+  }
 
   renderRadarChart();
   renderHeatmap();
