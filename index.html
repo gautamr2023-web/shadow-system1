@@ -2609,6 +2609,10 @@ function ensureKeys(){
   if(!S.topics.chemistry12)S.topics.chemistry12=JEE_TOPICS.chemistry12.map((n,i)=>({id:'c12_'+i,name:n,conf:0}));
   if(!S.topics.maths11)S.topics.maths11=JEE_TOPICS.maths11.map((n,i)=>({id:'m11_'+i,name:n,conf:0}));
   if(!S.topics.maths12)S.topics.maths12=JEE_TOPICS.maths12.map((n,i)=>({id:'m12_'+i,name:n,conf:0}));
+  // Migrate: add lastStudied field to all topics that don't have it yet
+  ['physics11','physics12','chemistry11','chemistry12','maths11','maths12'].forEach(function(k){
+    if(S.topics[k])S.topics[k].forEach(function(t){if(t.lastStudied===undefined)t.lastStudied=null;});
+  });
   if(!S.workout)S.workout={plan:JSON.parse(JSON.stringify(DEF_PLAN)),logs:[]};
   if(S.workout.woStreak===undefined)S.workout.woStreak=0;
   if(S.workout.woLastDate===undefined)S.workout.woLastDate=null;
@@ -5400,6 +5404,7 @@ function upConf(s,i,v,sl){
   if(!S.topics[s])return;
   const val=parseInt(v);
   S.topics[s][i].conf=val;
+  S.topics[s][i].lastStudied=today(); // stamp when this topic was last reviewed
   const c=val>=90?'#c35ff5':val>=70?'var(--green)':val>=50?'var(--gold)':'var(--red)';
   sl.style.background=`linear-gradient(to right,${c} ${val}%,rgba(255,255,255,.07) ${val}%)`;
   const e=document.getElementById('tp-'+s+'-'+i);if(e){e.textContent=val+'%';e.style.color=c;}
@@ -9171,6 +9176,147 @@ async function _oracleRaw(apiKey,messages,systemMsg,maxTokens,provider){
   const data=await resp.json();
   return data.choices?.[0]?.message?.content||'';
 }
+
+// ── REVISION CONTEXT ─────────────────────────────────────────────────────────
+// Tells the AI which topics are overdue for revision based on lastStudied date
+// and confidence level. Called by buildChatContext (brief) and buildFullContext (full).
+function _buildRevisionContext(mode){
+  var allTopics=[]
+    .concat(S.topics.physics11||[])
+    .concat(S.topics.physics12||[])
+    .concat(S.topics.chemistry11||[])
+    .concat(S.topics.chemistry12||[])
+    .concat(S.topics.maths11||[])
+    .concat(S.topics.maths12||[]);
+
+  // Revision interval based on confidence (days)
+  function revInterval(conf){
+    if(conf<30) return 3;
+    if(conf<60) return 7;
+    if(conf<80) return 14;
+    return 21;
+  }
+
+  // Subject label from topic id prefix
+  function subLabel(id){
+    if(!id)return '';
+    var p=id.charAt(0);
+    return p==='p'?'Phy':p==='c'?'Che':'Mat';
+  }
+
+  var todayStr=today();
+  var todayD=new Date(todayStr+'T12:00:00');
+
+  // Only consider topics the user has actually assessed (conf > 0 and lastStudied set)
+  var tracked=allTopics.filter(function(t){return t.conf>0&&t.lastStudied;});
+
+  var overdue=tracked.map(function(t){
+    var lastD=new Date(t.lastStudied+'T12:00:00');
+    var daysSince=Math.max(0,Math.round((todayD-lastD)/86400000));
+    var interval=revInterval(t.conf);
+    var daysOverdue=daysSince-interval;
+    return {name:t.name,conf:t.conf,daysSince:daysSince,daysOverdue:daysOverdue,sub:subLabel(t.id)};
+  }).filter(function(t){return t.daysOverdue>0;})
+    .sort(function(a,b){return b.daysOverdue-a.daysOverdue;});
+
+  // Topics with conf>0 but never stamped (no lastStudied) — tell AI they're untracked
+  var untracked=allTopics.filter(function(t){return t.conf>0&&!t.lastStudied;}).length;
+
+  if(!overdue.length&&!untracked){
+    return mode==='full'?'\n=== REVISION STATUS ===\nAll tracked topics are within their revision window.':'';
+  }
+
+  if(mode==='brief'){
+    if(!overdue.length)return '';
+    var top=overdue.slice(0,4);
+    return '\nRevision overdue ('+overdue.length+'): '+top.map(function(t){return t.sub+':'+t.name.split(' ')[0]+'('+t.daysSince+'d)';}).join(', ')+(overdue.length>4?' +more':'');
+  }
+
+  // Full mode
+  var lines=['=== REVISION SCHEDULE (overdue topics — worst first) ==='];
+  if(untracked)lines.push('Note: '+untracked+' topics have confidence set but no study date yet. Sliding their confidence sliders will begin tracking them.');
+  overdue.slice(0,20).forEach(function(t){
+    var urgency=t.daysOverdue>=14?' !! VERY OVERDUE':t.daysOverdue>=7?' ! OVERDUE':'';
+    lines.push('  ['+t.sub+'] '+t.name+' conf:'+t.conf+'% — last studied '+t.daysSince+'d ago (due every '+revInterval(t.conf)+'d)'+urgency);
+  });
+  if(overdue.length>20)lines.push('  ... and '+(overdue.length-20)+' more overdue');
+  return '\n'+lines.join('\n');
+}
+
+// ── LIFE TRACKING CONTEXT ───────────────────────────────────────────────────
+// Compact summary of sleep, mood, pressure and social logs for AI context.
+// Called by both buildChatContext (mode:'brief') and buildFullContext (mode:'full').
+function _buildLifeContext(mode){
+  var lt=S.lifeTracking||{};
+  var sleep=lt.sleepLog||[];
+  var mood=lt.moodLog||[];
+  var pressure=lt.pressureLog||[];
+  var social=lt.socialLog||[];
+  var lines=[];
+
+  if(mode==='brief'){
+    // Last sleep entry — just one line
+    if(sleep.length){
+      var sl=sleep[0];
+      var slAgo=sl.date===today()?'last night':'('+sl.date+')';
+      var slFlag=sl.hours<6.5?' ⚠ LOW':'';
+      lines.push('Sleep '+slAgo+': '+sl.hours+'h ('+sl.quality+')'+slFlag);
+    }
+    // Most recent mood
+    if(mood.length){
+      var md=mood[0];
+      var mdAgo=md.date===today()?'today':'('+md.date+')';
+      lines.push('Mood '+mdAgo+': '+md.mood+' energy '+md.energy+'/10'+(md.note?' — '+md.note.slice(0,50):''));
+    }
+    // Most recent pressure
+    if(pressure.length){
+      var pr=pressure[0];
+      lines.push('Pressure '+pr.date+': '+pr.type+' '+pr.score+'/10');
+    }
+    return lines.length?'\nLife signals: '+lines.join(' | '):'';
+  }
+
+  // FULL mode — 7-day breakdown for advisor/planner
+  var sleepRecent=sleep.slice(0,7);
+  if(sleepRecent.length){
+    var sleepAvg=Math.round(sleepRecent.reduce(function(a,s){return a+s.hours;},0)/sleepRecent.length*10)/10;
+    var poorNights=sleepRecent.filter(function(s){return s.hours<6.5;}).length;
+    lines.push('=== SLEEP ('+sleepRecent.length+' nights | avg '+sleepAvg+'h'+(poorNights?' | '+poorNights+' poor'+(poorNights>1?' nights':' night')+' ⚠':'')+') ===');
+    sleepRecent.forEach(function(s){
+      var flag=s.hours<6?' ⚠ CRITICAL':s.hours<6.5?' ⚠ LOW':s.hours>=8?' ✓ GOOD':'';
+      lines.push('  '+s.date+': '+s.hours+'h ('+s.quality+')'+flag+(s.note?' — '+s.note.slice(0,60):''));
+    });
+  }
+
+  var moodRecent=mood.slice(0,7);
+  if(moodRecent.length){
+    var energyAvg=Math.round(moodRecent.reduce(function(a,m){return a+m.energy;},0)/moodRecent.length*10)/10;
+    lines.push('=== MOOD / ENERGY ('+moodRecent.length+' entries | avg energy '+energyAvg+'/10) ===');
+    moodRecent.forEach(function(m){
+      lines.push('  '+m.date+(m.time?' '+m.time:'')+': '+m.mood+' | energy '+m.energy+'/10'+(m.note?' — '+m.note.slice(0,60):''));
+    });
+  }
+
+  var pressRecent=pressure.slice(0,5);
+  if(pressRecent.length){
+    lines.push('=== PRESSURE SESSIONS (last '+pressRecent.length+') ===');
+    pressRecent.forEach(function(p){
+      var flag=p.score<=4?' ⚠ STRUGGLED':p.score>=8?' ✓ HELD WELL':'';
+      lines.push('  '+p.date+': '+p.type+' — '+p.score+'/10'+flag+(p.note?' — '+p.note.slice(0,60):''));
+    });
+  }
+
+  var socialRecent=social.slice(0,3);
+  if(socialRecent.length){
+    lines.push('=== SOCIAL CALIBRATION (last '+socialRecent.length+') ===');
+    socialRecent.forEach(function(s){
+      lines.push('  '+s.date+': '+s.situation.slice(0,60)+(s.outcome?' → '+s.outcome.slice(0,40):''));
+    });
+  }
+
+  return lines.length?'\n'+lines.join('\n'):'';
+}
+
 function buildMemoryContext(){
   if(!S.oracleMemory||!S.oracleMemory.length)return '';
   return '\n\n--- AYANOKOJI MEMORY (patterns observed) ---\n'+S.oracleMemory.slice(-20).map(m=>`[${m.date}] ${m.text}`).join('\n')+'\n--- END MEMORY ---';
@@ -9674,7 +9820,7 @@ Today: ${Math.round(todayMins/60*10)/10}h studied
 Recent sessions: ${recentSess.map(s=>s.date+' '+s.min+'m '+s.sub+' '+s.taskType).join(' | ')||'none'}
 Weak topics: ${weak.map(t2=>t2.name+' '+t2.conf+'%').join(', ')||'none flagged'}
 Last tests: ${recentTests.map(t2=>t2.date+' '+t2.total+'/'+(t2.max||300)+(t2.classRank&&t2.classRank.pos?' rank:'+t2.classRank.pos+(t2.classRank.total?'/'+t2.classRank.total:''):'')).join(' | ')||'none'}
-${planStr}${conStr}${upcomingStr?'\nUpcoming exams: '+upcomingStr:''}${buildMemoryContext()}`;
+${planStr}${conStr}${upcomingStr?'\nUpcoming exams: '+upcomingStr:''}${_buildRevisionContext('brief')}${_buildLifeContext('brief')}${buildMemoryContext()}`;
   }catch(err){
     // If context building crashes, return minimal fallback — never lock the chat
     return 'Hunter data temporarily unavailable. Respond based on conversation only.';
@@ -10117,6 +10263,8 @@ ${(function(){
   if(pPending.length)lines.push('Active predictions (unresolved): '+pPending.map(function(p){return p.date+': '+p.prediction.slice(0,80);}).join(' | '));
   return lines.join('\n');
 })()}
+${_buildRevisionContext('full')}
+${_buildLifeContext('full')}
 ${buildMemoryContext()}
 === END ===`.trim();
 }
