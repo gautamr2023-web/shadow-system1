@@ -2434,9 +2434,9 @@ function applyXPDecay(){
   if(!allSess.length)return;
   const lastStudyDate=allSess.map(function(s){return s.date;}).sort().pop();
   const todayStr=today();
-  // Compute yesterday safely (DST-proof)
-  const _yd=new Date(todayStr+'T12:00:00');_yd.setDate(_yd.getDate()-1);
-  const yesterdayStr=_yd.toISOString().slice(0,10);
+  // Compute yesterday in IST (matching our today() offset) — DST-proof
+  const _yd=new Date();_yd.setTime(_yd.getTime()+5.5*3600000);_yd.setDate(_yd.getDate()-1);
+  const yesterdayStr=_yd.toISOString().split('T')[0];
   // No decay if studied today OR yesterday — today isn't over, yesterday was fine
   if(lastStudyDate>=yesterdayStr)return;
   // Only decay for days that are genuinely missed (between lastDecayDate and yesterday)
@@ -2489,7 +2489,7 @@ const DEF_PLAN={
   sunday:{name:'Rest',active:false,exercises:[]},
 };
 const DEF={
-  hunter:{xp:0,mana:100,streak:0,lastDate:null,startDate:new Date().toISOString().split('T')[0],name:'Gautam'},
+  hunter:{xp:0,mana:100,streak:0,lastDate:null,startDate:null,name:'Gautam'}, // startDate set in ensureKeys via today() (IST-aware)
   questComp:{},sessions:[],tests:[],
   topics:{
     physics11:JEE_TOPICS.physics11.map((n,i)=>({id:'p11_'+i,name:n,conf:0})),
@@ -2658,13 +2658,29 @@ function ensureKeys(){
   if(!S.lifeTracking.socialLog)S.lifeTracking.socialLog=[];
   if(!S.lifeTracking.pressureLog)S.lifeTracking.pressureLog=[];
   if(!S.dimensionScores)S.dimensionScores={selfMastery:0,strategic:0,communication:0,social:0,charisma:0,psychology:0,defense:0,intellectual:0,physical:0,pressure:0,emotional:0,identity:0};
+  // Auto-prune old data every 30 days on load to keep localStorage healthy
+  if(typeof _pruneOldData==='function'){
+    var _lastPrune=S._lastPruneDate||'';
+    var _pruneThreshold=new Date();_pruneThreshold.setDate(_pruneThreshold.getDate()-30);
+    if(!_lastPrune||_lastPrune<_pruneThreshold.toISOString().split('T')[0]){
+      _pruneOldData();S._lastPruneDate=today();
+    }
+  }
 }
 function loadLocal(){
   try{S=JSON.parse(localStorage.getItem('ss_v3'))||defState();}catch(e){S=defState();}
   ensureKeys();
 }
 function save(){
-  localStorage.setItem('ss_v3',JSON.stringify(S));
+  try{localStorage.setItem('ss_v3',JSON.stringify(S));}
+  catch(e){
+    if(e.name==='QuotaExceededError'||e.code===22){
+      // localStorage is full — prune oldest data and retry once
+      _pruneOldData();
+      try{localStorage.setItem('ss_v3',JSON.stringify(S));}
+      catch(e2){console.error('save failed even after prune',e2);}
+    }
+  }
   if(currentUser){
     clearTimeout(saveTimer);
     saveTimer=setTimeout(()=>{
@@ -2672,6 +2688,34 @@ function save(){
         .set(JSON.parse(JSON.stringify(S))).catch(e=>console.warn('cloud save',e));
     },1500);
   }
+}
+
+// ── DATA PRUNER — called on QuotaExceededError + every 30-day load ──────────
+function _pruneOldData(){
+  var cutoff=new Date();cutoff.setDate(cutoff.getDate()-90); // keep 90 days
+  var cutoffStr=cutoff.toISOString().split('T')[0];
+
+  // Prune sessions older than 90 days (keep all — XP already earned)
+  // But cap total sessions to 2000 to prevent runaway growth
+  if(S.sessions&&S.sessions.length>2000){
+    S.sessions=S.sessions.slice(-2000);
+  }
+
+  // Prune daily-keyed objects older than 90 days
+  ['dailyStatus','questComp','dailyXPCap','taskXP','starterXPDates','dailyMana','dailyGoalOverride','dailyNotes'].forEach(function(key){
+    if(!S[key])return;
+    Object.keys(S[key]).forEach(function(d){if(d<cutoffStr)delete S[key][d];});
+  });
+
+  // Prune pinnedPlan older than 30 days (no need to keep old plans)
+  if(S.pinnedPlan){
+    var planCutoff=new Date();planCutoff.setDate(planCutoff.getDate()-30);
+    var planCutoffStr=planCutoff.toISOString().split('T')[0];
+    Object.keys(S.pinnedPlan).forEach(function(d){if(d<planCutoffStr)delete S.pinnedPlan[d];});
+  }
+
+  // Prune behaviorLog to last 150 entries (was 200, tighten for quota safety)
+  if(S.behaviorLog&&S.behaviorLog.length>150)S.behaviorLog=S.behaviorLog.slice(-150);
 }
 async function loadFromCloud(uid){
   try{
@@ -2709,6 +2753,10 @@ auth.onAuthStateChanged(async user=>{
   }
 });
 
+
+// ── Tiny debounce helper ─────────────────────────────────────────────────────
+function _debounce(fn, ms){var t;return function(){var a=arguments;clearTimeout(t);t=setTimeout(function(){fn.apply(null,a);},ms);};}
+var _saveDebounced=_debounce(function(){save();},400);
 function today(){
   // Use IST (UTC+5:30) to match the user's timezone — avoids wrong date in the
   // midnight-to-05:30 IST window where toISOString() (UTC) would return tomorrow.
@@ -9592,7 +9640,9 @@ function buildChatContext(){
     const streak=S.hunter?.streak||0;
     const mana=S.hunter?.mana||100;
     const examDate=new Date(S.examDate||'2026-05-18');
-    const daysLeft=Math.max(0,Math.ceil((examDate-new Date())/86400000));
+    // Use IST-offset now so daysLeft is correct even before 5:30 AM IST
+    const _istNow=new Date(new Date().getTime()+5.5*3600000);
+    const daysLeft=Math.max(0,Math.ceil((examDate-_istNow)/86400000));
     // Last 5 sessions
     const recentSess=S.sessions.filter(s=>!s.paused).slice(-5);
     const todayMins=S.sessions.filter(s=>s.date===t&&!s.paused).reduce((a,s)=>a+s.min,0);
@@ -9624,7 +9674,7 @@ Today: ${Math.round(todayMins/60*10)/10}h studied
 Recent sessions: ${recentSess.map(s=>s.date+' '+s.min+'m '+s.sub+' '+s.taskType).join(' | ')||'none'}
 Weak topics: ${weak.map(t2=>t2.name+' '+t2.conf+'%').join(', ')||'none flagged'}
 Last tests: ${recentTests.map(t2=>t2.date+' '+t2.total+'/'+(t2.max||300)+(t2.classRank&&t2.classRank.pos?' rank:'+t2.classRank.pos+(t2.classRank.total?'/'+t2.classRank.total:''):'')).join(' | ')||'none'}
-${planStr}${conStr}${upcomingStr?'\nUpcoming exams: '+upcomingStr:''}`;
+${planStr}${conStr}${upcomingStr?'\nUpcoming exams: '+upcomingStr:''}${buildMemoryContext()}`;
   }catch(err){
     // If context building crashes, return minimal fallback — never lock the chat
     return 'Hunter data temporarily unavailable. Respond based on conversation only.';
