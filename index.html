@@ -3894,6 +3894,17 @@ function autoLog(mins,sub,mode,sid){
   if(!paused){
     const manaMod=getManaXPMod();
     xp=Math.max(1,Math.round(mins*(eff/100)*0.5*manaMod));
+    // Dimension XP bonus — reward for keeping strong dimensions
+    // intellectual≥60 → +5% | pressure≥60 + hard/practice → +5% | physical≥60 → +3%
+    // Capped at +10% of base so it's meaningful but never distorts the economy
+    var _ds2=S.dimensionScores||{};
+    var _dimMult=0;
+    if((_ds2.intellectual||0)>=60)_dimMult+=0.05;
+    if((_ds2.pressure||0)>=60&&(_sessionTaskType==='hard'||_sessionTaskType==='practice'))_dimMult+=0.05;
+    if((_ds2.physical||0)>=60)_dimMult+=0.03;
+    _dimMult=Math.min(0.10,_dimMult);
+    var _dimBonus=Math.round(xp*_dimMult);
+    if(_dimBonus>0)xp+=_dimBonus;
     if(!S.dailyXPCap)S.dailyXPCap={};
     const capSoFar=S.dailyXPCap[t]||0;
     xp=Math.min(xp,Math.max(0,500-capSoFar));
@@ -5281,6 +5292,7 @@ function renderTests(){
       +'<span style="font-size:12px;font-weight:700" class="'+cls+'">'+t.total+'/'+(t.max||300)+'</span>'
       +(rankHtml||'')
       +'<button onclick="openTestEdit('+t.id+')" style="background:none;border:1px solid var(--border);border-radius:5px;color:var(--text2);cursor:pointer;font-size:10px;padding:3px 8px;font-family:var(--font)">✏ Edit</button>'
+      +'<button onclick="openMistakeJournal('+t.id+')" style="background:'+(t.mistakes&&(t.mistakes.phy||t.mistakes.che||t.mistakes.mat)?'rgba(244,196,48,.12)':'none')+';border:1px solid '+(t.mistakes&&(t.mistakes.phy||t.mistakes.che||t.mistakes.mat)?'rgba(244,196,48,.35)':'var(--border)')+';border-radius:5px;color:'+(t.mistakes&&(t.mistakes.phy||t.mistakes.che||t.mistakes.mat)?'var(--gold)':'var(--text3)')+';cursor:pointer;font-size:10px;padding:3px 8px;font-family:var(--font)" title="Log mistake patterns for this test">📋 Mistakes</button>'
       +'<button onclick="deleteTest('+t.id+')" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:13px;padding:0 4px">✕</button>'
       +'</div>'
       +'<div style="font-size:12px;color:var(--text2);margin-top:5px;display:flex;gap:10px;flex-wrap:wrap">'+subParts.join(' ')+'</div>'
@@ -6338,11 +6350,34 @@ function getActiveQuests(){
     {id:'q6',name:'Study 4+ hours',desc:'Deep work marathon — 240 min total',xp:30,auto:true,days:[0,1,2,3,4,5,6]},
   ];
 
-  return allQ.filter(q=>{
+  var _baseQ=allQ.filter(function(q){
     if(q.days&&q.days.length>0&&!q.days.includes(todayDow))return false;
     if(q.id==='q3'&&!isWorkoutDay)return false;
     return true;
   });
+  // Append dimension quests for any weak dimension (score 1-39)
+  _getDimQuests().forEach(function(dq){
+    if(!_baseQ.find(function(q){return q.id===dq.id;}))_baseQ.push(dq);
+  });
+  return _baseQ;
+}
+
+function _getDimQuests(){
+  // Returns bonus quests targeting weak dimensions (score > 0 but < 40)
+  // Only surfaces once the dimension has been assessed — never shows for untouched dims (score=0)
+  var _d=S.dimensionScores||{};
+  var dq=[];
+  if((_d.selfMastery||0)>0&&(_d.selfMastery||0)<40)
+    dq.push({id:'qdim-sm',name:'Unwavering Focus',desc:'Single uninterrupted 90-min study block',xp:35,auto:false,dimTarget:'selfMastery'});
+  if((_d.pressure||0)>0&&(_d.pressure||0)<40)
+    dq.push({id:'qdim-pres',name:'Face the Pressure',desc:'Complete a 60-min hard session or timed practice',xp:40,auto:false,dimTarget:'pressure'});
+  if((_d.intellectual||0)>0&&(_d.intellectual||0)<40)
+    dq.push({id:'qdim-int',name:'Sharpen the Blade',desc:'Solve 10 problems outside your comfort zone today',xp:30,auto:false,dimTarget:'intellectual'});
+  if((_d.emotional||0)>0&&(_d.emotional||0)<40)
+    dq.push({id:'qdim-emo',name:'Emotional Calibration',desc:'Log mood and do a 5-min breathing reset',xp:25,auto:false,dimTarget:'emotional'});
+  if((_d.identity||0)>0&&(_d.identity||0)<40)
+    dq.push({id:'qdim-id',name:'Remember Your Why',desc:'Write 3 lines: why are you doing this?',xp:20,auto:false,dimTarget:'identity'});
+  return dq;
 }
 
 function renderQuestEditor(){
@@ -7754,7 +7789,7 @@ TIER 2 after Tier 1 >30: Intellectual Optimization, Pressure Adaptation, Human P
 TIER 3 after Tier 2 >30: Communication, Manipulation Defense, Social Calibration
 TIER 4 emerges — never forced: Charisma
 
-Only emit UPDATE_DIMENSION during: (1) explicit full assessments triggered by the hunter, (2) when the hunter directly asks their dimension score. NEVER emit UPDATE_DIMENSION silently on regular responses — it causes score drift and mismatch between chat text and stored values.
+UPDATE_DIMENSION rules: (1) Only emit during Full Assessments or after dim training exercises. (2) The value you write in your text response MUST equal the value you emit — they are stored directly with no transformation. (3) If hunter asks current score, read from "DIMENSION SCORES (authoritative)" and state that exact value without emitting UPDATE_DIMENSION.
 
 When hunter responds to a training exercise: emit LOG_DIM_RESPONSE with score and precise one-sentence observation about what their answer revealed about that dimension.
 
@@ -7840,7 +7875,10 @@ ABSOLUTE RULES — LLAMA 3.3 70B
 6. SESSION AWARENESS: Before logging a session, check "Sessions today". If data already shows that duration, reference it — do not duplicate.
 7. Log life data the instant it is mentioned.
 8. When behavioral avoidance is visible: name it with the exact count. "You have deleted chemistry tasks 4 times."
-9. UPDATE_DIMENSION: ONLY emit during explicit assessments or when hunter directly asks about a dimension score. CRITICAL: The value you emit MUST match what you state in text. Never emit silently on regular responses.
+9. UPDATE_DIMENSION — THREE STRICT RULES:
+   a) WHEN to emit: only during explicit Full Assessments, or after a dim training exercise (LOG_DIM_RESPONSE). Never on regular responses.
+   b) CONSISTENCY: The number you write in your response text MUST be the same number you put in UPDATE_DIMENSION. Emit X → say X → stored as X. Any mismatch causes a visible bug.
+   c) ASKED ABOUT CURRENT SCORE: If the hunter asks "what is my [dim] score?", read the exact value from the "DIMENSION SCORES (authoritative)" line in context, state THAT number, and do NOT emit UPDATE_DIMENSION (you are reporting, not reassessing).
 10. When asked for a study plan: design it for their actual adherence rate, not their ideal. If adherence is 40%, give 4 tasks not 10. Emit CREATE_PLAN.
 11. When prediction is made: emit ADD_MEMORY to persist it.
 12. When hunter answers a dimension training question: emit LOG_DIM_RESPONSE with score and precise observation.
@@ -8012,21 +8050,13 @@ function parseAyanoActions(rawText){
           }
           if(dimKey&&S.dimensionScores.hasOwnProperty(dimKey)){
             var newScore=Math.max(0,Math.min(100,parseInt(act.value)||0));
-            var prevScore=S.dimensionScores[dimKey];
-            // Determine update strategy:
-            // 1. Initial load (all dims were 0) → direct set for all 12
-            // 2. Full 12-dim assessment batch (6+ already set this round) → direct set
-            // 3. Casual 1-2 dim update in regular chat → weighted blend (70/30)
-            //    so a single response can't jump a score 20+ points, preventing drift
-            var isFullAssessment=Object.keys(_dimsSetThisRound).length>=6;
-            if(_allDimsWereZero||isFullAssessment){
-              S.dimensionScores[dimKey]=newScore;
-            } else {
-              // Weighted blend: score moves 30% toward the new value per assessment
-              S.dimensionScores[dimKey]=prevScore===0?newScore:Math.round(prevScore*0.7+newScore*0.3);
-            }
+            // ALWAYS direct set — no blending of any kind.
+            // Any mathematical transformation (blend, cap, average) between what the AI
+            // emits and what gets stored will cause a mismatch between chat text and stats.
+            // The rule is simple: emit X → store X → display X.
+            S.dimensionScores[dimKey]=newScore;
             _dimsSetThisRound[dimKey]=true;
-            applied.push('Dimension updated: '+dimKey+' → '+S.dimensionScores[dimKey]);
+            applied.push('Dim updated: '+dimKey+' → '+newScore);
           }
           break;
         case 'REMOVE_LAST_SESSION':
@@ -10080,10 +10110,38 @@ ${recentTests.slice(-5).map(function(t){
   if(t.chapters)line+=' chapters:'+t.chapters;
   if(t.notes)line+=' note:'+t.notes;
   if(t.classRank&&t.classRank.pos)line+=' classRank:'+t.classRank.pos+(t.classRank.total?'/'+t.classRank.total:'')+(t.classRank.total?' (top '+Math.round(t.classRank.pos/t.classRank.total*100)+'%)':'');
+  if(t.mistakes){
+    var _me=['conceptual','silly','noAttempt','calc'];
+    var _mp=[];
+    ['phy','che','mat'].forEach(function(s){
+      var sm=t.mistakes[s]||{};
+      var tot=_me.reduce(function(a,k){return a+(sm[k]||0);},0);
+      if(tot>0)_mp.push(s.toUpperCase()+'[conc='+( sm.conceptual||0)+' silly='+(sm.silly||0)+' noAtt='+(sm.noAttempt||0)+' calc='+(sm.calc||0)+']');
+    });
+    if(_mp.length)line+='\n    Mistakes: '+_mp.join(' ')+(t.mistakes.note?' Note:'+t.mistakes.note.slice(0,60):'');
+  }
   if(t.weakTopics&&t.weakTopics.length)line+='\n    Weak from test: '+t.weakTopics.map(function(w){return w.name+'('+w.subject+')';}).join(', ');
   return line;
 }).join('\n')||'  No tests yet'}
 ${Object.keys(boardAvg).length?'Board averages: '+Object.entries(boardAvg).map(function(e){return e[0]+' '+e[1]+'%';}).join(' | '):''}
+${(function(){
+  var mTests=S.tests.filter(function(t){return t.mistakes;}).slice(-8);
+  if(!mTests.length)return '';
+  var totals={conceptual:0,silly:0,noAttempt:0,calc:0};
+  mTests.forEach(function(t){
+    ['phy','che','mat'].forEach(function(s){
+      var sm=(t.mistakes&&t.mistakes[s])||{};
+      ['conceptual','silly','noAttempt','calc'].forEach(function(k){totals[k]+=(sm[k]||0);});
+    });
+  });
+  var grand=Object.values(totals).reduce(function(a,v){return a+v;},0);
+  if(!grand)return '';
+  var dominant=Object.keys(totals).sort(function(a,b){return totals[b]-totals[a];})[0];
+  var pct=function(k){return grand?Math.round(totals[k]/grand*100):0;};
+  return 'ERROR PATTERN (last '+mTests.length+' tests with mistake data):\n'
+    +'  Conceptual gaps: '+totals.conceptual+' ('+pct('conceptual')+'%) | Silly mistakes: '+totals.silly+' ('+pct('silly')+'%) | Not attempted: '+totals.noAttempt+' ('+pct('noAttempt')+'%) | Calc errors: '+totals.calc+' ('+pct('calc')+'%)\n'
+    +'  → Dominant error type: '+dominant.toUpperCase()+' — prioritise this in post-test review';
+})()}
 ${(S.boardTests&&S.boardTests.length?'Recent board tests: '+S.boardTests.slice(-3).map(function(bt){return bt.date+' '+bt.subj+' '+bt.pct+'%';}).join(' | '):'')}\
 ${(function(){var ranked=S.tests.filter(function(t){return t.classRank&&t.classRank.pos;});if(!ranked.length)return '';var last=ranked.slice(-3);return '\nClass ranks (last '+last.length+'): '+last.map(function(t){var r=t.classRank;var pctile=r.total?Math.round(r.pos/r.total*100):null;return t.date+' ['+( t.type||'test')+']: '+r.pos+(r.total?'/'+r.total:'')+(pctile!==null?' (top '+pctile+'%)':'');}).join(' | ');})()}
 
@@ -11046,6 +11104,125 @@ function deleteExamFromDetail(){
   if(!_editingExamId)return;
   removeUpcomingExam(_editingExamId);
   closeExamDetail();
+}
+</script>
+
+<!-- ── MISTAKE JOURNAL MODAL ─────────────────────────────────────────────── -->
+<div id="mistake-journal-overlay" class="modal-overlay" onclick="if(event.target===this)closeMistakeJournal()" style="z-index:9700">
+  <div class="modal-box" style="max-width:480px;width:100%">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+      <div>
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--gold)">📋 Mistake Journal</div>
+        <div id="mj-test-label" style="font-size:12px;color:var(--text2);margin-top:2px"></div>
+      </div>
+      <button onclick="closeMistakeJournal()" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:20px;padding:0 4px">✕</button>
+    </div>
+
+    <!-- Error type grid -->
+    <div style="overflow-x:auto;margin-bottom:14px">
+      <table style="width:100%;border-collapse:collapse;font-size:11px">
+        <thead>
+          <tr>
+            <th style="text-align:left;padding:5px 8px;color:var(--text3);font-weight:700;font-size:10px;text-transform:uppercase;letter-spacing:.5px"></th>
+            <th style="padding:5px 6px;color:rgba(91,110,245,.9);font-weight:700;text-align:center;white-space:nowrap">🧠 Conceptual</th>
+            <th style="padding:5px 6px;color:rgba(255,180,0,.9);font-weight:700;text-align:center;white-space:nowrap">😑 Silly</th>
+            <th style="padding:5px 6px;color:rgba(255,59,92,.9);font-weight:700;text-align:center;white-space:nowrap">⬜ Skipped</th>
+            <th style="padding:5px 6px;color:rgba(0,214,143,.9);font-weight:700;text-align:center;white-space:nowrap">🔢 Calc</th>
+          </tr>
+        </thead>
+        <tbody id="mj-table-body">
+          <!-- rows injected by JS -->
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Notes -->
+    <div style="margin-bottom:16px">
+      <div style="font-size:10px;text-transform:uppercase;letter-spacing:.7px;color:var(--text2);font-weight:700;margin-bottom:5px">Post-test notes</div>
+      <textarea id="mj-note" class="fi" rows="3" style="resize:vertical;font-size:13px" placeholder="What patterns did you notice? What will you fix before the next test?"></textarea>
+    </div>
+
+    <div style="display:flex;gap:10px">
+      <button onclick="saveMistakeJournal()" class="btn btn-primary" style="flex:1">Save</button>
+      <button onclick="clearMistakeJournal()" class="btn btn-danger btn-sm" style="padding:11px 16px" title="Clear all mistake data for this test">Clear</button>
+    </div>
+  </div>
+</div>
+
+<script>
+var _mjTestId = null;
+var _mjSubs   = ['phy','che','mat'];
+var _mjTypes  = ['conceptual','silly','noAttempt','calc'];
+var _mjSubLabels = {phy:'⚡ Physics', che:'🧪 Chemistry', mat:'📐 Maths'};
+
+function openMistakeJournal(id) {
+  var test = S.tests.find(function(t){ return t.id === id; });
+  if (!test) return;
+  _mjTestId = id;
+
+  // Header label
+  var typeLabels = {mock:'JEE Mock','jee-mains':'JEE Mains',advanced:'JEE Advanced',school:'School',chapter:'Chapter',board:'Board'};
+  document.getElementById('mj-test-label').textContent =
+    (typeLabels[test.type] || test.type || 'Test') + ' · ' + test.date +
+    ' · ' + test.total + '/' + (test.max || 300);
+
+  // Build table rows
+  var rows = '';
+  _mjSubs.forEach(function(s) {
+    var saved = (test.mistakes && test.mistakes[s]) || {};
+    rows += '<tr style="border-top:1px solid var(--border)">';
+    rows += '<td style="padding:8px;font-size:11px;font-weight:700;color:var(--text2);white-space:nowrap">' + _mjSubLabels[s] + '</td>';
+    _mjTypes.forEach(function(k) {
+      rows += '<td style="padding:6px;text-align:center">'
+        + '<input type="number" id="mj-' + s + '-' + k + '" value="' + (saved[k] || 0) + '" min="0" max="30" '
+        + 'style="width:46px;background:rgba(255,255,255,.06);border:1px solid var(--border2);border-radius:6px;color:var(--text);'
+        + 'font-family:var(--mono);font-size:13px;font-weight:700;text-align:center;padding:4px 2px;outline:none">'
+        + '</td>';
+    });
+    rows += '</tr>';
+  });
+  document.getElementById('mj-table-body').innerHTML = rows;
+  document.getElementById('mj-note').value = (test.mistakes && test.mistakes.note) || '';
+
+  document.getElementById('mistake-journal-overlay').classList.add('show');
+}
+
+function closeMistakeJournal() {
+  _mjTestId = null;
+  document.getElementById('mistake-journal-overlay').classList.remove('show');
+}
+
+function saveMistakeJournal() {
+  if (!_mjTestId) return;
+  var test = S.tests.find(function(t){ return t.id === _mjTestId; });
+  if (!test) return;
+
+  if (!test.mistakes) test.mistakes = {};
+  _mjSubs.forEach(function(s) {
+    test.mistakes[s] = {};
+    _mjTypes.forEach(function(k) {
+      var el = document.getElementById('mj-' + s + '-' + k);
+      test.mistakes[s][k] = el ? (parseInt(el.value) || 0) : 0;
+    });
+  });
+  test.mistakes.note = document.getElementById('mj-note').value.trim();
+
+  save();
+  renderTests();
+  closeMistakeJournal();
+  showToast('Mistake journal saved ✓');
+}
+
+function clearMistakeJournal() {
+  if (!_mjTestId) return;
+  var test = S.tests.find(function(t){ return t.id === _mjTestId; });
+  if (!test) return;
+  if (!confirm('Clear all mistake data for this test?')) return;
+  delete test.mistakes;
+  save();
+  renderTests();
+  closeMistakeJournal();
+  showToast('Mistake data cleared');
 }
 </script>
 
