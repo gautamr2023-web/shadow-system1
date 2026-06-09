@@ -1995,6 +1995,18 @@ input.fi:focus,select.fi:focus{
         <label class="fl">Study Goal for Quest (hrs)</label>
         <input type="number" class="fi" id="s-goal-quest" value="2" min="1" max="12" step="0.5">
       </div>
+      <div class="fg">
+        <label class="fl">Physics daily goal (h)</label>
+        <input type="number" class="fi" id="s-goal-phy" value="2" min="0" max="8" step="0.5">
+      </div>
+      <div class="fg">
+        <label class="fl">Chemistry daily goal (h)</label>
+        <input type="number" class="fi" id="s-goal-che" value="2" min="0" max="8" step="0.5">
+      </div>
+      <div class="fg">
+        <label class="fl">Maths daily goal (h)</label>
+        <input type="number" class="fi" id="s-goal-mat" value="2" min="0" max="8" step="0.5">
+      </div>
     </div>
     <div style="font-size:11px;color:var(--text2);margin-bottom:12px">Quest "Study 2+ hours" will trigger at whatever hours you set above (quest goal).</div>
     <button class="btn btn-primary btn-sm" onclick="saveDailyGoals()">Save Goals</button>
@@ -2513,7 +2525,7 @@ const DEF={
   examDate:'2026-05-18',
   examName:'JEE Advanced',
   classYear:'12',
-  goals:{studyHours:6,questStudyHours:2},
+  goals:{studyHours:6,questStudyHours:2,subjectGoals:{physics:2,chemistry:2,maths:2}},
   customQuests:null,
   upcomingExams:[],
   pinnedPlan:{},
@@ -2630,7 +2642,8 @@ function ensureKeys(){
   if(!S.examDate)S.examDate='2026-05-18';
   if(!S.examName)S.examName='JEE Advanced';
   if(!S.classYear)S.classYear='12';
-  if(!S.goals)S.goals={studyHours:6,questStudyHours:2};
+  if(!S.goals)S.goals={studyHours:6,questStudyHours:2,subjectGoals:{physics:2,chemistry:2,maths:2}};
+  if(!S.goals.subjectGoals)S.goals.subjectGoals={physics:2,chemistry:2,maths:2};
   if(!S.hunter.name)S.hunter.name='Gautam';
   if(S.customQuests===undefined)S.customQuests=null;
   if(!S.dailyStatus)S.dailyStatus={};
@@ -4320,7 +4333,7 @@ async function _upgradeSecAdviceAI(mins,sub,taskType,manaAfter,staticAdvice,stat
   const advSystemMsg=buildAyanoVoice('session');
   const advUserMsg=sessData+'\n\nNo preamble. No filler. Respond with EXACTLY two lines, nothing else.\n\nADVICE: [one complete, sharp observation — end with a full stop. 15-25 words.]\nNEXT: [one specific, actionable next session directive — end with a full stop. 12-20 words.]';
   try{
-    const text=await oracleCall([{role:'user',content:advUserMsg}],advSystemMsg,700);
+    const text=await oracleCall([{role:'user',content:advUserMsg}],advSystemMsg,900);
     if(!document.getElementById('sec-modal').classList.contains('show'))return;
     const advMatch=text.match(/ADVICE:\s*([\s\S]+?)(?=\nNEXT:|\n\n|$)/i);
     const nextMatch=text.match(/NEXT:\s*([\s\S]+?)(?=\n[A-Z]+:|\n\n|$)/i);
@@ -4356,7 +4369,7 @@ INSIGHT: [the core idea most students miss — 2-3 sentences max, be specific]
 FORMULA: [exact formula, rule, or key condition — use proper notation]
 TRAP: [the most common JEE mistake on this topic — 1 sentence]`;
   try{
-    const text=await oracleCall([{role:'user',content:prompt}],null,900);
+    const text=await oracleCall([{role:'user',content:prompt}],null,1200);
     if(!document.getElementById('sec-modal').classList.contains('show'))return;
     const cMatch=text.match(/CONCEPT:\s*([\s\S]+?)(?=\nINSIGHT:|\n\n|$)/i);
     const iMatch=text.match(/INSIGHT:\s*([\s\S]+?)(?=\nFORMULA:|\nTRAP:|\n\n|$)/i);
@@ -4831,7 +4844,34 @@ function renderFocusStatsBar(){
       ${sub.chemistry>0?`<span><span style="color:rgba(0,214,143,.9)">■</span> CHE ${fmtHM(sub.chemistry)}</span>`:''}
       ${sub.maths>0?`<span><span style="color:rgba(244,196,48,.9)">■</span> MAT ${fmtHM(sub.maths)}</span>`:''}
       ${sub.other>0?`<span><span style="color:rgba(150,150,200,.8)">■</span> OTH ${fmtHM(sub.other)}</span>`:''}
-    </div>`:'<div style="font-size:11px;color:var(--text3)">No sessions yet today. Start a session above!</div>'}
+    </div>
+    <!-- Subject goal progress bars -->
+    ${(function(){
+      const sg=S.goals&&S.goals.subjectGoals||{};
+      const rows=[
+        {key:'physics',label:'PHY',col:'rgba(91,110,245,1)',mins:sub.physics,goal:(sg.physics||0)*60},
+        {key:'chemistry',label:'CHE',col:'rgba(0,214,143,1)',mins:sub.chemistry,goal:(sg.chemistry||0)*60},
+        {key:'maths',label:'MAT',col:'rgba(244,196,48,1)',mins:sub.maths,goal:(sg.maths||0)*60},
+      ].filter(r=>r.goal>0);
+      if(!rows.length)return '';
+      return '<div style="margin-top:10px;padding-top:8px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:5px">'
+        +rows.map(r=>{
+          const pct=Math.min(100,Math.round(r.mins/r.goal*100));
+          const done=pct>=100;
+          const warn=pct<30&&r.goal>0;
+          const col=done?'var(--green)':warn?'var(--red)':r.col;
+          return '<div style="display:flex;align-items:center;gap:8px">'
+            +'<div style="font-size:10px;font-weight:700;color:var(--text3);width:28px;flex-shrink:0">'+r.label+'</div>'
+            +'<div style="flex:1;height:5px;background:rgba(255,255,255,.06);border-radius:3px;overflow:hidden">'
+            +'<div style="height:100%;width:'+pct+'%;background:'+col+';border-radius:3px;transition:width .5s"></div>'
+            +'</div>'
+            +'<div style="font-size:10px;color:'+(done?'var(--green)':warn?'var(--red)':'var(--text3)')+';width:62px;text-align:right;flex-shrink:0">'
+            +fmtHM(r.mins)+'<span style="color:var(--text3)"> /'+r.goal/60+'h</span>'+(done?' ✓':warn?' ⚠':'')
+            +'</div>'
+            +'</div>';
+        }).join('')
+        +'</div>';
+    })()}`:'<div style="font-size:11px;color:var(--text3)">No sessions yet today. Start a session above!</div>'}
   </div>`;
 }
 
@@ -6281,6 +6321,10 @@ function renderSettings(){
   renderChapterLog();
   const gsh=document.getElementById('s-goal-study');if(gsh)gsh.value=S.goals&&S.goals.studyHours?S.goals.studyHours:6;
   const gqh=document.getElementById('s-goal-quest');if(gqh)gqh.value=S.goals&&S.goals.questStudyHours?S.goals.questStudyHours:2;
+  const sg=S.goals&&S.goals.subjectGoals||{};
+  const gphy=document.getElementById('s-goal-phy');if(gphy)gphy.value=sg.physics||2;
+  const gche=document.getElementById('s-goal-che');if(gche)gche.value=sg.chemistry||2;
+  const gmat=document.getElementById('s-goal-mat');if(gmat)gmat.value=sg.maths||2;
   const hn=document.getElementById('s-hunter-name');if(hn)hn.value=S.hunter.name||'Gautam';
   renderQuestEditor();
   renderPauseStatus();
@@ -6320,9 +6364,13 @@ function saveStatusSettings(){
 function saveDailyGoals(){
   const gsh=parseFloat(document.getElementById('s-goal-study').value)||6;
   const gqh=parseFloat(document.getElementById('s-goal-quest').value)||2;
-  S.goals={studyHours:gsh,questStudyHours:gqh};
+  const gphy=parseFloat(document.getElementById('s-goal-phy')?.value)||2;
+  const gche=parseFloat(document.getElementById('s-goal-che')?.value)||2;
+  const gmat=parseFloat(document.getElementById('s-goal-mat')?.value)||2;
+  S.goals={studyHours:gsh,questStudyHours:gqh,subjectGoals:{physics:gphy,chemistry:gche,maths:gmat}};
   save();
-  showToast(`Goals saved! Study ${gsh}h, Quest at ${gqh}h. ✅`);
+  renderFocusStatsBar();
+  showToast(`Goals saved! Total ${gsh}h | PHY ${gphy}h CHE ${gche}h MAT ${gmat}h ✅`);
 }
 
 function saveHunterName(){
@@ -9082,7 +9130,7 @@ function changeOracleModel(val){
 }
 
 async function oracleCall(messages,systemMsg,maxTokens){
-  maxTokens=maxTokens||1200;
+  maxTokens=maxTokens||1500;
   if(!_oracleKeys.length){
     throw new Error('No API key found. Go to Oracle → Keys tab, add your free Groq key from console.groq.com');
   }
@@ -9422,7 +9470,7 @@ async function extractWeeklyPatterns(){
   var maH=Math.round(subMins.maths/60*10)/10;
   var prompt='Analyze this JEE student\'s last 7 days of study sessions. '+wSess.length+' sessions total.\nSessions:\n'+sessLines+'\nWeek split — Physics: '+phH+'h Chemistry: '+chH+'h Maths: '+maH+'h\nWeak topics: '+(weakT.length?weakT.map(function(t){return t.name+' '+t.conf+'%';}).join(', '):'not set yet')+'\n\nGive EXACTLY 3 pattern insights. Each line must start with PATTERN: then the insight. Use the actual numbers. Be specific.';
   try{
-    var text=await oracleCall([{role:'user',content:prompt}],null,350);
+    var text=await oracleCall([{role:'user',content:prompt}],null,700);
     var lines=text.split('\n').filter(function(l){return l.trim().toUpperCase().indexOf('PATTERN:')===0;});
     if(lines.length===0){lines=text.split('\n').filter(function(l){return l.trim().length>20;}).slice(0,3);}
     lines.forEach(function(l){addToMemory('📊 '+l.trim(),true);});
@@ -9795,9 +9843,9 @@ async function oracleResourceAnalysis(){
     +'NCERT ALERT: [specific NCERT guidance for boards + JEE Chemistry]\n'
     +'THIS WEEK: [3 specific chapter targets given their current progress]\n'
     +'PACE CHECK: [are they on track? what chapter speed do they need?]\n'
-    +'Use their actual resource names and percentages. Be direct, specific, max 220 words.';
+    +'Use their actual resource names and percentages. Be direct and specific — complete every section fully.';
   try{
-    var text=await oracleCall([{role:'user',content:prompt}],null,600);
+    var text=await oracleCall([{role:'user',content:prompt}],null,1200);
     if(out){
       out.innerHTML='<div style="font-size:9px;color:var(--mana);text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-bottom:8px">⚔ Ayanokoji Resource Analysis</div>'+formatOracleMD(text);
     }
@@ -9822,6 +9870,15 @@ function buildChatContext(){
     // Last 5 sessions
     const recentSess=S.sessions.filter(s=>!s.paused).slice(-5);
     const todayMins=S.sessions.filter(s=>s.date===t&&!s.paused).reduce((a,s)=>a+s.min,0);
+    // Subject totals today vs per-subject goals
+    const _subToday={physics:0,chemistry:0,maths:0};
+    S.sessions.filter(s=>s.date===t&&!s.paused).forEach(function(s){if(_subToday[s.sub]!==undefined)_subToday[s.sub]+=s.min;});
+    const _sg=S.goals&&S.goals.subjectGoals||{};
+    const _subLine=['physics','chemistry','maths'].map(function(sub){
+      const g=(_sg[sub]||0)*60;if(!g)return null;
+      const m=_subToday[sub]||0;const pct=Math.round(m/g*100);
+      return sub.slice(0,3).toUpperCase()+' '+(m/60).toFixed(1)+'h/'+g/60+'h'+(pct>=100?' ✓':pct<30?' ⚠':'');
+    }).filter(Boolean).join(' | ');
     // Weak topics (top 6)
     const allT=[...(S.topics.physics11||[]),...(S.topics.physics12||[]),...(S.topics.chemistry11||[]),...(S.topics.chemistry12||[]),...(S.topics.maths11||[]),...(S.topics.maths12||[])];
     const weak=allT.filter(t2=>t2.conf>0&&t2.conf<50).sort((a,b)=>a.conf-b.conf).slice(0,6);
@@ -9846,7 +9903,7 @@ function buildChatContext(){
     }).join(' || ');
     return `HUNTER: ${name} | Rank ${rank} | ${xp} XP | ${streak}d streak | Mana ${mana}/100 | ${daysLeft} days to JEE
 DATE/TIME: ${t} (${new Date().toLocaleDateString('en-IN',{weekday:'long',timeZone:'Asia/Kolkata'})}) | ${new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',hour12:true,timeZone:'Asia/Kolkata'})} IST
-Today: ${Math.round(todayMins/60*10)/10}h studied
+Today: ${Math.round(todayMins/60*10)/10}h studied${_subLine?'\nSubject balance: '+_subLine:''}
 Recent sessions: ${recentSess.map(s=>s.date+' '+s.min+'m '+s.sub+' '+s.taskType).join(' | ')||'none'}
 Weak topics: ${weak.map(t2=>t2.name+' '+t2.conf+'%').join(', ')||'none flagged'}
 Last tests: ${recentTests.map(t2=>t2.date+' '+t2.total+'/'+(t2.max||300)+(t2.classRank&&t2.classRank.pos?' rank:'+t2.classRank.pos+(t2.classRank.total?'/'+t2.classRank.total:''):'')).join(' | ')||'none'}
@@ -10798,9 +10855,9 @@ async function oracleWorkoutCoach(){
   var last7=[];for(var i=6;i>=0;i--){var dd=new Date();dd.setDate(dd.getDate()-i);last7.push(dd.toISOString().split('T')[0]);}
   var studyMins=S.sessions.filter(function(s){return last7.indexOf(s.date)>-1&&!s.paused;}).reduce(function(a,s){return a+s.min;},0);
   var daysLeft=Math.max(0,Math.ceil((new Date(S.examDate||'2026-05-18')-new Date())/86400000));
-  var prompt=buildAyanoVoice('workout')+'\n\nHunter training data:\nWorkout streak: '+streak+' days | Strength stat: '+strength+'/100\nDays to exam: '+daysLeft+'\nStudy load this week: '+Math.round(studyMins/60*10)/10+'h\n\nWeekly plan:\n'+planLines+'\n\nRecent logs:\n'+logLines+'\n\nRespond with exactly 3 directives:\n1. PROGRESS: One specific exercise or muscle group to intensify this week — exact reps/sets\n2. WATCH: One risk in their current pattern — overtraining, imbalance, or neglect\n3. ADJUST: One change for next week based on their study load and exam proximity\n\nEvery sentence uses their actual data. Under 120 words total.';
+  var prompt=buildAyanoVoice('workout')+'\n\nHunter training data:\nWorkout streak: '+streak+' days | Strength stat: '+strength+'/100\nDays to exam: '+daysLeft+'\nStudy load this week: '+Math.round(studyMins/60*10)/10+'h\n\nWeekly plan:\n'+planLines+'\n\nRecent logs:\n'+logLines+'\n\nRespond with exactly 3 directives:\n1. PROGRESS: One specific exercise or muscle group to intensify this week — exact reps/sets\n2. WATCH: One risk in their current pattern — overtraining, imbalance, or neglect\n3. ADJUST: One change for next week based on their study load and exam proximity\n\nEvery sentence uses their actual data. Be thorough — complete each directive fully.';
   try{
-    var text=await oracleCall([{role:'user',content:prompt}],null,300);
+    var text=await oracleCall([{role:'user',content:prompt}],null,900);
     if(out){
       out.innerHTML='<div style="font-size:9px;color:var(--green);text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-bottom:8px">⚔ Ayanokoji Training Analysis</div>'+formatOracleMD(text);
     }
@@ -11210,6 +11267,8 @@ function saveMistakeJournal() {
   save();
   renderTests();
   closeMistakeJournal();
+  // After a small delay so the modal close animation finishes, offer topic review
+  setTimeout(function(){ showTopicReviewSuggestions(test); }, 350);
   showToast('Mistake journal saved ✓');
 }
 
@@ -11223,6 +11282,122 @@ function clearMistakeJournal() {
   renderTests();
   closeMistakeJournal();
   showToast('Mistake data cleared');
+}
+</script>
+
+<!-- ── TOPIC REVIEW SUGGESTION MODAL ──────────────────────────────────────── -->
+<div id="topic-review-overlay" class="modal-overlay" onclick="if(event.target===this)closeTopicReview()" style="z-index:9800">
+  <div class="modal-box" style="max-width:460px;width:100%">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--red)">🎯 Topic Review Suggestions</div>
+      <button onclick="closeTopicReview()" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:20px;padding:0 4px">✕</button>
+    </div>
+    <div id="trv-subtitle" style="font-size:12px;color:var(--text2);margin-bottom:16px"></div>
+    <div id="trv-body"></div>
+    <div style="margin-top:16px;display:flex;gap:10px">
+      <button onclick="closeTopicReview()" class="btn btn-primary" style="flex:1">Done</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── TOPIC REVIEW SUGGESTIONS ─────────────────────────────────────────────────
+var _SUB_MAP={
+  phy:{keys:['physics11','physics12'],  label:'Physics',   col:'rgba(91,110,245,1)'},
+  che:{keys:['chemistry11','chemistry12'],label:'Chemistry',col:'rgba(0,214,143,1)'},
+  mat:{keys:['maths11','maths12'],      label:'Maths',     col:'rgba(244,196,48,1)'},
+};
+
+function showTopicReviewSuggestions(test){
+  var m=test&&test.mistakes;
+  if(!m)return;
+
+  // Only trigger for subjects with 2+ conceptual OR noAttempt mistakes
+  // (silly mistakes and calc errors are execution problems, not knowledge gaps)
+  var affected=Object.keys(_SUB_MAP).filter(function(s){
+    var sm=m[s]||{};
+    return (sm.conceptual||0)+(sm.noAttempt||0)>=2;
+  });
+  if(!affected.length)return;
+
+  // Build suggestions per affected subject
+  var sections=[];
+  affected.forEach(function(s){
+    var info=_SUB_MAP[s];
+    var sm=m[s]||{};
+    var gapCount=(sm.conceptual||0)+(sm.noAttempt||0);
+    var pool=[];
+    info.keys.forEach(function(key){
+      (S.topics[key]||[]).forEach(function(t,idx){
+        // Only show topics already being tracked (conf > 0) and not already strong (< 75)
+        if(t.conf>0&&t.conf<75)pool.push({name:t.name,conf:t.conf,key:key,idx:idx});
+      });
+    });
+    pool.sort(function(a,b){return a.conf-b.conf;});
+    if(pool.length)sections.push({label:info.label,col:info.col,topics:pool.slice(0,5),gapCount:gapCount,sub:s});
+  });
+  if(!sections.length)return;
+
+  // Build subtitle
+  var subtitleParts=affected.map(function(s){
+    var sm=m[s]||{};
+    var n=(sm.conceptual||0)+(sm.noAttempt||0);
+    return n+' gap'+(n>1?'s':'')+' in '+_SUB_MAP[s].label;
+  });
+  document.getElementById('trv-subtitle').textContent=
+    'These topics may need revision based on: '+subtitleParts.join(', ')+'.';
+
+  // Build rows
+  var html='';
+  sections.forEach(function(sec){
+    html+='<div style="margin-bottom:14px">'
+      +'<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:'+sec.col+';margin-bottom:8px">'+sec.label+'</div>';
+    sec.topics.forEach(function(t){
+      var barW=t.conf+'%';
+      var barCol=t.conf<40?'rgba(255,59,92,.7)':'rgba(244,196,48,.7)';
+      html+='<div id="trv-row-'+t.key+'-'+t.idx+'" style="display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--border)">'
+        +'<div style="flex:1;min-width:0">'
+        +'<div style="font-size:12px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+escHtml(t.name)+'</div>'
+        +'<div style="height:3px;background:rgba(255,255,255,.06);border-radius:2px;margin-top:4px">'
+        +'<div style="height:100%;width:'+barW+';background:'+barCol+';border-radius:2px"></div>'
+        +'</div>'
+        +'</div>'
+        +'<div id="trv-conf-'+t.key+'-'+t.idx+'" style="font-family:var(--mono);font-size:12px;color:var(--text2);width:30px;text-align:right;flex-shrink:0">'+t.conf+'%</div>'
+        +'<button onclick="dropTopicConf(\''+t.key+'\','+t.idx+',15)" '
+        +'id="trv-btn-'+t.key+'-'+t.idx+'" '
+        +'style="background:rgba(255,59,92,.1);border:1px solid rgba(255,59,92,.3);border-radius:6px;color:var(--red);'
+        +'font-size:10px;font-weight:700;padding:4px 10px;cursor:pointer;font-family:var(--font);flex-shrink:0;white-space:nowrap">'
+        +'▼ −15</button>'
+        +'</div>';
+    });
+    html+='</div>';
+  });
+  document.getElementById('trv-body').innerHTML=html;
+  document.getElementById('topic-review-overlay').classList.add('show');
+}
+
+function closeTopicReview(){
+  document.getElementById('topic-review-overlay').classList.remove('show');
+}
+
+function dropTopicConf(key,idx,amount){
+  if(!S.topics[key]||!S.topics[key][idx])return;
+  var t=S.topics[key][idx];
+  var newConf=Math.max(0,t.conf-amount);
+  t.conf=newConf;
+  t.lastStudied=today(); // stamp lastStudied — test context counts as reviewing the topic
+  save();
+
+  // Update the row inline — no full re-render needed
+  var confEl=document.getElementById('trv-conf-'+key+'-'+idx);
+  if(confEl)confEl.textContent=newConf+'%';
+  var barEl=document.querySelector('#trv-row-'+key+'-'+idx+' div div div');
+  if(barEl)barEl.style.width=newConf+'%';
+  var btn=document.getElementById('trv-btn-'+key+'-'+idx);
+  if(btn){
+    if(newConf<=0){btn.disabled=true;btn.style.opacity='0.35';}
+    else btn.textContent='▼ −15 (now '+newConf+'%)';
+  }
 }
 </script>
 
