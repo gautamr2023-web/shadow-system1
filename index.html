@@ -14,6 +14,10 @@
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+<!-- KaTeX — renders LaTeX math ($...$ and \( \) for inline, $$...$$ and \[ \] for display) -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -1551,6 +1555,10 @@ input.fi:focus,select.fi:focus{
         <button class="btn btn-ghost btn-sm" onclick="saveJeeTgt()">Set Target</button>
       </div>
       <div id="jee-prog"></div>
+    </div>
+    <div class="card">
+      <div class="card-hdr"><span class="hl">📈 Score Trajectory</span></div>
+      <div id="jee-trajectory"></div>
     </div>
     <div class="card"><div class="card-hdr"><span class="hl">Subject Averages</span></div><div id="subj-avg"></div></div>
     <div class="card"><div class="card-hdr"><span class="hl">Weak Chapters</span></div><div id="weak-chapters"></div></div>
@@ -4340,6 +4348,7 @@ async function _upgradeSecAdviceAI(mins,sub,taskType,manaAfter,staticAdvice,stat
     const advEl2=document.getElementById('sec-advice');
     if(advEl2&&advMatch){
       advEl2.innerHTML='<span style="font-size:9px;color:var(--accent);letter-spacing:.8px;text-transform:uppercase;font-weight:700;display:block;margin-bottom:4px">⚔ Ayanokoji</span>'+escHtml(advMatch[1].trim());
+      renderMathIn(advEl2);
     } else if(advEl2){advEl2.textContent=staticAdvice;}
     const sugEl2=document.getElementById('sec-suggest');
     if(sugEl2&&nextMatch){sugEl2.textContent=nextMatch[1].trim();}
@@ -4383,8 +4392,9 @@ TRAP: [the most common JEE mistake on this topic — 1 sentence]`;
       micEl2.innerHTML='<div class="sec-learn-tag" style="background:rgba(0,180,216,.12);color:var(--mana);border-color:rgba(0,180,216,.3)">⚡ Oracle · '+subLabel+'</div>'
         +'<div class="sec-micro-word">'+escHtml(cMatch[1].trim())+'</div>'
         +(insight?'<div class="sec-micro-def" style="margin-bottom:8px">'+escHtml(insight)+'</div>':'')
-        +(formula?'<div style="background:rgba(91,110,245,.1);border:1px solid rgba(91,110,245,.25);border-radius:6px;padding:6px 10px;font-family:var(--mono);font-size:12px;color:var(--accent);margin-bottom:6px">'+escHtml(formula)+'</div>':'')
+        +(formula?'<div style="background:rgba(91,110,245,.1);border:1px solid rgba(91,110,245,.25);border-radius:6px;padding:6px 10px;font-family:var(--mono);font-size:12px;color:var(--accent);margin-bottom:6px;overflow-x:auto">'+escHtml(formula)+'</div>':'')
         +(trap?'<div style="font-size:11px;color:var(--gold);margin-top:4px">⚠ Common trap: '+escHtml(trap)+'</div>':'');
+      renderMathIn(micEl2); // typeset any $...$ / \(...\) LaTeX in the card
     }
   }catch(e){/* silently keep static fallback */}
 }
@@ -5464,10 +5474,116 @@ function upConf(s,i,v,sl){
   const bEl=sl.previousElementSibling?.querySelector('span:first-child');
   if(bEl&&bEl.style){bEl.textContent=badge;bEl.style.color=c;bEl.style.background=c+'22';}
 }
+// ── SCORE TRAJECTORY ─────────────────────────────────────────────────────────
+// Linear regression on (days-since-first-test, total-score) to project the
+// score on exam day and compare against the target.
+function _computeTrajectory(){
+  var fullTests=S.tests.filter(function(t){return !t.subjects||t.subjects.length===3;});
+  if(fullTests.length<3)return {insufficient:true,nTests:fullTests.length};
+
+  var maxS=fullTests[fullTests.length-1].max||300;
+  var target=S.jeeTarget||250;
+  var n=fullTests.length;
+
+  var t0=new Date(fullTests[0].date+'T12:00:00').getTime();
+  var pts=fullTests.map(function(t){
+    return {x:(new Date(t.date+'T12:00:00').getTime()-t0)/86400000, y:t.total};
+  });
+  var spreadDays=pts[n-1].x;
+
+  var recentN=Math.min(3,n);
+  var recentAvg=Math.round(fullTests.slice(-recentN).reduce(function(a,t){return a+t.total;},0)/recentN);
+
+  // Need at least 3 days of spread between first and last test for a meaningful
+  // date-based trend. Otherwise fall back to a simple per-test trend.
+  if(spreadDays<3){
+    var sumXi=0,sumYi=0,sumXYi=0,sumXXi=0;
+    pts.forEach(function(p,i){sumXi+=i;sumYi+=p.y;sumXYi+=i*p.y;sumXXi+=i*i;});
+    var denomI=n*sumXXi-sumXi*sumXi;
+    var slopeI=denomI!==0?(n*sumXYi-sumXi*sumYi)/denomI:0;
+    return {
+      insufficient:false,dateSpreadOK:false,
+      perTestSlope:Math.round(slopeI*10)/10,
+      recentAvg:recentAvg,maxS:maxS,target:target,nTests:n
+    };
+  }
+
+  // Standard least-squares regression on (days, score)
+  var sumX=0,sumY=0,sumXY=0,sumXX=0;
+  pts.forEach(function(p){sumX+=p.x;sumY+=p.y;sumXY+=p.x*p.y;sumXX+=p.x*p.x;});
+  var denom=n*sumXX-sumX*sumX;
+  var slope=denom!==0?(n*sumXY-sumX*sumY)/denom:0;
+  var intercept=(sumY-slope*sumX)/n;
+
+  var lastDate=new Date(fullTests[n-1].date+'T12:00:00');
+  var examDate=new Date(S.examDate||'2026-05-18');
+  var daysToExam=Math.max(0,Math.ceil((examDate-lastDate)/86400000));
+  var examX=(examDate.getTime()-t0)/86400000;
+
+  var projectedScore=Math.max(0,Math.min(maxS,Math.round(intercept+slope*examX)));
+  var weeklySlope=Math.round(slope*7*10)/10;
+  var gap=Math.round(target-projectedScore);
+  var requiredWeekly=daysToExam>0?Math.round((target-recentAvg)/daysToExam*7*10)/10:null;
+  var status=gap<=0?'on-track':gap<=15?'close':'behind';
+
+  return {
+    insufficient:false,dateSpreadOK:true,
+    weeklySlope:weeklySlope,recentAvg:recentAvg,maxS:maxS,target:target,
+    daysToExam:daysToExam,projectedScore:projectedScore,gap:gap,
+    requiredWeekly:requiredWeekly,status:status,nTests:n
+  };
+}
+
+function renderTrajectoryCard(){
+  var el=document.getElementById('jee-trajectory');
+  if(!el)return;
+  var tr=_computeTrajectory();
+
+  if(!tr||tr.insufficient){
+    el.innerHTML='<div class="empty">Log at least 3 full mock tests (on different dates) to see your trajectory. ('+(tr?tr.nTests:0)+'/3 so far)</div>';
+    return;
+  }
+
+  if(!tr.dateSpreadOK){
+    var ptCol=tr.perTestSlope>=0?'var(--green)':'var(--red)';
+    el.innerHTML='<div style="font-size:13px;line-height:1.7">'
+      +'Trend per test: <strong style="color:'+ptCol+'">'+(tr.perTestSlope>=0?'+':'')+tr.perTestSlope+' marks/test</strong><br>'
+      +'Recent avg: <strong>'+tr.recentAvg+'/'+tr.maxS+'</strong><br>'
+      +'<span style="font-size:11px;color:var(--text3)">Log tests across different dates for an exam-day projection.</span>'
+      +'</div>';
+    return;
+  }
+
+  var slopeCol=tr.weeklySlope>0?'var(--green)':tr.weeklySlope<0?'var(--red)':'var(--text2)';
+  var statusCol=tr.status==='on-track'?'var(--green)':tr.status==='close'?'var(--gold)':'var(--red)';
+  var statusTxt=tr.status==='on-track'
+    ?'✓ On track — projected to clear target by '+Math.abs(tr.gap)+' marks'
+    :tr.status==='close'
+      ?'⚠ Close — projected '+tr.gap+' marks short. Small push needed.'
+      :'▲ Behind pace — projected '+tr.gap+' marks short of target';
+
+  el.innerHTML=
+    '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px;gap:10px">'
+    +'<div><div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.7px">Current trend</div>'
+    +'<div style="font-size:22px;font-weight:700;color:'+slopeCol+'">'+(tr.weeklySlope>=0?'+':'')+tr.weeklySlope+'<span style="font-size:11px;color:var(--text3)"> /wk</span></div></div>'
+    +'<div style="text-align:right"><div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.7px">Projected on exam day</div>'
+    +'<div style="font-size:22px;font-weight:700;color:var(--text)">'+tr.projectedScore+'<span style="font-size:11px;color:var(--text3)">/'+tr.maxS+'</span></div></div>'
+    +'</div>'
+    +'<div class="pb-wrap" style="height:8px;position:relative;margin-bottom:10px">'
+    +'<div class="pb-fill" style="width:'+Math.min(100,Math.round(tr.projectedScore/tr.maxS*100))+'%;background:'+statusCol+'"></div>'
+    +'<div style="position:absolute;top:0;bottom:0;left:'+Math.round(tr.target/tr.maxS*100)+'%;width:2px;background:var(--gold)" title="Target: '+tr.target+'"></div>'
+    +'</div>'
+    +'<div style="font-size:12px;color:'+statusCol+';margin-bottom:8px">'+statusTxt+'</div>'
+    +(tr.status!=='on-track'&&tr.requiredWeekly!==null
+      ?'<div style="font-size:11px;color:var(--text3)">Required pace: <strong style="color:var(--text2)">'+(tr.requiredWeekly>=0?'+':'')+tr.requiredWeekly+' marks/wk</strong> to hit '+tr.target+' · '+tr.daysToExam+'d left</div>'
+      :'<div style="font-size:11px;color:var(--text3)">'+tr.daysToExam+' days to exam · based on last '+tr.nTests+' tests</div>')
+  ;
+}
+
 function renderJeeMks(){
   document.getElementById('jee-tgt').value=S.jeeTarget;
   const tests=S.tests;
-  if(!tests.length){['jee-prog','subj-avg','weak-chapters'].forEach(id=>document.getElementById(id).innerHTML='<div class="empty">Log tests first.</div>');return;}
+  if(!tests.length){['jee-prog','subj-avg','weak-chapters'].forEach(id=>document.getElementById(id).innerHTML='<div class="empty">Log tests first.</div>');renderTrajectoryCard();return;}
   const target=S.jeeTarget||250;
   const avgTot=Math.round(tests.reduce((a,t)=>a+t.total,0)/tests.length);
   const avgPhy=Math.round(tests.reduce((a,t)=>a+t.phy,0)/tests.length);
@@ -5484,6 +5600,7 @@ function renderJeeMks(){
   const weak=[...(S.topics.physics11||[]),...(S.topics.physics12||[]),...(S.topics.chemistry11||[]),...(S.topics.chemistry12||[]),...(S.topics.maths11||[]),...(S.topics.maths12||[])].filter(t=>t.conf<40).slice(0,6);
   if(!weak.length){document.getElementById('weak-chapters').innerHTML='<div style="color:var(--green);font-size:13px">✓ No topics below 40%. Keep going!</div>';}
   else{let wh='<div style="font-size:12px;color:var(--text2);margin-bottom:10px">Prioritise these for quick score gains:</div>';weak.forEach(t=>{wh+=`<div style="display:flex;align-items:center;gap:9px;margin-bottom:9px"><div style="width:6px;height:6px;border-radius:50%;background:var(--red);flex-shrink:0"></div><span style="font-size:13px;flex:1">${t.name}</span><span style="font-family:var(--mono);font-size:11px;color:var(--red)">${t.conf}%</span></div>`;});document.getElementById('weak-chapters').innerHTML=wh;}
+  renderTrajectoryCard();
 }
 function saveJeeTgt(){const v=parseInt(document.getElementById('jee-tgt').value);if(v>0){S.jeeTarget=v;save();renderJeeMks();showToast('Target set: '+v+' marks');}}
 
@@ -7994,9 +8111,9 @@ function _buildAyanoChatHTML(history,compact){
 function renderAyanoChat(){
   renderThreadBars();
   var floatChat=document.getElementById('ayano-float-chat');
-  if(floatChat){floatChat.innerHTML=_buildAyanoChatHTML(_ayanoHistory,true);floatChat.scrollTop=floatChat.scrollHeight;}
+  if(floatChat){floatChat.innerHTML=_buildAyanoChatHTML(_ayanoHistory,true);floatChat.scrollTop=floatChat.scrollHeight;renderMathIn(floatChat);}
   var tabChat=document.getElementById('ayano-chat');
-  if(tabChat){tabChat.innerHTML=_buildAyanoChatHTML(_ayanoHistory,false);tabChat.scrollTop=tabChat.scrollHeight;}
+  if(tabChat){tabChat.innerHTML=_buildAyanoChatHTML(_ayanoHistory,false);tabChat.scrollTop=tabChat.scrollHeight;renderMathIn(tabChat);}
 }
 function parseAyanoActions(rawText){
   var workText=rawText;
@@ -9848,6 +9965,7 @@ async function oracleResourceAnalysis(){
     var text=await oracleCall([{role:'user',content:prompt}],null,1200);
     if(out){
       out.innerHTML='<div style="font-size:9px;color:var(--mana);text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-bottom:8px">⚔ Ayanokoji Resource Analysis</div>'+formatOracleMD(text);
+      renderMathIn(out);
     }
   }catch(e){
     if(out)out.innerHTML='<span style="color:var(--red);font-size:12px">⚠ '+(e.message||'Oracle offline')+'</span>';
@@ -9907,7 +10025,12 @@ Today: ${Math.round(todayMins/60*10)/10}h studied${_subLine?'\nSubject balance: 
 Recent sessions: ${recentSess.map(s=>s.date+' '+s.min+'m '+s.sub+' '+s.taskType).join(' | ')||'none'}
 Weak topics: ${weak.map(t2=>t2.name+' '+t2.conf+'%').join(', ')||'none flagged'}
 Last tests: ${recentTests.map(t2=>t2.date+' '+t2.total+'/'+(t2.max||300)+(t2.classRank&&t2.classRank.pos?' rank:'+t2.classRank.pos+(t2.classRank.total?'/'+t2.classRank.total:''):'')).join(' | ')||'none'}
-${planStr}${conStr}${upcomingStr?'\nUpcoming exams: '+upcomingStr:''}${_buildRevisionContext('brief')}${_buildLifeContext('brief')}${buildMemoryContext()}`;
+${planStr}${conStr}${upcomingStr?'\nUpcoming exams: '+upcomingStr:''}${(function(){
+  var tr=_computeTrajectory();
+  if(!tr||tr.insufficient||!tr.dateSpreadOK)return '';
+  var lbl=tr.status==='on-track'?'on track':tr.status==='close'?'close':'behind pace';
+  return '\nTrajectory: '+(tr.weeklySlope>=0?'+':'')+tr.weeklySlope+'/wk → projected '+tr.projectedScore+'/'+tr.maxS+' vs target '+tr.target+' ('+lbl+', '+tr.daysToExam+'d left)';
+})()}${_buildRevisionContext('brief')}${_buildLifeContext('brief')}${buildMemoryContext()}`;
   }catch(err){
     // If context building crashes, return minimal fallback — never lock the chat
     return 'Hunter data temporarily unavailable. Respond based on conversation only.';
@@ -10182,6 +10305,20 @@ ${recentTests.slice(-5).map(function(t){
 }).join('\n')||'  No tests yet'}
 ${Object.keys(boardAvg).length?'Board averages: '+Object.entries(boardAvg).map(function(e){return e[0]+' '+e[1]+'%';}).join(' | '):''}
 ${(function(){
+  var tr=_computeTrajectory();
+  if(!tr||tr.insufficient)return '';
+  if(!tr.dateSpreadOK){
+    return '=== SCORE TRAJECTORY ===\nTrend per test: '+(tr.perTestSlope>=0?'+':'')+tr.perTestSlope+' marks/test (need tests on different dates for exam-day projection)\nRecent avg: '+tr.recentAvg+'/'+tr.maxS+' | Target: '+tr.target;
+  }
+  var statusLabel=tr.status==='on-track'?'ON TRACK':tr.status==='close'?'CLOSE — small gap':'BEHIND PACE';
+  var lines=['=== SCORE TRAJECTORY ===',
+    'Trend: '+(tr.weeklySlope>=0?'+':'')+tr.weeklySlope+' marks/week (last '+tr.nTests+' tests)',
+    'Projected on exam day ('+tr.daysToExam+'d away): '+tr.projectedScore+'/'+tr.maxS+' | Target: '+tr.target+'/'+tr.maxS,
+    'Status: '+statusLabel+' (gap: '+(tr.gap>0?'-':'+')+Math.abs(tr.gap)+' marks)'];
+  if(tr.status!=='on-track'&&tr.requiredWeekly!==null)lines.push('Required pace to hit target: '+(tr.requiredWeekly>=0?'+':'')+tr.requiredWeekly+' marks/week');
+  return lines.join('\n');
+})()}
+${(function(){
   var mTests=S.tests.filter(function(t){return t.mistakes;}).slice(-8);
   if(!mTests.length)return '';
   var totals={conceptual:0,silly:0,noAttempt:0,calc:0};
@@ -10433,7 +10570,7 @@ async function runAdvisor(){
     +'Under 220 words. Every sentence must reference their actual logged data.';
   try{
     const text=await oracleCall([{role:'user',content:advisorUserMsg}],advisorSystemMsg,2048);
-    if(out)out.innerHTML=`<div class="oracle-section-chip">⚔ Ayanokoji Report · ${new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})}</div>${formatOracleMD(text)}`;
+    if(out){out.innerHTML=`<div class="oracle-section-chip">⚔ Ayanokoji Report · ${new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})}</div>${formatOracleMD(text)}`;renderMathIn(out);}
     addToMemory('Advisor: '+text.slice(0,120).replace(/\n/g,' ')+'…',true);
   }catch(e){if(out)out.innerHTML=`<div style="color:var(--red);font-size:13px;padding:6px 0">⚠ ${e.message||'Oracle offline. Add API keys in Keys tab.'}</div>`;}
   setOracleStreaming(false);if(btn){btn.disabled=false;btn.textContent='⚔ Analyze My Progress';}
@@ -10533,6 +10670,7 @@ function renderDoubtChat(){
   }
   chat.innerHTML=doubtHistory.map(m=>`<div class="oracle-bubble ${m.role}">${m.role==='assistant'?formatOracleMD(m.content):`<span>${escHtml(m.content)}</span>`}</div>`).join('');
   chat.scrollTop=chat.scrollHeight;
+  renderMathIn(chat); // typeset LaTeX in AI responses (derivations, formulas, etc.)
 }
 function clearDoubtHistory(){
   if(doubtHistory.length&&!confirm('Clear this conversation?'))return;
@@ -10825,6 +10963,7 @@ async function generateDailyPlan(){
     if(out){
       out.innerHTML=`<div class="oracle-section-chip">📅 ${dow} · ${timeStr}</div>${formatOracleMD(text)}`
         +`<button onclick="pinBattlePlan()" style="width:100%;margin-top:12px;padding:10px;background:rgba(0,214,143,.1);border:1px solid rgba(0,214,143,.3);border-radius:var(--radius-sm);color:var(--green);font-family:var(--font);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;cursor:pointer">📌 Pin to Dashboard</button>`;
+      renderMathIn(out);
       S._lastPlanText=text; // store raw text for pin parsing
     }
     addToMemory(`Plan generated: ${today()}, ${dow}, ${goalH}h goal`,true);
@@ -10860,6 +10999,7 @@ async function oracleWorkoutCoach(){
     var text=await oracleCall([{role:'user',content:prompt}],null,900);
     if(out){
       out.innerHTML='<div style="font-size:9px;color:var(--green);text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-bottom:8px">⚔ Ayanokoji Training Analysis</div>'+formatOracleMD(text);
+      renderMathIn(out);
     }
   }catch(e){
     if(out)out.innerHTML='<span style="color:var(--red);font-size:12px">⚠ '+(e.message||'Oracle offline')+'</span>';
@@ -10912,6 +11052,26 @@ function formatOracleMD(text){
     .replace(/\n\n/g,'<br style="line-height:2.5">').replace(/\n/g,'<br>');
 }
 function escHtml(text){return String(text).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+// ── MATH RENDERING ────────────────────────────────────────────────────────
+// Call after injecting any HTML that may contain LaTeX ($...$, $$...$$, \(...\), \[...\]).
+// Safe to call even if KaTeX hasn't loaded yet (e.g. slow network) — fails silently.
+function renderMathIn(el){
+  if(!el)return;
+  if(typeof renderMathInElement!=='function')return; // KaTeX auto-render not loaded yet
+  try{
+    renderMathInElement(el,{
+      delimiters:[
+        {left:'$$',right:'$$',display:true},
+        {left:'\\[',right:'\\]',display:true},
+        {left:'$',right:'$',display:false},
+        {left:'\\(',right:'\\)',display:false}
+      ],
+      throwOnError:false,
+      ignoredTags:['script','noscript','style','textarea','pre']
+    });
+  }catch(e){/* malformed LaTeX in AI output — leave as plain text */}
+}
 
 </script>
 <!-- SL PENALTY OVERLAY — top priority messages -->
