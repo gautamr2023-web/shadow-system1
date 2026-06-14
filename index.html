@@ -1738,30 +1738,6 @@ input.fi:focus,select.fi:focus{
     <div class="graph-scroll-wrap"><div id="ch-heatmap" style="margin-top:8px;min-height:160px;min-width:560px"></div></div>
   </div>
 
-  <!-- DAILY TIMELINE -->
-  <div class="card">
-    <div class="card-hdr" style="display:flex;justify-content:space-between;align-items:center">
-      <span class="hl">📅 Daily Timeline</span>
-      <div style="display:flex;align-items:center;gap:8px">
-        <button onclick="shiftTimelineDay(-1)" style="background:none;border:1px solid var(--border);border-radius:6px;color:var(--text2);cursor:pointer;font-size:13px;padding:3px 9px;font-family:var(--font)">‹</button>
-        <span id="tl-date-label" style="font-size:12px;color:var(--text2);min-width:90px;text-align:center"></span>
-        <button id="tl-next-btn" onclick="shiftTimelineDay(1)" style="background:none;border:1px solid var(--border);border-radius:6px;color:var(--text2);cursor:pointer;font-size:13px;padding:3px 9px;font-family:var(--font)">›</button>
-      </div>
-    </div>
-    <div style="font-size:11px;color:var(--text2);margin-bottom:14px">Every hour of your day — sleep, sessions, and what's still unaccounted for. Tap a block for details, tap an "Untracked" block to label it.</div>
-    <div style="display:flex;gap:18px;flex-wrap:wrap;align-items:flex-start">
-      <div style="flex:0 0 200px">
-        <div id="tl-summary" style="font-size:11px;color:var(--text3);margin-bottom:10px"></div>
-        <div style="position:relative;height:480px;margin-left:40px" id="tl-track"></div>
-      </div>
-      <div style="flex:1;min-width:240px">
-        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--accent);margin-bottom:8px">⚔ Ayanokoji's Note</div>
-        <div id="tl-ai-note" style="font-size:12px;line-height:1.7;color:var(--text2)"></div>
-        <div id="tl-patterns" style="margin-top:14px"></div>
-      </div>
-    </div>
-  </div>
-
   <!-- Chronicle -->
   <div class="card"><div class="card-hdr"><span class="hl">Shadow Chronicle</span></div><div id="chronicle"></div></div>
 
@@ -2567,15 +2543,14 @@ const DEF={
     chapterLog:[]
   },
   weeklySchedule:{
-    monday:   {type:'school',schoolStart:'08:00',freeAfter:'14:00',coaching:false,coachingTime:''},
-    tuesday:  {type:'school',schoolStart:'08:00',freeAfter:'14:00',coaching:false,coachingTime:''},
-    wednesday:{type:'school',schoolStart:'08:00',freeAfter:'14:00',coaching:false,coachingTime:''},
-    thursday: {type:'school',schoolStart:'08:00',freeAfter:'14:00',coaching:false,coachingTime:''},
-    friday:   {type:'school',schoolStart:'08:00',freeAfter:'14:00',coaching:false,coachingTime:''},
-    saturday: {type:'free', schoolStart:'08:00',freeAfter:'00:00',coaching:false,coachingTime:''},
-    sunday:   {type:'free', schoolStart:'08:00',freeAfter:'00:00',coaching:false,coachingTime:''},
+    monday:   {type:'school',freeAfter:'14:00',coaching:false,coachingTime:''},
+    tuesday:  {type:'school',freeAfter:'14:00',coaching:false,coachingTime:''},
+    wednesday:{type:'school',freeAfter:'14:00',coaching:false,coachingTime:''},
+    thursday: {type:'school',freeAfter:'14:00',coaching:false,coachingTime:''},
+    friday:   {type:'school',freeAfter:'14:00',coaching:false,coachingTime:''},
+    saturday: {type:'free', freeAfter:'00:00',coaching:false,coachingTime:''},
+    sunday:   {type:'free', freeAfter:'00:00',coaching:false,coachingTime:''},
   },
-  dayLabels:{}, // {date: {startHourKey: 'label'}} — user-labeled gaps in the daily timeline
   ayanoChat:[],
   dailyGoalOverride:{},
   dailyNotes:{},
@@ -6335,7 +6310,6 @@ function renderCharts(){
   renderRadarChart();
   renderHeatmap();
   renderChronicle();
-  renderDailyTimeline(); // 24-hour day view
 }
 
 function renderHeatmap(){
@@ -6418,227 +6392,6 @@ function showHeatTip(e,msg){
 }
 function hideHeatTip(){
   const t=document.getElementById('heat-tip');if(t)t.style.opacity='0';
-}
-
-  const t=document.getElementById('heat-tip');if(t)t.style.opacity='0';
-}
-
-// ── DAILY TIMELINE ───────────────────────────────────────────────────────────
-var _tlDate=null; // currently-viewed date (null = today)
-var _tlAiPending=false;
-
-// Block colours (dark theme)
-var _TL_COLORS={
-  sleep:   {bg:'rgba(80,80,140,.35)',  border:'rgba(100,100,200,.3)',  text:'var(--text2)'},
-  session: {
-    physics:   {bg:'rgba(91,110,245,.35)', border:'rgba(91,110,245,.55)',   text:'var(--accent)'},
-    chemistry: {bg:'rgba(0,214,143,.25)',  border:'rgba(0,214,143,.5)',     text:'var(--green)'},
-    maths:     {bg:'rgba(244,196,48,.25)', border:'rgba(244,196,48,.5)',    text:'var(--gold)'},
-    other:     {bg:'rgba(180,140,255,.2)', border:'rgba(180,140,255,.4)',   text:'rgba(180,140,255,1)'},
-  },
-  workout: {bg:'rgba(0,180,216,.2)',   border:'rgba(0,180,216,.4)',    text:'var(--mana)'},
-  school:  {bg:'rgba(91,110,245,.1)', border:'rgba(91,110,245,.25)', text:'var(--text2)'},
-  gap:     {bg:'rgba(255,255,255,.02)',border:'rgba(255,255,255,.07)',text:'var(--text3)'},
-  gapLabeled:{bg:'rgba(255,255,255,.05)',border:'rgba(255,255,255,.15)',text:'var(--text2)'},
-};
-
-function shiftTimelineDay(dir){
-  var base=_tlDate?new Date(_tlDate+'T12:00:00'):new Date();
-  base.setDate(base.getDate()+dir);
-  var candidate=base.toISOString().split('T')[0];
-  if(candidate>today())return; // don't go into future
-  _tlDate=(candidate===today())?null:candidate;
-  renderDailyTimeline();
-}
-
-function labelGapPrompt(dateStr,gapKey,currentLabel){
-  var label=prompt('Label this time block (e.g. "Lunch", "Travel", "Break", "Phone"):', currentLabel||'');
-  if(label===null)return;
-  if(!S.dayLabels)S.dayLabels={};
-  if(!S.dayLabels[dateStr])S.dayLabels[dateStr]={};
-  if(label.trim())S.dayLabels[dateStr][gapKey]=label.trim();
-  else delete S.dayLabels[dateStr][gapKey];
-  save();
-  renderDailyTimeline();
-  showToast(label.trim()?'Block labeled ✓':'Label cleared');
-}
-
-function renderDailyTimeline(){
-  var track=document.getElementById('tl-track');
-  var summary=document.getElementById('tl-summary');
-  var aiNote=document.getElementById('tl-ai-note');
-  var patternsEl=document.getElementById('tl-patterns');
-  var dateLabel=document.getElementById('tl-date-label');
-  var nextBtn=document.getElementById('tl-next-btn');
-  if(!track)return;
-
-  var dateStr=_tlDate||today();
-  var isToday=dateStr===today();
-
-  // Update header
-  if(dateLabel){
-    var d=new Date(dateStr+'T12:00:00');
-    var days=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-    var mons=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-    dateLabel.textContent=days[d.getDay()]+', '+d.getDate()+' '+mons[d.getMonth()]+(isToday?' (Today)':'');
-  }
-  if(nextBtn)nextBtn.style.opacity=isToday?'0.3':'1';
-
-  var blocks=_buildDayTimeline(dateStr);
-  var PX_PER_HOUR=20; // 480px / 24h
-  var TOTAL_H=480;
-  var START_H=0; // 00:00
-
-  // Summary line
-  if(summary){
-    var studyMins=blocks.filter(function(b){return b.type==='session';}).reduce(function(a,b){return a+(b.end-b.start)*60;},0);
-    var sleepHrs=blocks.filter(function(b){return b.type==='sleep';}).reduce(function(a,b){return a+(b.end-b.start);},0);
-    var untrackedHrs=blocks.filter(function(b){return b.type==='gap'&&!b.labeled;}).reduce(function(a,b){return a+(b.end-b.start);},0);
-    summary.innerHTML='<div style="display:flex;gap:10px;flex-wrap:wrap;font-size:11px;color:var(--text3);margin-bottom:6px">'
-      +'<span style="color:var(--accent)">📚 '+Math.round(studyMins)+'m study</span>'
-      +(sleepHrs>0?'<span style="color:rgba(100,100,200,.8)">😴 '+sleepHrs.toFixed(1)+'h sleep</span>':'')
-      +(untrackedHrs>0?'<span style="color:var(--text3)">❓ '+untrackedHrs.toFixed(1)+'h untracked</span>':'')
-      +'</div>';
-  }
-
-  // Hour labels every 2h
-  var hourLabels='';
-  for(var hh=0;hh<=24;hh+=2){
-    var topPx=(hh-START_H)*PX_PER_HOUR;
-    if(topPx<0||topPx>TOTAL_H)continue;
-    var lbl=hh===0?'12AM':hh<12?hh+'AM':hh===12?'12PM':(hh-12)+'PM';
-    hourLabels+='<div style="position:absolute;left:-40px;top:'+topPx+'px;width:36px;text-align:right;'
-      +'font-size:9px;color:var(--text3);transform:translateY(-50%);pointer-events:none">'+lbl+'</div>'
-      +'<div style="position:absolute;left:0;right:0;top:'+topPx+'px;height:1px;background:rgba(255,255,255,.04);pointer-events:none"></div>';
-  }
-
-  // Current time marker (if today)
-  if(isToday){
-    var nowIST=new Date(new Date().getTime()+5.5*3600000);
-    var nowHr=nowIST.getUTCHours()+nowIST.getUTCMinutes()/60;
-    var nowTop=(nowHr-START_H)*PX_PER_HOUR;
-    if(nowTop>=0&&nowTop<=TOTAL_H){
-      hourLabels+='<div style="position:absolute;left:-4px;right:0;top:'+nowTop+'px;height:2px;'
-        +'background:var(--red);border-radius:1px;pointer-events:none;z-index:10">'
-        +'<div style="position:absolute;left:-4px;top:-4px;width:8px;height:8px;background:var(--red);border-radius:50%"></div></div>';
-    }
-  }
-
-  // Render blocks
-  var blockHtml='';
-  blocks.forEach(function(b){
-    var top=(b.start-START_H)*PX_PER_HOUR;
-    var h=(b.end-b.start)*PX_PER_HOUR;
-    if(top+h<=0||top>=TOTAL_H)return;
-    top=Math.max(0,top); h=Math.min(h,TOTAL_H-top);
-    if(h<1)return;
-
-    var col,borderStyle='solid',cursor='default';
-    if(b.type==='sleep'){
-      col=_TL_COLORS.sleep;
-    }else if(b.type==='session'){
-      col=_TL_COLORS.session[b.label]||_TL_COLORS.session.other;
-      cursor='pointer';
-    }else if(b.type==='workout'){
-      col=_TL_COLORS.workout;
-    }else if(b.type==='school'){
-      col=_TL_COLORS.school;
-    }else{
-      col=b.labeled?_TL_COLORS.gapLabeled:_TL_COLORS.gap;
-      borderStyle=b.labeled?'solid':'dashed';
-      cursor='pointer';
-    }
-
-    var inner='';
-    if(h>=14){
-      var labelText=b.type==='session'?(b.label.charAt(0).toUpperCase()+b.label.slice(1)):b.label;
-      inner+='<div style="font-size:11px;font-weight:700;color:'+col.text+';white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+labelText+'</div>';
-      if(h>=22&&b.type==='session'&&b.rating){
-        inner+='<div style="font-size:9px;color:'+col.text+';opacity:.8">'+'★'.repeat(b.rating)+'</div>';
-      }
-      if(h>=22&&b.type==='session'&&b.min){
-        inner+='<div style="font-size:9px;color:var(--text3)">'+b.min+'m</div>';
-      }
-      if(h>=18&&b.type==='gap'&&!b.labeled){
-        inner+='<div style="font-size:9px;color:var(--text3)">tap to label</div>';
-      }
-    }
-
-    // Click handlers
-    var onclick='';
-    if(b.type==='gap'){
-      onclick='onclick="labelGapPrompt(\''+dateStr+'\',\''+b.gapKey+'\',\''+escHtml(b.label)+'\')"';
-    }else if(b.type==='session'&&b.sessionId){
-      onclick='onclick="openSessionDetail && openSessionDetail('+b.sessionId+')"';
-    }
-
-    blockHtml+='<div '+onclick+' class="tl-block" style="position:absolute;left:0;right:0;top:'+top+'px;height:'+(h-1)+'px;'
-      +'box-sizing:border-box;border-radius:4px;padding:3px 6px;overflow:hidden;cursor:'+cursor+';'
-      +'background:'+col.bg+';border:1px '+borderStyle+' '+col.border+'">'
-      +inner+'</div>';
-  });
-
-  track.innerHTML=hourLabels+blockHtml;
-
-  // Time-slot patterns
-  if(patternsEl){
-    var pat=_computeTimeSlotPatterns({minSamples:3});
-    if(!pat.insufficient&&pat.results.length){
-      var best=pat.results[0];
-      var worst=pat.results[pat.results.length-1];
-      patternsEl.innerHTML='<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--text3);margin-bottom:8px">Your study windows (rated sessions)</div>'
-        +'<div style="font-size:11px;margin-bottom:4px;color:var(--green)">✓ Best: '+best.slot+' — avg '+best.avg+'★ ('+best.count+' sessions)</div>'
-        +(worst!==best?'<div style="font-size:11px;color:var(--red)">⚠ Worst: '+worst.slot+' — avg '+worst.avg+'★ ('+worst.count+' sessions)</div>':'')
-        +'<div style="font-size:10px;color:var(--text3);margin-top:6px">Based on '+pat.nSamples+' rated sessions</div>';
-    }else if(pat.insufficient){
-      patternsEl.innerHTML='<div style="font-size:11px;color:var(--text3)">Rate more sessions ('+pat.nSamples+'/3 rated so far) to see your best study windows.</div>';
-    }
-  }
-
-  // AI note — generate if not already loading
-  if(aiNote&&!_tlAiPending){
-    _generateTimelineNote(dateStr,blocks,aiNote);
-  }
-}
-
-async function _generateTimelineNote(dateStr,blocks,el){
-  if(!el)return;
-  // Build compact day summary for AI
-  var studyMins=blocks.filter(function(b){return b.type==='session';}).reduce(function(a,b){return a+(b.end-b.start)*60;},0);
-  var sleepBlock=blocks.find(function(b){return b.type==='sleep';});
-  var gaps=blocks.filter(function(b){return b.type==='gap'&&!b.labeled;});
-  var totalGapHrs=gaps.reduce(function(a,b){return a+(b.end-b.start);},0);
-  var sessLines=blocks.filter(function(b){return b.type==='session';}).map(function(b){
-    return (b.label||'study')+' '+_fmtHourLabel(b.start)+'–'+_fmtHourLabel(b.end)+(b.rating?' ★'.repeat(b.rating):'')+(b.taskType?' ('+b.taskType+')':'');
-  }).join(', ');
-  var dayContext='Date: '+dateStr+' | Study: '+Math.round(studyMins)+'min'
-    +(sleepBlock?' | Sleep: '+sleepBlock.hours+'h ('+sleepBlock.quality+')':'')
-    +(totalGapHrs>0.5?' | Untracked: '+totalGapHrs.toFixed(1)+'h':' | No significant untracked time')
-    +(sessLines?' | Sessions: '+sessLines:'');
-
-  // Pattern context
-  var pat=_computeTimeSlotPatterns({minSamples:3});
-  if(!pat.insufficient&&pat.results.length){
-    dayContext+=' | Best historical slot: '+pat.results[0].slot+' ('+pat.results[0].avg+'★)';
-    if(pat.results.length>1)dayContext+=' | Worst: '+pat.results[pat.results.length-1].slot+' ('+pat.results[pat.results.length-1].avg+'★)';
-  }
-
-  var prompt='Hunter study day data:\n'+dayContext+'\n\n'
-    +'Write a sharp 3-4 sentence note about this day. Reference exact times and ratings. '
-    +'Note what went well, what was wasted, and one specific scheduling adjustment for tomorrow. '
-    +'Ayanokoji voice — cold, precise, no praise unless earned. No bullet points.';
-
-  el.innerHTML='<span style="color:var(--text3);font-size:11px">⚙ Analysing day…</span>';
-  _tlAiPending=true;
-  try{
-    var text=await oracleCall([{role:'user',content:prompt}],AYANO_SYSTEM,700);
-    el.innerHTML='<div style="font-size:12px;line-height:1.7;color:var(--text2)">'+formatOracleMD(text)+'</div>';
-    renderMathIn(el);
-  }catch(e){
-    el.innerHTML='<span style="color:var(--text3);font-size:11px">Oracle offline — add API keys in the Keys tab.</span>';
-  }finally{
-    _tlAiPending=false;
-  }
 }
 
 function renderChronicle(){
@@ -9685,165 +9438,6 @@ function _buildRevisionContext(mode){
   return '\n'+lines.join('\n');
 }
 
-// ── DAILY TIMELINE — DATA LAYER ─────────────────────────────────────────────
-// Parses "HH:MM AM/PM" (session times) or "HH:MM" 24h (sleep/weeklySchedule) to decimal hour.
-function _parseTimeStr(str){
-  if(!str)return null;
-  str=String(str).trim();
-  var m=str.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)?$/i);
-  if(!m)return null;
-  var h=parseInt(m[1]),mn=parseInt(m[2]);
-  if(m[3]){
-    var ap=m[3].toUpperCase();
-    if(ap==='PM'&&h!==12)h+=12;
-    if(ap==='AM'&&h===12)h=0;
-  }
-  return h+mn/60;
-}
-// Format a decimal hour (0-24) as "H:MM AM/PM"
-function _fmtHourLabel(h){
-  h=((h%24)+24)%24;
-  var hh=Math.floor(h),mm=Math.round((h-hh)*60);
-  if(mm===60){mm=0;hh++;}
-  var ap=hh<12||hh===24?'AM':'PM';
-  var h12=hh%12===0?12:hh%12;
-  return h12+':'+(mm<10?'0':'')+mm+' '+ap;
-}
-
-// Builds a sorted array of timeline blocks for a single calendar day (00:00-24:00):
-// sleep, study sessions (with subject+rating), workout (best-effort), school (from
-// weeklySchedule), and computed gaps (anything uncovered, including user-labeled ones).
-function _buildDayTimeline(dateStr){
-  var blocks=[];
-  var nextDateStr=new Date(new Date(dateStr+'T12:00:00').getTime()+86400000).toISOString().split('T')[0];
-  var lt=S.lifeTracking||{};
-
-  // Sleep — morning portion (last night, logged as today's entry)
-  var morningSleep=(lt.sleepLog||[]).find(function(s){return s.date===dateStr;});
-  if(morningSleep){
-    var wake=_parseTimeStr(morningSleep.wakeTime);
-    var bed=_parseTimeStr(morningSleep.sleepStart);
-    if(wake!=null){
-      var start=(bed!=null&&bed<wake)?bed:0;
-      if(wake>start)blocks.push({type:'sleep',label:'Sleep',start:start,end:wake,quality:morningSleep.quality,hours:morningSleep.hours});
-    }
-  }
-  // Sleep — evening portion (tonight, logged tomorrow morning — only exists for past days)
-  var eveningSleep=(lt.sleepLog||[]).find(function(s){return s.date===nextDateStr;});
-  if(eveningSleep){
-    var bed2=_parseTimeStr(eveningSleep.sleepStart);
-    var wake2=_parseTimeStr(eveningSleep.wakeTime);
-    if(bed2!=null&&wake2!=null&&bed2>wake2){
-      blocks.push({type:'sleep',label:'Sleep',start:bed2,end:24,quality:eveningSleep.quality,hours:eveningSleep.hours});
-    }
-  }
-
-  // Study sessions
-  (S.sessions||[]).filter(function(s){return s.date===dateStr&&!s.paused;}).forEach(function(s){
-    var st=_parseTimeStr(s.startTime),en=_parseTimeStr(s.time);
-    if(st==null||en==null)return;
-    if(en<=st)en=Math.min(24,st+(s.min||0)/60);
-    blocks.push({type:'session',label:s.sub,start:st,end:en,rating:s.rating||null,taskType:s.taskType,min:s.min,sessionId:s.id});
-  });
-
-  // Workout (best-effort — startTime is epoch ms; duration from exTimes or default 45min)
-  ((S.workout&&S.workout.logs)||[]).filter(function(l){return l.date===dateStr&&l.startTime;}).forEach(function(l){
-    var startD=new Date(l.startTime);
-    var startHr=startD.getHours()+startD.getMinutes()/60;
-    var endHr=Math.min(24,startHr+0.75);
-    if(l.exTimes){
-      var times=Object.values(l.exTimes).map(_parseTimeStr).filter(function(t){return t!=null;});
-      if(times.length){
-        var maxT=Math.max.apply(null,times);
-        if(maxT>startHr)endHr=Math.min(24,startHr+2,maxT);
-      }
-    }
-    if(endHr>startHr)blocks.push({type:'workout',label:'Workout',start:startHr,end:endHr});
-  });
-
-  // School (from weeklySchedule)
-  var wDays=['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
-  var dow=wDays[new Date(dateStr+'T12:00:00').getDay()];
-  var sched=(S.weeklySchedule||{})[dow];
-  if(sched&&sched.type==='school'&&sched.schoolStart&&sched.freeAfter){
-    var sStart=_parseTimeStr(sched.schoolStart),sEnd=_parseTimeStr(sched.freeAfter);
-    if(sStart!=null&&sEnd!=null&&sEnd>sStart)blocks.push({type:'school',label:'School',start:sStart,end:sEnd});
-  }
-
-  blocks.sort(function(a,b){return a.start-b.start;});
-
-  // Gap detection — merge all covered intervals, then find uncovered ranges
-  var covered=[];
-  blocks.forEach(function(b){
-    var s=Math.max(0,b.start),e=Math.min(24,b.end);
-    if(e<=s)return;
-    var merged=false;
-    for(var i=0;i<covered.length;i++){
-      if(s<=covered[i][1]&&e>=covered[i][0]){
-        covered[i][0]=Math.min(covered[i][0],s);
-        covered[i][1]=Math.max(covered[i][1],e);
-        merged=true;break;
-      }
-    }
-    if(!merged)covered.push([s,e]);
-  });
-  covered.sort(function(a,b){return a[0]-b[0];});
-  var merged2=[];
-  covered.forEach(function(c){
-    if(merged2.length&&c[0]<=merged2[merged2.length-1][1]){
-      merged2[merged2.length-1][1]=Math.max(merged2[merged2.length-1][1],c[1]);
-    }else merged2.push(c.slice());
-  });
-
-  var gapMin=0.25; // ignore sub-15-min gaps (rounding noise)
-  var cursor=0;
-  var dayLabels=(S.dayLabels&&S.dayLabels[dateStr])||{};
-  merged2.forEach(function(c){
-    if(c[0]-cursor>=gapMin){
-      var key=cursor.toFixed(2);
-      blocks.push({type:'gap',label:dayLabels[key]||'Untracked',start:cursor,end:c[0],labeled:!!dayLabels[key],gapKey:key});
-    }
-    cursor=Math.max(cursor,c[1]);
-  });
-  if(24-cursor>=gapMin){
-    var key2=cursor.toFixed(2);
-    blocks.push({type:'gap',label:dayLabels[key2]||'Untracked',start:cursor,end:24,labeled:!!dayLabels[key2],gapKey:key2});
-  }
-
-  blocks.sort(function(a,b){return a.start-b.start;});
-  return blocks;
-}
-
-// Aggregates session ratings by 2-hour slot across recent rated sessions, to find the
-// hunter's genuinely best/worst study windows. Used to inform Ayanokoji's scheduling.
-function _computeTimeSlotPatterns(opts){
-  opts=opts||{};
-  var lookback=opts.lookback||60;
-  var minSamples=opts.minSamples||3;
-
-  var rated=(S.sessions||[]).filter(function(s){return s.rating&&s.startTime&&!s.paused;}).slice(-lookback);
-  if(rated.length<minSamples)return {insufficient:true,nSamples:rated.length};
-
-  var slots={};
-  rated.forEach(function(s){
-    var st=_parseTimeStr(s.startTime);
-    if(st==null)return;
-    var idx=Math.floor(st/2);
-    if(!slots[idx])slots[idx]={sum:0,count:0};
-    slots[idx].sum+=s.rating;
-    slots[idx].count++;
-  });
-
-  var results=Object.keys(slots).map(function(k){
-    var idx=parseInt(k);
-    var h1=idx*2,h2=h1+2;
-    return {slot:_fmtHourLabel(h1)+'–'+_fmtHourLabel(h2),startHour:h1,avg:Math.round(slots[k].sum/slots[k].count*10)/10,count:slots[k].count};
-  }).filter(function(r){return r.count>=minSamples;});
-
-  results.sort(function(a,b){return b.avg-a.avg;});
-  return {insufficient:false,results:results,nSamples:rated.length};
-}
-
 // ── LIFE TRACKING CONTEXT ───────────────────────────────────────────────────
 // Compact summary of sleep, mood, pressure and social logs for AI context.
 // Called by both buildChatContext (mode:'brief') and buildFullContext (mode:'full').
@@ -10031,10 +9625,7 @@ function _initSR(){
   if(!S.studyResources)S.studyResources={refBooks:[],ncert:[],coaching:[],pyqs:[],schoolChapters:{physics:'',chemistry:'',maths:''},chapterLog:[]};
   if(!S.studyResources.ncert)S.studyResources.ncert=[];
   if(!S.studyResources.chapterLog)S.studyResources.chapterLog=[];
-  if(!S.weeklySchedule)S.weeklySchedule={monday:{type:'school',schoolStart:'08:00',freeAfter:'14:00',coaching:false,coachingTime:''},tuesday:{type:'school',schoolStart:'08:00',freeAfter:'14:00',coaching:false,coachingTime:''},wednesday:{type:'school',schoolStart:'08:00',freeAfter:'14:00',coaching:false,coachingTime:''},thursday:{type:'school',schoolStart:'08:00',freeAfter:'14:00',coaching:false,coachingTime:''},friday:{type:'school',schoolStart:'08:00',freeAfter:'14:00',coaching:false,coachingTime:''},saturday:{type:'free',schoolStart:'08:00',freeAfter:'00:00',coaching:false,coachingTime:''},sunday:{type:'free',schoolStart:'08:00',freeAfter:'00:00',coaching:false,coachingTime:''}};
-  // Migrate: add schoolStart to existing weeklySchedule entries that don't have it
-  Object.keys(S.weeklySchedule).forEach(function(d){if(S.weeklySchedule[d]&&!S.weeklySchedule[d].schoolStart)S.weeklySchedule[d].schoolStart='08:00';});
-  if(!S.dayLabels)S.dayLabels={};
+  if(!S.weeklySchedule)S.weeklySchedule={monday:{type:'school',freeAfter:'14:00',coaching:false,coachingTime:''},tuesday:{type:'school',freeAfter:'14:00',coaching:false,coachingTime:''},wednesday:{type:'school',freeAfter:'14:00',coaching:false,coachingTime:''},thursday:{type:'school',freeAfter:'14:00',coaching:false,coachingTime:''},friday:{type:'school',freeAfter:'14:00',coaching:false,coachingTime:''},saturday:{type:'free',freeAfter:'00:00',coaching:false,coachingTime:''},sunday:{type:'free',freeAfter:'00:00',coaching:false,coachingTime:''}};
 }
 function addStudyResource(){
   _initSR();
@@ -10224,8 +9815,6 @@ function renderWeeklySchedule(){
       +'<option value="free"'+(ds.type==='free'?' selected':'')+'>🟢 Free</option>'
       +'<option value="holiday"'+(ds.type==='holiday'?' selected':'')+'>🏖 Holiday</option>'
       +'</select>'
-      +'<span style="font-size:11px;color:var(--text3)">Starts</span>'
-      +'<input type="time" id="ws-start-'+d+'" class="fi" value="'+(ds.schoolStart||'08:00')+'" style="font-size:12px;padding:4px 7px;width:auto">'
       +'<span style="font-size:11px;color:var(--text3)">Free from</span>'
       +'<input type="time" id="ws-free-'+d+'" class="fi" value="'+(ds.freeAfter||'00:00')+'" style="font-size:12px;padding:4px 7px;width:auto">'
       +'<label style="display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer"><input type="checkbox" id="ws-coach-'+d+'"'+(ds.coaching?' checked':'')+' style="accent-color:var(--mana)"> Coaching</label>'
@@ -10248,11 +9837,10 @@ function saveWeeklySchedule(){
   var days=['monday','tuesday','wednesday','thursday','friday','saturday','sunday'];
   days.forEach(function(d){
     var t=document.getElementById('ws-type-'+d);
-    var st=document.getElementById('ws-start-'+d);
     var f=document.getElementById('ws-free-'+d);
     var c=document.getElementById('ws-coach-'+d);
     var ct=document.getElementById('ws-ctime-'+d);
-    if(t)S.weeklySchedule[d]={type:t.value,schoolStart:(st&&st.value)||'08:00',freeAfter:(f&&f.value)||'00:00',coaching:!!(c&&c.checked),coachingTime:(ct&&ct.value)||''};
+    if(t)S.weeklySchedule[d]={type:t.value,freeAfter:(f&&f.value)||'00:00',coaching:!!(c&&c.checked),coachingTime:(ct&&ct.value)||''};
   });
   save();showToast('Schedule saved ✓');
 }
@@ -10747,16 +10335,6 @@ ${(function(){
   return 'ERROR PATTERN (last '+mTests.length+' tests with mistake data):\n'
     +'  Conceptual gaps: '+totals.conceptual+' ('+pct('conceptual')+'%) | Silly mistakes: '+totals.silly+' ('+pct('silly')+'%) | Not attempted: '+totals.noAttempt+' ('+pct('noAttempt')+'%) | Calc errors: '+totals.calc+' ('+pct('calc')+'%)\n'
     +'  → Dominant error type: '+dominant.toUpperCase()+' — prioritise this in post-test review';
-})()}
-${(function(){
-  var pat=_computeTimeSlotPatterns({minSamples:3});
-  if(pat.insufficient)return '';
-  var best=pat.results[0];
-  var worst=pat.results.length>1?pat.results[pat.results.length-1]:null;
-  return '=== STUDY WINDOW PATTERNS (based on '+pat.nSamples+' rated sessions) ===\n'
-    +'  Best window: '+best.slot+' avg '+best.avg+'\u2605 ('+best.count+' sessions)\n'
-    +(worst&&worst!==best?'  Worst window: '+worst.slot+' avg '+worst.avg+'\u2605 ('+worst.count+' sessions)\n':'')
-    +'  Rule: schedule highest-difficulty work in '+best.slot+'.'+(worst&&worst!==best?' Avoid hard tasks in '+worst.slot+'.':'');
 })()}
 ${(S.boardTests&&S.boardTests.length?'Recent board tests: '+S.boardTests.slice(-3).map(function(bt){return bt.date+' '+bt.subj+' '+bt.pct+'%';}).join(' | '):'')}\
 ${(function(){var ranked=S.tests.filter(function(t){return t.classRank&&t.classRank.pos;});if(!ranked.length)return '';var last=ranked.slice(-3);return '\nClass ranks (last '+last.length+'): '+last.map(function(t){var r=t.classRank;var pctile=r.total?Math.round(r.pos/r.total*100):null;return t.date+' ['+( t.type||'test')+']: '+r.pos+(r.total?'/'+r.total:'')+(pctile!==null?' (top '+pctile+'%)':'');}).join(' | ');})()}
