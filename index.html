@@ -1139,6 +1139,29 @@ input.fi:focus,select.fi:focus{
 .wo-bar-val{position:absolute;top:-16px;font-size:8px;color:var(--text2);text-align:center;width:100%;font-family:var(--mono)}
 .wo-bar.today-bar{outline:2px solid rgba(91,110,245,.6);outline-offset:2px}
 
+
+/* ── Daily Timeline responsive layout ─────────────────────────────────────── */
+.tl-layout{display:flex;gap:22px;align-items:flex-start}
+.tl-track-col{flex-shrink:0;position:relative;padding-left:50px}
+.tl-track-col #tl-track{width:190px}
+.tl-right-col{flex:1;min-width:0;display:flex;flex-direction:column;gap:0}
+.tl-track-wrap{position:relative}
+
+/* Phone: stack columns, track goes full width */
+@media(max-width:680px){
+  .tl-layout{flex-direction:column;gap:16px}
+  .tl-track-col{padding-left:44px;width:100%}
+  .tl-track-col #tl-track{width:calc(100vw - 100px)!important;min-width:200px;max-width:420px}
+  .tl-right-col{width:100%;margin-top:0}
+  #tl-insights>div{min-width:calc(50% - 4px)!important;flex:1 1 calc(50% - 4px)!important}
+  #tl-ai-note{font-size:12px!important}
+  #tl-gen-btn{font-size:12px!important}
+  #tl-patterns .pat-bar-row{font-size:10px!important}
+}
+@media(max-width:420px){
+  .tl-track-col #tl-track{width:calc(100vw - 80px)!important}
+  #tl-insights>div{min-width:100%!important;flex:1 1 100%!important}
+}
 </style>
 <body>
 <div class="app-shell">
@@ -1750,21 +1773,26 @@ input.fi:focus,select.fi:focus{
     </div>
     <!-- Insight chips row -->
     <div id="tl-insights" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px"></div>
-    <!-- Two-column layout -->
-    <div style="display:flex;gap:22px;align-items:flex-start">
-      <!-- Timeline track -->
-      <div style="flex-shrink:0;position:relative;padding-left:50px">
-        <div id="tl-summary" style="font-size:11px;color:var(--text2);margin-bottom:10px;padding-left:2px"></div>
-        <div id="tl-track" style="position:relative;width:190px;background:rgba(255,255,255,.02);border-radius:6px;overflow:visible"></div>
+    <!-- Main layout: side-by-side on desktop, stacked on mobile -->
+    <div class="tl-layout">
+      <!-- Timeline track column -->
+      <div class="tl-track-col">
+        <div id="tl-summary" style="font-size:11px;color:var(--text2);margin-bottom:10px"></div>
+        <div class="tl-track-wrap">
+          <div id="tl-track" style="position:relative;background:rgba(255,255,255,.02);border-radius:6px;overflow:visible"></div>
+        </div>
       </div>
       <!-- Right analysis panel -->
-      <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:18px">
-        <!-- AI note -->
-        <div>
+      <div class="tl-right-col">
+        <!-- AI note section -->
+        <div style="margin-bottom:18px">
           <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--accent);margin-bottom:10px">⚔ Ayanokoji's Analysis</div>
-          <div id="tl-ai-note" style="font-size:13px;line-height:1.8;color:var(--text2)"></div>
+          <div id="tl-ai-note" style="font-size:13px;line-height:1.8;color:var(--text2);margin-bottom:12px"></div>
+          <button id="tl-gen-btn" onclick="triggerTimelineNote()" style="display:flex;align-items:center;gap:7px;background:rgba(91,110,245,.12);border:1px solid rgba(91,110,245,.3);border-radius:8px;color:var(--accent);font-family:var(--font);font-size:12px;font-weight:700;padding:9px 16px;cursor:pointer;width:100%">
+            <span>⚔</span><span>Analyse This Day</span>
+          </button>
         </div>
-        <!-- Study windows -->
+        <!-- Study windows chart -->
         <div id="tl-patterns"></div>
       </div>
     </div>
@@ -6450,6 +6478,11 @@ function shiftTimelineDay(dir){
   if(cand>today())return;
   _tlDate=(cand===today())?null:cand;
   _tlAiPending=false;
+  // Reset AI note and button for new day
+  var an=document.getElementById('tl-ai-note');
+  var gb=document.getElementById('tl-gen-btn');
+  if(an)an.innerHTML='';
+  if(gb){gb.disabled=false;gb.innerHTML='<span>⚔</span><span>Analyse This Day</span>';}
   renderDailyTimeline();
 }
 
@@ -6665,41 +6698,79 @@ function renderDailyTimeline(){
   }
 
   // ── AI note ──
-  if(aiNote&&!_tlAiPending)_generateTimelineNote(dateStr,blocks,aiNote);
+  // AI note is generated on demand via the 'Analyse This Day' button
+  if(aiNote&&!aiNote.dataset.loaded){aiNote.dataset.date='';} // reset on day change
 }
-async function _generateTimelineNote(dateStr,blocks,el){
+function triggerTimelineNote(){
+  var el=document.getElementById('tl-ai-note');
+  var btn=document.getElementById('tl-gen-btn');
+  var dateStr=_tlDate||today();
+  var blocks=_buildDayTimeline(dateStr);
+  if(_tlAiPending)return;
+  if(btn){btn.disabled=true;btn.innerHTML='<span style="opacity:.5">⏳ Analysing...</span>';}
+  _generateTimelineNote(dateStr,blocks,el,function(){
+    if(btn){btn.disabled=false;btn.innerHTML='<span>⚔</span><span>Regenerate Analysis</span>';}
+  });
+}
+
+async function _generateTimelineNote(dateStr,blocks,el,onDone){
   if(!el)return;
-  var studyM=blocks.filter(function(b){return b.type==='session';}).reduce(function(a,b){return a+(b.end-b.start)*60;},0);
+
+  // Build rich context
+  var sessBlocks=blocks.filter(function(b){return b.type==='session';});
+  var studyM=sessBlocks.reduce(function(a,b){return a+(b.end-b.start)*60;},0);
   var sleepB=blocks.find(function(b){return b.type==='sleep';});
   var gapH=blocks.filter(function(b){return b.type==='gap'&&!b.labeled;}).reduce(function(a,b){return a+(b.end-b.start);},0);
-  var ratArr=blocks.filter(function(b){return b.type==='session'&&b.rating;});
+  var ratArr=sessBlocks.filter(function(b){return b.rating;});
   var avgR=ratArr.length?Math.round(ratArr.reduce(function(a,b){return a+b.rating;},0)/ratArr.length*10)/10:null;
-  var sessLines=blocks.filter(function(b){return b.type==='session';}).map(function(b){
-    return (b.label||'?')+' '+_fmtHourLabel(b.start)+'-'+_fmtHourLabel(b.end)+(b.rating?' ('+b.rating+'/5)':'')+(b.min?' '+b.min+'min':'');
-  }).join('; ');
-  var ctx='Date: '+dateStr
-    +'\nStudy: '+Math.round(studyM)+'min'+(avgR?' avg '+avgR+'/5':'')
-    +'\nSleep: '+(sleepB?sleepB.hours+'h ('+sleepB.quality+')':'not logged')
-    +'\nUntracked: '+(gapH>=0.5?gapH.toFixed(1)+'h':'<30min (good)')
-    +'\nSessions: '+(sessLines||'none');
+
+  var sessLines=sessBlocks.map(function(b){
+    return (b.label||'study')+' '+_fmtHourLabel(b.start)+'–'+_fmtHourLabel(b.end)
+      +(b.rating?' ('+b.rating+'/5)':'')+(b.min?' '+b.min+'min':'')
+      +(b.taskType?' ['+b.taskType+']':'');
+  }).join('\n  ');
+
+  var ctx='== DAY: '+dateStr+' =='
+    +'\nTotal study: '+Math.round(studyM)+'min'+(avgR?' | avg quality: '+avgR+'/5':'')
+    +'\nSleep: '+(sleepB?sleepB.hours+'h ('+sleepB.quality+', woke '+sleepB.wakeTime+')':'not logged')
+    +'\nUntracked time: '+(gapH>=0.5?gapH.toFixed(1)+'h':'under 30min')
+    +'\nSessions:\n  '+(sessLines||'none');
+
   var pat=_computeTimeSlotPatterns({minSamples:3});
   if(!pat.insufficient&&pat.results.length){
-    ctx+='\nPeak window (historical): '+pat.results[0].slot+' avg '+pat.results[0].avg+'/5';
-    if(pat.results.length>1)ctx+='\nWeakest window: '+pat.results[pat.results.length-1].slot+' avg '+pat.results[pat.results.length-1].avg+'/5';
+    ctx+='\n\nHistorical window data (from '+pat.nSamples+' rated sessions):';
+    pat.results.slice(0,4).forEach(function(r){ctx+='\n  '+r.slot+': avg '+r.avg+'/5 ('+r.count+' sessions)';});
   }
-  el.innerHTML='<div style="font-size:11px;color:var(--text3);font-style:italic">Reading your day...</div>';
+
+  // Recent test performance for context
+  var lastTests=(S.tests||[]).slice(-3);
+  if(lastTests.length){
+    ctx+='\n\nRecent tests: '+lastTests.map(function(t){return t.date+' '+t.total+'/'+(t.max||300);}).join(', ');
+  }
+
+  var tr=_computeTrajectory();
+  if(tr&&!tr.insufficient&&tr.dateSpreadOK){
+    ctx+='\nJEE trajectory: projected '+tr.projectedScore+'/'+(tr.maxS||300)+' | target '+tr.target+' | '+(tr.status==='on-track'?'on track':'behind by '+tr.gap+' marks');
+  }
+
+  el.innerHTML='<div style="font-size:11px;color:var(--text3);font-style:italic;padding:8px 0">Reading your day…</div>';
   _tlAiPending=true;
   try{
-    var text=await oracleCall([{role:'user',content:'Hunter day log:\n'+ctx
-      +'\n\nWrite 3 focused sentences. No preamble. No bullet points. Ayanokoji voice.'
-      +'\nSentence 1: What the session timing and ratings actually show about focus quality.'
-      +'\nSentence 2: What the sleep or untracked time reveals.'
-      +'\nSentence 3: One concrete scheduling change for tomorrow, time-specific.'}],AYANO_SYSTEM,900);
-    el.innerHTML='<div style="font-size:13px;line-height:1.8;color:var(--text2)">'+formatOracleMD(text)+'</div>';
+    var prompt='Hunter day data:\n'+ctx
+      +'\n\nWrite a sharp, honest analysis of this day in 2–3 paragraphs. Ayanokoji voice — cold, precise, no motivation speak.'
+      +'\nParagraph 1: What the session data actually shows — quality gaps, timing patterns, whether the rated sessions align with historical windows.'
+      +'\nParagraph 2: What the sleep data and untracked time reveal about time management. Be specific about hours lost.'
+      +'\nParagraph 3: Two or three concrete changes for tomorrow — specific times, specific subjects, specific actions derived from the data. If the trajectory shows a problem, factor it in.'
+      +'\nNo bullet points. No headers. No preamble. Reference exact times and numbers from the data.';
+    var text=await oracleCall([{role:'user',content:prompt}],AYANO_SYSTEM,2048);
+    el.innerHTML='<div style="font-size:13px;line-height:1.85;color:var(--text2)">'+formatOracleMD(text)+'</div>';
     renderMathIn(el);
   }catch(err){
-    el.innerHTML='<div style="font-size:11px;color:var(--text3)">Oracle offline - add API keys in the Keys tab.</div>';
-  }finally{_tlAiPending=false;}
+    el.innerHTML='<div style="font-size:11px;color:var(--text3)">Oracle offline — add API keys in the Keys tab.</div>';
+  }finally{
+    _tlAiPending=false;
+    if(onDone)onDone();
+  }
 }
 function renderChronicle(){
   const wMins=S.sessions.filter(s=>{const d=new Date(s.date),n=new Date();return(n-d)/86400000<=7;}).reduce((a,s)=>a+s.min,0);
@@ -9825,8 +9896,10 @@ function _buildDayTimeline(dateStr){
   var wDays=['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
   var dow=wDays[new Date(dateStr+'T12:00:00').getDay()];
   var sched=(S.weeklySchedule||{})[dow];
-  if(sched&&sched.type==='school'&&sched.schoolStart&&sched.freeAfter){
-    var sStart=_parseTimeStr(sched.schoolStart),sEnd=_parseTimeStr(sched.freeAfter);
+  if(sched&&sched.type==='school'&&sched.freeAfter&&sched.freeAfter!=='00:00'){
+    // schoolStart is optional — if missing/zero, fall back to 8 AM
+    var rawStart=sched.schoolStart&&sched.schoolStart!=='00:00'?sched.schoolStart:'08:00';
+    var sStart=_parseTimeStr(rawStart), sEnd=_parseTimeStr(sched.freeAfter);
     if(sStart!=null&&sEnd!=null&&sEnd>sStart)blocks.push({type:'school',label:'School',start:sStart,end:sEnd});
   }
 
