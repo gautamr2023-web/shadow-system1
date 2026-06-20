@@ -4013,10 +4013,11 @@ function autoLog(mins,sub,mode,sid){
     rating:null,
     resourceType:_sessionResource.type||undefined,
     chapter:_sessionResource.chapter||undefined,
-    breakActivity:_breakActivity||undefined,
+    breakActivity:_breakActivities[0]||undefined, // legacy field — first tag, for old code paths
+    breakActivities:_breakActivities.length?_breakActivities.slice():undefined, // full multi-select array
   };
   _sessionResource={type:'',chapter:''};
-  _breakActivity='';
+  _breakActivities=[];
   S.sessions.push(sessObj);
   if(!paused){
     addXP(xp+starterBonus);
@@ -4120,7 +4121,16 @@ REASON: [why this, now — derived from their data, max 8 words]`;
 let _manaEnergy='normal',_manaTask='practice';
 let _manaXPMod=1.0;
 let _sessionResource={type:'',chapter:''};
-let _breakActivity='';
+let _breakActivities=[]; // multi-select break tags chosen in Next Session modal
+let _breakTypeManual=false; // true once user manually picks Productive/Waste (stops auto-override)
+var BREAK_TAG_META={
+  rest:{icon:'\ud83d\ude34',label:'Rest/Sleep',waste:false},
+  walk:{icon:'\ud83d\udeb6',label:'Walk',waste:false},
+  food:{icon:'\ud83c\udf7d',label:'Food',waste:false},
+  youtube:{icon:'\ud83d\udcf1',label:'YouTube/Reels',waste:true},
+  gaming:{icon:'\ud83c\udfae',label:'Gaming',waste:true},
+  other:{icon:'\ud83d\udcac',label:'Other',waste:false}
+};
 
 function pickResource(type,btn){
   _sessionResource.type=type;
@@ -4129,18 +4139,26 @@ function pickResource(type,btn){
 }
 function pickBreakActivity(activity,btn){
   if(typeof _nextSessBreakType==='undefined')return; // guard until declared
-  _breakActivity=activity;
-  document.querySelectorAll('#next-break-activity-pick .pick-btn').forEach(function(b){b.classList.remove('sel');});
-  if(btn)btn.classList.add('sel');
-  const autoWaste=['youtube','gaming'];
-  const autoProd=['rest','walk','food'];
-  if(autoWaste.includes(activity)){
-    document.querySelectorAll('#next-break-type-pick .pick-btn').forEach(function(b){b.classList.remove('sel');if(b.textContent.includes('Waste'))b.classList.add('sel');});
-    _nextSessBreakType='waste';
-  } else if(autoProd.includes(activity)){
-    document.querySelectorAll('#next-break-type-pick .pick-btn').forEach(function(b){b.classList.remove('sel');if(b.textContent.includes('Productive'))b.classList.add('sel');});
-    _nextSessBreakType='productive';
+  // Multi-select: tap to add, tap again to remove
+  var idx=_breakActivities.indexOf(activity);
+  if(idx>-1){_breakActivities.splice(idx,1);if(btn)btn.classList.remove('sel');}
+  else{_breakActivities.push(activity);if(btn)btn.classList.add('sel');}
+
+  // Auto-suggest break type from selected tags, unless user manually overrode it
+  if(!_breakTypeManual){
+    var hasWaste=_breakActivities.some(function(a){return BREAK_TAG_META[a]&&BREAK_TAG_META[a].waste;});
+    var hasProd=_breakActivities.some(function(a){return BREAK_TAG_META[a]&&!BREAK_TAG_META[a].waste;});
+    var autoType=hasWaste?'waste':(hasProd?'productive':'');
+    if(autoType){
+      _nextSessBreakType=autoType;
+      document.querySelectorAll('#next-break-type-pick .pick-btn').forEach(function(b){
+        b.classList.remove('sel','sel-waste');
+        var isWasteBtn=b.textContent.indexOf('Waste')>-1;
+        if((autoType==='waste'&&isWasteBtn)||(autoType==='productive'&&!isWasteBtn))b.classList.add(autoType==='waste'?'sel-waste':'sel');
+      });
+    }
   }
+  updateNextSessNote();
 }
 
 function showManaModal(){
@@ -4475,8 +4493,10 @@ function closeSecModal(){
 
 function showNextSessModal(){
   _nextSessBreakLen='none';_nextSessBreakType='';_nextSessTask='practice';
+  _breakActivities=[];_breakTypeManual=false;
   document.querySelectorAll('#next-break-len-pick .pick-btn').forEach(b=>b.classList.remove('sel','sel-waste'));
   document.querySelectorAll('#next-break-type-pick .pick-btn').forEach(b=>b.classList.remove('sel','sel-waste'));
+  document.querySelectorAll('#next-break-activity-pick .pick-btn').forEach(b=>b.classList.remove('sel'));
   document.querySelectorAll('#next-task-pick .pick-btn').forEach(b=>b.classList.remove('sel'));
   const bts=document.getElementById('next-break-type-section');if(bts)bts.style.display='none';
   const note=document.getElementById('next-sess-effect-note');if(note){note.textContent='';note.style.color='var(--text2)';}
@@ -4484,8 +4504,10 @@ function showNextSessModal(){
 }
 function pickNextBreakLen(len,btn){
   _nextSessBreakLen=len;_nextSessBreakType='';
+  _breakActivities=[];_breakTypeManual=false;
   document.querySelectorAll('#next-break-len-pick .pick-btn').forEach(b=>b.classList.remove('sel','sel-waste'));
   btn.classList.add('sel');
+  document.querySelectorAll('#next-break-activity-pick .pick-btn').forEach(b=>b.classList.remove('sel'));
   const bts=document.getElementById('next-break-type-section');
   if(bts)bts.style.display=(len!=='none')?'block':'none';
   if(len!=='none'){document.querySelectorAll('#next-break-type-pick .pick-btn').forEach(b=>b.classList.remove('sel','sel-waste'));}
@@ -4493,6 +4515,7 @@ function pickNextBreakLen(len,btn){
 }
 function pickNextBreakType(type,btn){
   _nextSessBreakType=type;
+  _breakTypeManual=true; // user explicitly chose — stop auto-overriding from tag picks
   document.querySelectorAll('#next-break-type-pick .pick-btn').forEach(b=>b.classList.remove('sel','sel-waste'));
   btn.classList.add(type==='waste'?'sel-waste':'sel');
   updateNextSessNote();
@@ -6465,6 +6488,7 @@ var _TL_C={
   physics:  {bg:'rgba(91,110,245,.28)', ac:'rgba(91,110,245,1)'},
   chemistry:{bg:'rgba(0,214,143,.22)',  ac:'rgba(0,214,143,1)'},
   maths:    {bg:'rgba(244,196,48,.2)',  ac:'rgba(244,196,48,1)'},
+  other:    {bg:'rgba(180,140,255,.22)',ac:'rgba(180,140,255,1)'},
   workout:  {bg:'rgba(0,180,216,.18)',  ac:'rgba(0,180,216,1)'},
   school:   {bg:'rgba(91,110,245,.07)', ac:'rgba(91,110,245,.5)'},
   gap:      {bg:'rgba(255,255,255,.02)',ac:'rgba(255,255,255,.14)'},
@@ -6486,15 +6510,18 @@ function shiftTimelineDay(dir){
   renderDailyTimeline();
 }
 
-function labelGapPrompt(dateStr,gapKey,curLabel){
-  var lbl=prompt('Label this block (e.g. Lunch / Travel / Break / Phone):',curLabel||'');
-  if(lbl===null)return;
-  if(!S.dayLabels)S.dayLabels={};
-  if(!S.dayLabels[dateStr])S.dayLabels[dateStr]={};
-  if(lbl.trim())S.dayLabels[dateStr][gapKey]=lbl.trim();
-  else delete S.dayLabels[dateStr][gapKey];
-  save();renderDailyTimeline();
-  showToast(lbl.trim()?'Block labeled \u2713':'Label cleared');
+// labelGapPrompt removed — replaced by openGapDetail() modal (multi-select tags + note)
+
+function _blockWeight(b){
+  // Visual weight per hour — compresses low-detail blocks (sleep/school) and
+  // expands study sessions so a 1h session is actually readable, even on a day
+  // with 8h sleep + 6h school competing for the same vertical space.
+  if(b.type==='sleep')return 0.35;
+  if(b.type==='school')return 0.42;
+  if(b.type==='workout')return 0.9;
+  if(b.type==='session')return 1.6;
+  if(b.type==='gap')return (b.labeled||b.autoFilled)?0.8:0.55;
+  return 1;
 }
 
 function renderDailyTimeline(){
@@ -6517,30 +6544,66 @@ function renderDailyTimeline(){
 
   var blocks=_buildDayTimeline(dateStr);
 
-  // ── Dynamic window ──
+  // ── Dynamic window (real hours, unweighted — just decides what's visible) ──
   var placed=blocks.filter(function(b){return b.type!=='gap';});
   var wS=5, wE=23;
   if(placed.length){
     wS=Math.max(0,Math.min(5,Math.floor(Math.min.apply(null,placed.map(function(b){return b.start;}))-0.5)));
     wE=Math.min(24,Math.max(21,Math.ceil(Math.max.apply(null,placed.map(function(b){return b.end;}))+0.5)));
   }
-  var WIN=wE-wS;
-  var TRACK_H=Math.max(360,Math.min(540,WIN*24));
-  var PX=TRACK_H/WIN;
-  var MIN_BLK_H=14; // minimum visible height in px — prevents short sessions from vanishing
+
+  // Clip every block to the visible window, drop anything fully outside
+  var visible=[];
+  blocks.forEach(function(b){
+    var bs=Math.max(b.start,wS),be=Math.min(b.end,wE);
+    if(be<=bs)return;
+    var clone={}; for(var k in b)clone[k]=b[k];
+    clone.start=bs; clone.end=be;
+    visible.push(clone);
+  });
+  visible.sort(function(a,b){return a.start-b.start;});
+
+  // ── Weighted layout pass: each block's pixel height = duration * weight * PXW ──
+  var PXW=56; // px per "weighted hour" — tune this to change overall track length
+  var MIN_PX={session:30,workout:20,school:18,sleep:18,gap:14};
+  var cum=0;
+  visible.forEach(function(b){
+    var durH=b.end-b.start;
+    var rawPx=durH*_blockWeight(b)*PXW;
+    var minPx=MIN_PX[b.type]||14;
+    b._top=cum;
+    b._h=Math.max(rawPx,minPx);
+    cum+=b._h;
+  });
+  var TRACK_H=Math.max(280,cum);
   track.style.height=TRACK_H+'px';
 
-  // ── Stats for summary + insights ──
+  // Maps a real hour (e.g. 14.5) to its pixel Y position using the laid-out blocks —
+  // finds the block containing that hour and interpolates within it.
+  function hourToY(h){
+    for(var i=0;i<visible.length;i++){
+      var b=visible[i];
+      if(h>=b.start&&h<=b.end){
+        var frac=(b.end>b.start)?(h-b.start)/(b.end-b.start):0;
+        return b._top+frac*b._h;
+      }
+    }
+    if(visible.length&&h<visible[0].start)return 0;
+    if(visible.length&&h>visible[visible.length-1].end)return TRACK_H;
+    return null;
+  }
+
+  // ── Stats for summary + insights (use unclipped blocks for accurate daily totals) ──
   var studyM=blocks.filter(function(b){return b.type==='session';}).reduce(function(a,b){return a+(b.end-b.start)*60;},0);
   var sleepH=blocks.filter(function(b){return b.type==='sleep';}).reduce(function(a,b){return a+(b.end-b.start);},0);
-  var gapH=blocks.filter(function(b){return b.type==='gap'&&!b.labeled;}).reduce(function(a,b){return a+(b.end-b.start);},0);
+  var gapH=blocks.filter(function(b){return b.type==='gap'&&!b.labeled&&!b.autoFilled;}).reduce(function(a,b){return a+(b.end-b.start);},0);
   var ratArr=blocks.filter(function(b){return b.type==='session'&&b.rating;});
   var avgR=ratArr.length?Math.round(ratArr.reduce(function(a,b){return a+b.rating;},0)/ratArr.length*10)/10:null;
 
   // ── Summary row ──
   if(summary){
     summary.innerHTML='<div style="display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12px">'
-      +'<span>📚 <b style="color:var(--text)">'+Math.round(studyM)+'m</b>'+(avgR?' <span style="color:var(--gold)">avg \u2605'+avgR+'</span>':'')+'</span>'
+      +'<span>\ud83d\udcda <b style="color:var(--text)">'+Math.round(studyM)+'m</b>'+(avgR?' <span style="color:var(--gold)">avg \u2605'+avgR+'</span>':'')+'</span>'
       +(sleepH?'<span>\ud83d\ude34 <b style="color:var(--text)">'+sleepH.toFixed(1)+'h</b> sleep</span>':'')
       +(gapH>=0.5?'<span style="color:var(--text3)">\u2753 '+gapH.toFixed(1)+'h untracked</span>':'')
       +'</div>';
@@ -6549,7 +6612,6 @@ function renderDailyTimeline(){
   // ── Insight chips ──
   if(insightsEl){
     var chips=[];
-    // Focus quality chip
     if(avgR!==null){
       var hist=(S.sessions||[]).filter(function(s){return s.rating&&!s.paused;}).slice(-30);
       var histAvg=hist.length?Math.round(hist.reduce(function(a,s){return a+s.rating;},0)/hist.length*10)/10:null;
@@ -6557,24 +6619,20 @@ function renderDailyTimeline(){
       var qCol=avgR>=4?'var(--green)':avgR>=3?'var(--gold)':'var(--red)';
       chips.push({icon:'\u2605',label:'Focus Quality',val:avgR+'\u2605'+(diff!==null?' ('+(diff>=0?'+':'')+diff+' vs avg)':''),col:qCol});
     }
-    // Time efficiency chip (study vs waking hours)
     if(sleepH>0){
       var wakeH=24-sleepH;
       var effPct=wakeH>0?Math.round(studyM/60/wakeH*100):0;
       var eCol=effPct>=30?'var(--green)':effPct>=15?'var(--gold)':'var(--text2)';
       chips.push({icon:'\u23f1',label:'Time Efficiency',val:effPct+'% of waking hrs',col:eCol});
     }
-    // Gap chip if significant
     if(gapH>=2){
-      chips.push({icon:'\u2753',label:'Untracked',val:gapH.toFixed(1)+'h — tap blocks to label',col:'var(--text3)'});
+      chips.push({icon:'\u2753',label:'Untracked',val:gapH.toFixed(1)+'h \u2014 tap blocks to label',col:'var(--text3)'});
     }
-    // Sleep chip
     if(sleepH>0){
       var sleepCol=sleepH>=7.5?'var(--green)':sleepH>=6?'var(--gold)':'var(--red)';
-      var sleepNote=sleepH>=7.5?'Good':'Short — may affect focus';
+      var sleepNote=sleepH>=7.5?'Good':'Short \u2014 may affect focus';
       chips.push({icon:'\ud83d\ude34',label:'Sleep',val:sleepH.toFixed(1)+'h \u00b7 '+sleepNote,col:sleepCol});
     }
-
     insightsEl.innerHTML=chips.map(function(ch){
       return '<div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:8px 12px;flex:1;min-width:160px">'
         +'<div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:3px">'+ch.icon+' '+ch.label+'</div>'
@@ -6583,12 +6641,12 @@ function renderDailyTimeline(){
     }).join('');
   }
 
-  // ── Grid + labels ──
+  // ── Grid + hour labels (positions interpolated through the weighted layout) ──
   var html='';
-  var step=WIN>15?3:2;
+  var step=(wE-wS)>15?3:2;
   for(var hh=Math.ceil(wS/step)*step;hh<=wE;hh+=step){
-    var tp=(hh-wS)*PX;
-    if(tp<0||tp>TRACK_H+1)continue;
+    var tp=hourToY(hh);
+    if(tp===null)continue;
     var lbl=hh===0||hh===24?'12AM':hh<12?hh+'AM':hh===12?'12PM':(hh-12)+'PM';
     html+='<div style="position:absolute;right:calc(100% + 5px);top:'+tp+'px;transform:translateY(-50%);font-size:9px;color:var(--text3);white-space:nowrap;font-family:var(--mono)">'+lbl+'</div>'
       +'<div style="position:absolute;left:0;right:0;top:'+tp+'px;height:1px;background:rgba(255,255,255,.05)"></div>';
@@ -6598,8 +6656,8 @@ function renderDailyTimeline(){
   if(isToday){
     var ist=new Date(new Date().getTime()+5.5*3600000);
     var nowH=ist.getUTCHours()+ist.getUTCMinutes()/60;
-    if(nowH>=wS&&nowH<=wE){
-      var nTop=(nowH-wS)*PX;
+    var nTop=hourToY(nowH);
+    if(nTop!==null){
       html+='<div style="position:absolute;left:-6px;right:0;top:'+nTop+'px;height:2px;background:var(--red);z-index:20;border-radius:1px">'
         +'<div style="position:absolute;left:0;top:-4px;width:10px;height:10px;background:var(--red);border-radius:50%;border:2px solid var(--bg)"></div></div>';
     }
@@ -6609,58 +6667,67 @@ function renderDailyTimeline(){
   var SUBS={physics:'PHY',chemistry:'CHE',maths:'MAT'};
   var EMOJ={physics:'\u26a1',chemistry:'\ud83e\uddea',maths:'\ud83d\udcd0',workout:'\ud83d\udcaa',school:'\ud83c\udfe2',sleep:'\ud83d\ude34'};
 
-  blocks.forEach(function(b){
-    var bs=Math.max(b.start,wS), be=Math.min(b.end,wE);
-    if(be<=bs)return;
-    var top=(bs-wS)*PX;
-    var rawH=(be-bs)*PX;
-    var ht=Math.max(rawH,MIN_BLK_H)-1; // enforce minimum visible height
+  visible.forEach(function(b){
+    var top=b._top, ht=b._h-1;
+    if(ht<2)return;
 
     var col;
     if(b.type==='sleep')col=_TL_C.sleep;
-    else if(b.type==='session')col=_TL_C[b.label]||_TL_C.physics;
+    else if(b.type==='session')col=_TL_C[b.label]||_TL_C.other||_TL_C.physics;
     else if(b.type==='workout')col=_TL_C.workout;
     else if(b.type==='school')col=_TL_C.school;
-    else col=b.labeled?_TL_C.gapL:_TL_C.gap;
+    else col=(b.labeled||b.autoFilled)?_TL_C.gapL:_TL_C.gap;
 
-    var bord=b.type==='gap'&&!b.labeled?'dashed':'solid';
+    var bord=b.type==='gap'&&!b.labeled&&!b.autoFilled?'dashed':'solid';
     var bCol=col.ac.replace(',1)',',.3)').replace(',.85)',',0.28)').replace(',.5)',',0.2)').replace(',.14)',',0.1)').replace(',.35)',',0.2)');
-    var cursor=b.type==='gap'?'pointer':'default';
+    var cursor=(b.type==='gap'||b.type==='session')?'pointer':'default';
 
-    // Content based on actual height (rawH = real proportional height)
     var inner='';
     if(b.type==='session'){
       var sub=b.label||'';
       var abbr=SUBS[sub]||(sub.slice(0,3).toUpperCase());
       var ac=col.ac;
-      if(rawH>=48){
-        inner='<div style="font-size:12px;font-weight:700;color:'+ac+';line-height:1.3">'+(EMOJ[sub]||'')+' '+(sub?sub.charAt(0).toUpperCase()+sub.slice(1):abbr)+'</div>'
-          +(b.min?'<div style="font-size:10px;color:var(--text3);margin-top:2px">'+b.min+'m'+(b.rating?' \u00b7 '+'\u2605'.repeat(b.rating):'')+(b.taskType?' \u00b7 '+b.taskType:'')+'</div>':'');
-      }else if(rawH>=24){
+      if(ht>=64){
+        inner='<div style="font-size:13px;font-weight:700;color:'+ac+';line-height:1.3">'+(EMOJ[sub]||'')+' '+(sub?sub.charAt(0).toUpperCase()+sub.slice(1):abbr)+'</div>'
+          +(b.chapter?'<div style="font-size:11px;color:var(--text);margin-top:2px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+escHtml(b.chapter)+'</div>':'')
+          +(b.min?'<div style="font-size:10px;color:var(--text3);margin-top:3px">'+b.min+'m'+(b.rating?' \u00b7 '+'\u2605'.repeat(b.rating):'')+(b.taskType?' \u00b7 '+b.taskType:'')+'</div>':'');
+      }else if(ht>=40){
+        inner='<div style="font-size:12px;font-weight:700;color:'+ac+'">'+(EMOJ[sub]||'')+' '+(sub?sub.charAt(0).toUpperCase()+sub.slice(1):abbr)+'</div>'
+          +'<div style="font-size:10px;color:var(--text3);margin-top:1px">'+(b.min||'')+'m'+(b.rating?' \u00b7\u2605'+b.rating:'')+'</div>';
+      }else if(ht>=24){
         inner='<div style="font-size:11px;font-weight:700;color:'+ac+'">'+abbr+(b.rating?' \u2605'+b.rating:'')+'</div>';
       }else{
-        // Very short block — just abbreviation, tiny
         inner='<div style="font-size:9px;font-weight:700;color:'+ac+';line-height:1">'+abbr+'</div>';
       }
     }else if(b.type==='sleep'){
-      if(rawH>=30)inner='<div style="font-size:11px;color:rgba(150,150,220,.8);font-weight:600">\ud83d\ude34 Sleep'+(b.hours&&rawH>=50?' \u00b7 '+b.hours+'h':'')+'</div>';
+      if(ht>=26)inner='<div style="font-size:11px;color:rgba(150,150,220,.8);font-weight:600">\ud83d\ude34 Sleep'+(b.hours&&ht>=42?' \u00b7 '+b.hours+'h':'')+'</div>';
     }else if(b.type==='school'){
-      if(rawH>=22)inner='<div style="font-size:10px;color:rgba(91,110,245,.65);font-weight:600">\ud83c\udfe2 School</div>';
+      if(ht>=20)inner='<div style="font-size:10px;color:rgba(91,110,245,.65);font-weight:600">\ud83c\udfe2 School</div>';
     }else if(b.type==='workout'){
-      if(rawH>=20)inner='<div style="font-size:10px;color:rgba(0,180,216,.8);font-weight:600">\ud83d\udcaa Workout</div>';
+      if(ht>=18)inner='<div style="font-size:10px;color:rgba(0,180,216,.8);font-weight:600">\ud83d\udcaa Workout</div>';
     }else{
-      if(b.labeled&&rawH>=18)inner='<div style="font-size:10px;color:var(--text2)">'+escHtml(b.label)+'</div>';
-      else if(!b.labeled&&rawH>=32)inner='<div style="font-size:9px;color:var(--text3);margin-top:1px">tap to label</div>';
+      // gap — manual label, auto-filled break tags, or plain "tap to label"
+      if((b.labeled||b.autoFilled)&&ht>=18){
+        inner='<div style="font-size:10px;color:var(--text2);font-weight:'+(b.labeled?'700':'500')+'">'+escHtml(b.label)+(b.autoFilled&&!b.labeled?' <span style="opacity:.5">(auto)</span>':'')+'</div>';
+      }else if(!b.labeled&&!b.autoFilled&&ht>=26){
+        inner='<div style="font-size:9px;color:var(--text3);margin-top:1px">tap to label</div>';
+      }
     }
 
     var datr='';
-    if(b.type==='gap')datr='data-gdate="'+dateStr+'" data-gkey="'+b.gapKey+'" data-glabel="'+escHtml(b.labeled?b.label:'')+'" onclick="labelGapPrompt(this.dataset.gdate,this.dataset.gkey,this.dataset.glabel)"';
+    if(b.type==='gap'){
+      datr='data-gdate="'+dateStr+'" data-gkey="'+b.gapKey+'" '
+        +'data-gtags="'+(b.tags||[]).join(',')+'" data-gnote="'+escHtml(b.note||'')+'" '
+        +'onclick="openGapDetail(this.dataset.gdate,this.dataset.gkey,this.dataset.gtags,this.dataset.gnote)"';
+    }else if(b.type==='session'&&b.sessionId){
+      datr='data-sid="'+b.sessionId+'" onclick="openSessionDetail(this.dataset.sid)"';
+    }
 
     html+='<div '+datr+' style="position:absolute;left:0;right:0;top:'+top+'px;height:'+ht+'px;'
       +'box-sizing:border-box;border-radius:5px;overflow:hidden;cursor:'+cursor+';'
       +'background:'+col.bg+';border:1px '+bord+' '+bCol+';">'
       +'<div style="position:absolute;top:0;left:0;bottom:0;width:3px;background:'+col.ac+';opacity:.85;flex-shrink:0"></div>'
-      +'<div style="padding:3px 4px 3px 8px;height:100%;box-sizing:border-box;overflow:hidden">'+inner+'</div>'
+      +'<div style="padding:4px 6px 4px 9px;height:100%;box-sizing:border-box;overflow:hidden">'+inner+'</div>'
       +'</div>';
   });
 
@@ -9874,7 +9941,8 @@ function _buildDayTimeline(dateStr){
     var st=_parseTimeStr(s.startTime),en=_parseTimeStr(s.time);
     if(st==null||en==null)return;
     if(en<=st)en=Math.min(24,st+(s.min||0)/60);
-    blocks.push({type:'session',label:s.sub,start:st,end:en,rating:s.rating||null,taskType:s.taskType,min:s.min,sessionId:s.id});
+    var bTags=s.breakActivities&&s.breakActivities.length?s.breakActivities:(s.breakActivity?[s.breakActivity]:[]);
+    blocks.push({type:'session',label:s.sub,start:st,end:en,rating:s.rating||null,taskType:s.taskType,min:s.min,sessionId:s.id,chapter:s.chapter||null,resourceType:s.resourceType||null,breakBefore:bTags});
   });
 
   // Workout (best-effort — startTime is epoch ms; duration from exTimes or default 45min)
@@ -9931,19 +9999,46 @@ function _buildDayTimeline(dateStr){
   var gapMin=0.25; // ignore sub-15-min gaps (rounding noise)
   var cursor=0;
   var dayLabels=(S.dayLabels&&S.dayLabels[dateStr])||{};
+  // Normalises a dayLabels entry to {tags:[],note:''} — handles legacy plain-string entries
+  function _normGapEntry(entry){
+    if(!entry)return null;
+    if(typeof entry==='string')return {tags:[],note:entry};
+    return {tags:entry.tags||[],note:entry.note||''};
+  }
   merged2.forEach(function(c){
     if(c[0]-cursor>=gapMin){
       var key=cursor.toFixed(2);
-      blocks.push({type:'gap',label:dayLabels[key]||'Untracked',start:cursor,end:c[0],labeled:!!dayLabels[key],gapKey:key});
+      var manual=_normGapEntry(dayLabels[key]);
+      blocks.push({type:'gap',start:cursor,end:c[0],gapKey:key,
+        labeled:!!manual,tags:manual?manual.tags:[],note:manual?manual.note:'',
+        label:manual?(manual.note||(manual.tags.length?manual.tags.map(function(t){return BREAK_TAG_META[t]?BREAK_TAG_META[t].label:t;}).join(' + '):'Labeled')):'Untracked'});
     }
     cursor=Math.max(cursor,c[1]);
   });
   if(24-cursor>=gapMin){
     var key2=cursor.toFixed(2);
-    blocks.push({type:'gap',label:dayLabels[key2]||'Untracked',start:cursor,end:24,labeled:!!dayLabels[key2],gapKey:key2});
+    var manual2=_normGapEntry(dayLabels[key2]);
+    blocks.push({type:'gap',start:cursor,end:24,gapKey:key2,
+      labeled:!!manual2,tags:manual2?manual2.tags:[],note:manual2?manual2.note:'',
+      label:manual2?(manual2.note||(manual2.tags.length?manual2.tags.map(function(t){return BREAK_TAG_META[t]?BREAK_TAG_META[t].label:t;}).join(' + '):'Labeled')):'Untracked'});
   }
 
   blocks.sort(function(a,b){return a.start-b.start;});
+
+  // Auto-fill unlabeled gaps from the break tags logged before the NEXT session
+  // (the "Next Session" modal break-type pick describes the break immediately before it starts).
+  // Manual dayLabels entries always take priority and are never overwritten here.
+  for(var gi=0;gi<blocks.length;gi++){
+    var gb=blocks[gi];
+    if(gb.type!=='gap'||gb.labeled)continue;
+    var nextB=blocks[gi+1];
+    if(nextB&&nextB.type==='session'&&nextB.breakBefore&&nextB.breakBefore.length&&Math.abs(nextB.start-gb.end)<0.02){
+      gb.autoFilled=true;
+      gb.tags=nextB.breakBefore.slice();
+      gb.label=gb.tags.map(function(t){return BREAK_TAG_META[t]?BREAK_TAG_META[t].icon+' '+BREAK_TAG_META[t].label:t;}).join(' + ');
+    }
+  }
+
   return blocks;
 }
 
@@ -10708,11 +10803,12 @@ function buildFullContext(){
   }).join('\n'):'';
 
   // Break quality pattern — last 14 days
-  const breakSess=S.sessions.filter(function(s){return !s.paused&&s.breakActivity;}).slice(-14);
-  const wasteBrks=breakSess.filter(function(s){return s.breakActivity==='youtube'||s.breakActivity==='gaming';});
-  const goodBrks=breakSess.filter(function(s){return s.breakActivity==='rest'||s.breakActivity==='walk'||s.breakActivity==='food';});
+  const breakSess=S.sessions.filter(function(s){return !s.paused&&(s.breakActivity||(s.breakActivities&&s.breakActivities.length));}).slice(-14);
+  const _tagsOf=function(s){return s.breakActivities&&s.breakActivities.length?s.breakActivities:(s.breakActivity?[s.breakActivity]:[]);};
+  const wasteBrks=breakSess.filter(function(s){return _tagsOf(s).some(function(a){return a==='youtube'||a==='gaming';});});
+  const goodBrks=breakSess.filter(function(s){return _tagsOf(s).some(function(a){return a==='rest'||a==='walk'||a==='food';});});
   const breakLine=breakSess.length?'\nBreak patterns (last '+breakSess.length+' tracked): '+goodBrks.length+' quality (rest/walk/food) · '+wasteBrks.length+' waste (YouTube/gaming)'
-    +(wasteBrks.length>goodBrks.length?' ⚠ More waste breaks than quality breaks':'')+'\nMost common waste break: '+(wasteBrks.length?wasteBrks.map(function(s){return s.breakActivity;}).sort().pop():'none'):'';
+    +(wasteBrks.length>goodBrks.length?' ⚠ More waste breaks than quality breaks':'')+'\nMost common waste break: '+(wasteBrks.length?wasteBrks.map(function(s){return _tagsOf(s).filter(function(a){return a==='youtube'||a==='gaming';})[0];}).sort().pop():'none'):'';
 
 
   const goalOverride=S.dailyGoalOverride&&S.dailyGoalOverride[t];
@@ -10791,7 +10887,8 @@ ${todaySess.length?'Sessions today:\n'+todaySess.map(function(s){
   var st=s.startTime||(s.time&&s.min?'~'+(function(){try{var d=new Date();var t=s.time.match(/(\d+):(\d+)\s*(AM|PM)?/i);if(t){var h=parseInt(t[1])+(t[3]&&t[3].toUpperCase()==='PM'&&t[1]!=='12'?12:0)+(t[3]&&t[3].toUpperCase()==='AM'&&t[1]==='12'?-12:0);var m=parseInt(t[2]);var end=new Date();end.setHours(h,m,0,0);var start=new Date(end-s.min*60000);return start.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',hour12:true});}return '?';}catch(e){return '?'}}()):'?');
   var et=s.time||'?';
   var stars=s.stars||s.rating;
-  return '  '+st+' → '+et+' | '+s.sub+' '+s.min+'min ['+(s.taskType||'practice')+']'+(s.resourceType?' [src:'+s.resourceType+']':'')+(s.chapter?' [ch:'+s.chapter+']':'')+(stars?' ★'+stars+'/5':'')+(s.manaDrain?' mana-'+s.manaDrain:'')+(s.eff&&s.eff!==1?' eff:'+s.eff+'%':'')+(s.breakActivity?' break:'+s.breakActivity:'')+(s.mode==='ayanokoji'?' (AI logged)':s.mode==='manual'?' (manual)':' (timer)');
+  var _brkTags=s.breakActivities&&s.breakActivities.length?s.breakActivities.join('+'):(s.breakActivity||'');
+  return '  '+st+' → '+et+' | '+s.sub+' '+s.min+'min ['+(s.taskType||'practice')+']'+(s.resourceType?' [src:'+s.resourceType+']':'')+(s.chapter?' [ch:'+s.chapter+']':'')+(stars?' ★'+stars+'/5':'')+(s.manaDrain?' mana-'+s.manaDrain:'')+(s.eff&&s.eff!==1?' eff:'+s.eff+'%':'')+(_brkTags?' break:'+_brkTags:'')+(s.mode==='ayanokoji'?' (AI logged)':s.mode==='manual'?' (manual)':' (timer)');
 }).join('\n'):'No sessions logged today'}
 
 === THIS WEEK (day-by-day) ===
@@ -12113,6 +12210,179 @@ function dropTopicConf(key,idx,amount){
     if(newConf<=0){btn.disabled=true;btn.style.opacity='0.35';}
     else btn.textContent='▼ −15 (now '+newConf+'%)';
   }
+}
+</script>
+
+<!-- ── GAP DETAIL MODAL — multi-select break tags + note, for Untracked timeline blocks ── -->
+<div id="gap-detail-overlay" class="modal-overlay" onclick="if(event.target===this)closeGapDetail()" style="z-index:9900">
+  <div class="modal-box" style="max-width:420px;width:100%">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--text2)">\u2753 Untracked Block</div>
+      <button onclick="closeGapDetail()" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:20px;padding:0 4px">\u2715</button>
+    </div>
+    <div id="gd-time-label" style="font-size:13px;color:var(--text);font-weight:700;margin-bottom:16px"></div>
+
+    <div style="font-size:10px;text-transform:uppercase;letter-spacing:.7px;color:var(--text2);font-weight:700;margin-bottom:8px">What were you doing? <span style="color:var(--text3);font-weight:400;text-transform:none;letter-spacing:0">(pick any that apply)</span></div>
+    <div id="gd-tags" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px"></div>
+
+    <div style="font-size:10px;text-transform:uppercase;letter-spacing:.7px;color:var(--text2);font-weight:700;margin-bottom:6px">Note <span style="color:var(--text3);font-weight:400;text-transform:none;letter-spacing:0">(optional)</span></div>
+    <textarea id="gd-note" class="fi" rows="2" style="resize:vertical;font-size:13px;margin-bottom:16px" placeholder="e.g. Family dinner, watched a couple of YouTube shorts"></textarea>
+
+    <div style="display:flex;gap:10px">
+      <button onclick="saveGapDetail()" class="btn btn-primary" style="flex:1">Save</button>
+      <button onclick="clearGapDetail()" class="btn btn-danger btn-sm" style="padding:11px 16px">Clear</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── SESSION DETAIL MODAL — shows what was actually studied, editable chapter ── -->
+<div id="session-detail-overlay" class="modal-overlay" onclick="if(event.target===this)closeSessionDetail()" style="z-index:9950">
+  <div class="modal-box" style="max-width:420px;width:100%">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+      <div id="sd-subject-label" style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px"></div>
+      <button onclick="closeSessionDetail()" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:20px;padding:0 4px">\u2715</button>
+    </div>
+    <div id="sd-time-label" style="font-size:13px;color:var(--text);font-weight:700;margin-bottom:16px"></div>
+
+    <div id="sd-stats-row" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px"></div>
+
+    <div style="margin-bottom:14px">
+      <div style="font-size:10px;text-transform:uppercase;letter-spacing:.7px;color:var(--text2);font-weight:700;margin-bottom:6px">Chapter / Topic studied</div>
+      <input type="text" id="sd-chapter" class="fi" style="font-size:13px" placeholder="e.g. Rotational Motion, Aldehydes...">
+    </div>
+
+    <div id="sd-break-before" style="margin-bottom:14px;display:none">
+      <div style="font-size:10px;text-transform:uppercase;letter-spacing:.7px;color:var(--text2);font-weight:700;margin-bottom:6px">Break before this session</div>
+      <div id="sd-break-tags" style="font-size:12px;color:var(--text2)"></div>
+    </div>
+
+    <div style="display:flex;gap:10px">
+      <button onclick="saveSessionDetail()" class="btn btn-primary" style="flex:1">Save</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── GAP DETAIL MODAL ─────────────────────────────────────────────────────────
+var _gdState=null; // {dateStr,gapKey}
+
+function openGapDetail(dateStr,gapKey,tagsCsv,note){
+  _gdState={dateStr:dateStr,gapKey:gapKey};
+  var startH=parseFloat(gapKey);
+  document.getElementById('gd-time-label').textContent=_fmtHourLabel(startH)+' onward';
+
+  var curTags=tagsCsv?tagsCsv.split(',').filter(Boolean):[];
+  var tagsEl=document.getElementById('gd-tags');
+  tagsEl.innerHTML=Object.keys(BREAK_TAG_META).map(function(t){
+    var m=BREAK_TAG_META[t];
+    var sel=curTags.indexOf(t)>-1;
+    return '<button type="button" data-tag="'+t+'" onclick="toggleGapTag(this)" '
+      +'class="pick-btn'+(sel?' sel':'')+'" '
+      +'style="background:'+(sel?'rgba(91,110,245,.18)':'rgba(255,255,255,.04)')+';border:1px solid '+(sel?'rgba(91,110,245,.5)':'var(--border2)')+';'
+      +'border-radius:8px;color:'+(sel?'var(--accent)':'var(--text2)')+';font-family:var(--font);font-size:12px;font-weight:600;padding:7px 12px;cursor:pointer">'
+      +m.icon+' '+m.label+'</button>';
+  }).join('');
+
+  document.getElementById('gd-note').value=note||'';
+  document.getElementById('gap-detail-overlay').classList.add('show');
+}
+
+function toggleGapTag(btn){
+  var sel=btn.classList.toggle('sel');
+  btn.style.background=sel?'rgba(91,110,245,.18)':'rgba(255,255,255,.04)';
+  btn.style.borderColor=sel?'rgba(91,110,245,.5)':'var(--border2)';
+  btn.style.color=sel?'var(--accent)':'var(--text2)';
+}
+
+function closeGapDetail(){
+  _gdState=null;
+  document.getElementById('gap-detail-overlay').classList.remove('show');
+}
+
+function saveGapDetail(){
+  if(!_gdState)return;
+  var tags=Array.prototype.slice.call(document.querySelectorAll('#gd-tags .pick-btn.sel')).map(function(b){return b.dataset.tag;});
+  var note=document.getElementById('gd-note').value.trim();
+  if(!S.dayLabels)S.dayLabels={};
+  if(!S.dayLabels[_gdState.dateStr])S.dayLabels[_gdState.dateStr]={};
+  if(tags.length||note){
+    S.dayLabels[_gdState.dateStr][_gdState.gapKey]={tags:tags,note:note};
+  }else{
+    delete S.dayLabels[_gdState.dateStr][_gdState.gapKey];
+  }
+  save();
+  renderDailyTimeline();
+  closeGapDetail();
+  showToast('Block updated \u2713');
+}
+
+function clearGapDetail(){
+  if(!_gdState)return;
+  if(S.dayLabels&&S.dayLabels[_gdState.dateStr])delete S.dayLabels[_gdState.dateStr][_gdState.gapKey];
+  save();
+  renderDailyTimeline();
+  closeGapDetail();
+  showToast('Cleared');
+}
+
+// ── SESSION DETAIL MODAL ─────────────────────────────────────────────────────
+var _sdSessionId=null;
+
+function openSessionDetail(sessionId){
+  var sid=parseInt(sessionId,10);
+  var s=(S.sessions||[]).find(function(x){return x.id===sid;});
+  if(!s)return;
+  _sdSessionId=sid;
+
+  var SUB_LABEL={physics:'\u26a1 Physics',chemistry:'\ud83e\uddea Chemistry',maths:'\ud83d\udcd0 Maths'};
+  var SUB_COL={physics:'var(--accent)',chemistry:'var(--green)',maths:'var(--gold)'};
+  document.getElementById('sd-subject-label').textContent=SUB_LABEL[s.sub]||s.sub;
+  document.getElementById('sd-subject-label').style.color=SUB_COL[s.sub]||'var(--text)';
+  document.getElementById('sd-time-label').textContent=(s.startTime||'?')+' \u2013 '+(s.time||'?')+' \u00b7 '+(s.min||0)+' min';
+
+  var stats=[];
+  if(s.rating)stats.push({label:'Rating',val:'\u2605'.repeat(s.rating)+' '+s.rating+'/5',col:'var(--gold)'});
+  if(s.taskType)stats.push({label:'Type',val:s.taskType,col:'var(--text2)'});
+  if(s.resourceType)stats.push({label:'Source',val:s.resourceType,col:'var(--text2)'});
+  if(s.mode)stats.push({label:'Logged',val:s.mode==='ayanokoji'?'AI':(s.mode==='manual'?'Manual':'Timer'),col:'var(--text3)'});
+  document.getElementById('sd-stats-row').innerHTML=stats.map(function(st){
+    return '<div style="background:rgba(255,255,255,.04);border-radius:6px;padding:5px 10px">'
+      +'<div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px">'+st.label+'</div>'
+      +'<div style="font-size:12px;font-weight:700;color:'+st.col+'">'+st.val+'</div></div>';
+  }).join('');
+
+  document.getElementById('sd-chapter').value=s.chapter||'';
+
+  var brkTags=s.breakActivities&&s.breakActivities.length?s.breakActivities:(s.breakActivity?[s.breakActivity]:[]);
+  var brkSection=document.getElementById('sd-break-before');
+  if(brkTags.length){
+    brkSection.style.display='block';
+    document.getElementById('sd-break-tags').innerHTML=brkTags.map(function(t){
+      var m=BREAK_TAG_META[t];
+      return m?('<span style="margin-right:10px">'+m.icon+' '+m.label+'</span>'):t;
+    }).join('');
+  }else{
+    brkSection.style.display='none';
+  }
+
+  document.getElementById('session-detail-overlay').classList.add('show');
+}
+
+function closeSessionDetail(){
+  _sdSessionId=null;
+  document.getElementById('session-detail-overlay').classList.remove('show');
+}
+
+function saveSessionDetail(){
+  if(!_sdSessionId)return;
+  var s=(S.sessions||[]).find(function(x){return x.id===_sdSessionId;});
+  if(!s)return;
+  var ch=document.getElementById('sd-chapter').value.trim();
+  s.chapter=ch||undefined;
+  save();
+  renderDailyTimeline();
+  closeSessionDetail();
+  showToast('Session updated \u2713');
 }
 </script>
 
