@@ -24,7 +24,7 @@
   --bg:#080810;--bg2:#0d0d1a;--bg3:#121220;--card:#0f0f1e;--card2:#161628;
   --border:rgba(91,110,245,0.14);--border2:rgba(91,110,245,0.28);
   --accent:#5b6ef5;--accent2:#7c5ef5;--gold:#f4c430;--red:#ff3b5c;
-  --green:#00d68f;--mana:#00b4d8;--text:#e0e3f4;--text2:#7a7aaa;--text3:#333366;
+  --green:#00d68f;--mana:#00b4d8;--text:#e0e3f4;--text2:#7a7aaa;--text3:#5e5e88;
   --nav-w:72px;--right-w:300px;
   --font:'Rajdhani',sans-serif;--mono:'Share Tech Mono',monospace;
   --radius:14px;--radius-sm:8px;
@@ -6648,7 +6648,7 @@ function renderDailyTimeline(){
     var tp=hourToY(hh);
     if(tp===null)continue;
     var lbl=hh===0||hh===24?'12AM':hh<12?hh+'AM':hh===12?'12PM':(hh-12)+'PM';
-    html+='<div style="position:absolute;right:calc(100% + 5px);top:'+tp+'px;transform:translateY(-50%);font-size:9px;color:var(--text3);white-space:nowrap;font-family:var(--mono)">'+lbl+'</div>'
+    html+='<div style="position:absolute;right:calc(100% + 5px);top:'+tp+'px;transform:translateY(-50%);font-size:9px;color:var(--text2);white-space:nowrap;font-family:var(--mono)">'+lbl+'</div>'
       +'<div style="position:absolute;left:0;right:0;top:'+tp+'px;height:1px;background:rgba(255,255,255,.05)"></div>';
   }
 
@@ -6690,10 +6690,10 @@ function renderDailyTimeline(){
       if(ht>=64){
         inner='<div style="font-size:13px;font-weight:700;color:'+ac+';line-height:1.3">'+(EMOJ[sub]||'')+' '+(sub?sub.charAt(0).toUpperCase()+sub.slice(1):abbr)+'</div>'
           +(b.chapter?'<div style="font-size:11px;color:var(--text);margin-top:2px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+escHtml(b.chapter)+'</div>':'')
-          +(b.min?'<div style="font-size:10px;color:var(--text3);margin-top:3px">'+b.min+'m'+(b.rating?' \u00b7 '+'\u2605'.repeat(b.rating):'')+(b.taskType?' \u00b7 '+b.taskType:'')+'</div>':'');
+          +(b.min?'<div style="font-size:10px;color:var(--text2);margin-top:3px">'+b.min+'m'+(b.rating?' \u00b7 '+'\u2605'.repeat(b.rating):'')+(b.taskType?' \u00b7 '+b.taskType:'')+'</div>':'');
       }else if(ht>=40){
         inner='<div style="font-size:12px;font-weight:700;color:'+ac+'">'+(EMOJ[sub]||'')+' '+(sub?sub.charAt(0).toUpperCase()+sub.slice(1):abbr)+'</div>'
-          +'<div style="font-size:10px;color:var(--text3);margin-top:1px">'+(b.min||'')+'m'+(b.rating?' \u00b7\u2605'+b.rating:'')+'</div>';
+          +'<div style="font-size:10px;color:var(--text2);margin-top:1px">'+(b.min||'')+'m'+(b.rating?' \u00b7\u2605'+b.rating:'')+'</div>';
       }else if(ht>=24){
         inner='<div style="font-size:11px;font-weight:700;color:'+ac+'">'+abbr+(b.rating?' \u2605'+b.rating:'')+'</div>';
       }else{
@@ -6748,7 +6748,7 @@ function renderDailyTimeline(){
           +'<div style="flex:1;height:6px;background:rgba(255,255,255,.05);border-radius:3px;position:relative">'
           +'<div style="height:100%;width:'+barW+'%;background:'+bc+';border-radius:3px;transition:width .6s"></div></div>'
           +'<div style="font-size:11px;color:'+bc+';width:32px;text-align:right;flex-shrink:0;font-weight:700">'+r.avg+'\u2605</div>'
-          +'<div style="font-size:9px;color:var(--text3);width:20px;flex-shrink:0">x'+r.count+'</div>'
+          +'<div style="font-size:9px;color:var(--text2);width:20px;flex-shrink:0">x'+r.count+'</div>'
           +'</div>';
       }).join('');
 
@@ -10662,7 +10662,7 @@ function buildChatContext(){
     return `HUNTER: ${name} | Rank ${rank} | ${xp} XP | ${streak}d streak | Mana ${mana}/100 | ${daysLeft} days to JEE
 DATE/TIME: ${t} (${new Date().toLocaleDateString('en-IN',{weekday:'long',timeZone:'Asia/Kolkata'})}) | ${new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',hour12:true,timeZone:'Asia/Kolkata'})} IST
 Today: ${Math.round(todayMins/60*10)/10}h studied${_subLine?'\nSubject balance: '+_subLine:''}
-Recent sessions: ${recentSess.map(s=>s.date+' '+s.min+'m '+s.sub+' '+s.taskType).join(' | ')||'none'}
+Recent sessions: ${recentSess.map(s=>{var bt=s.breakActivities&&s.breakActivities.length?' [break before: '+s.breakActivities.join('+')+']':(s.breakActivity?' [break before: '+s.breakActivity+']':'');return s.date+' '+s.min+'m '+s.sub+' '+s.taskType+bt;}).join(' | ')||'none'}
 Weak topics: ${weak.map(t2=>t2.name+' '+t2.conf+'%').join(', ')||'none flagged'}
 Last tests: ${recentTests.map(t2=>t2.date+' '+t2.total+'/'+(t2.max||300)+(t2.classRank&&t2.classRank.pos?' rank:'+t2.classRank.pos+(t2.classRank.total?'/'+t2.classRank.total:''):'')).join(' | ')||'none'}
 ${planStr}${conStr}${upcomingStr?'\nUpcoming exams: '+upcomingStr:''}${(function(){
