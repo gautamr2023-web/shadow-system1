@@ -1142,7 +1142,7 @@ input.fi:focus,select.fi:focus{
 
 /* ── Daily Timeline responsive layout ─────────────────────────────────────── */
 .tl-layout{display:flex;gap:22px;align-items:flex-start}
-.tl-track-col{flex-shrink:0;position:relative;padding-left:82px}
+.tl-track-col{flex-shrink:0;position:relative;padding-left:58px}
 .tl-track-col #tl-track{width:190px}
 .tl-right-col{flex:1;min-width:0;display:flex;flex-direction:column;gap:0}
 .tl-track-wrap{position:relative}
@@ -1150,8 +1150,8 @@ input.fi:focus,select.fi:focus{
 /* Phone: stack columns, track goes full width */
 @media(max-width:680px){
   .tl-layout{flex-direction:column;gap:16px}
-  .tl-track-col{padding-left:72px;width:100%}
-  .tl-track-col #tl-track{width:calc(100vw - 132px)!important;min-width:170px;max-width:390px}
+  .tl-track-col{padding-left:54px;width:100%}
+  .tl-track-col #tl-track{width:calc(100vw - 114px)!important;min-width:170px;max-width:390px}
   .tl-right-col{width:100%;margin-top:0}
   #tl-insights>div{min-width:calc(50% - 4px)!important;flex:1 1 calc(50% - 4px)!important}
   #tl-ai-note{font-size:12px!important}
@@ -1159,8 +1159,8 @@ input.fi:focus,select.fi:focus{
   #tl-patterns .pat-bar-row{font-size:10px!important}
 }
 @media(max-width:420px){
-  .tl-track-col{padding-left:64px}
-  .tl-track-col #tl-track{width:calc(100vw - 116px)!important}
+  .tl-track-col{padding-left:48px}
+  .tl-track-col #tl-track{width:calc(100vw - 100px)!important}
   #tl-insights>div{min-width:100%!important;flex:1 1 100%!important}
 }
 </style>
@@ -3976,7 +3976,13 @@ function manualLog(){
 }
 function autoLog(mins,sub,mode,sid){
   if(mins<1)return;
-  const t=today();
+  // Use the session's actual START instant for date-bucketing (XP cap, streak day,
+  // quest day, session.date) — not "now" (which is the END instant). Without this,
+  // a session that crosses midnight (e.g. 11:45 PM → 12:45 AM) gets stamped with
+  // TOMORROW's date even though it mostly happened tonight, causing it to show up
+  // squished into the wrong day on the Daily Timeline and in daily totals.
+  var _sessStartIST=new Date(Date.now()-mins*60000+5.5*3600000);
+  const t=_sessStartIST.toISOString().split('T')[0];
   const paused=isPaused();
   const eff=Math.max(10,Math.round(100-pauseCount*8));
 
@@ -6649,15 +6655,13 @@ function renderDailyTimeline(){
     }).join('');
   }
 
-  // ── Grid + hour labels (positions interpolated through the weighted layout) ──
+  // ── Grid (faint reference lines only — text removed, per-block labels below are more useful) ──
   var html='';
   var step=(wE-wS)>15?3:2;
   for(var hh=Math.ceil(wS/step)*step;hh<=wE;hh+=step){
     var tp=hourToY(hh);
     if(tp===null)continue;
-    var lbl=hh===0||hh===24?'12AM':hh<12?hh+'AM':hh===12?'12PM':(hh-12)+'PM';
-    html+='<div style="position:absolute;right:calc(100% + 38px);top:'+tp+'px;transform:translateY(-50%);font-size:9px;color:var(--text2);white-space:nowrap;font-family:var(--mono)">'+lbl+'</div>'
-      +'<div style="position:absolute;left:0;right:0;top:'+tp+'px;height:1px;background:rgba(255,255,255,.05)"></div>';
+    html+='<div style="position:absolute;left:0;right:0;top:'+tp+'px;height:1px;background:rgba(255,255,255,.05)"></div>';
   }
 
   // Now-marker
@@ -6675,7 +6679,7 @@ function renderDailyTimeline(){
   var SUBS={physics:'PHY',chemistry:'CHE',maths:'MAT'};
   var EMOJ={physics:'\u26a1',chemistry:'\ud83e\uddea',maths:'\ud83d\udcd0',workout:'\ud83d\udcaa',school:'\ud83c\udfe2',sleep:'\ud83d\ude34'};
 
-  visible.forEach(function(b){
+  visible.forEach(function(b,bIdx){
     var top=b._top, ht=b._h-1;
     if(ht<2)return;
 
@@ -6738,15 +6742,29 @@ function renderDailyTimeline(){
       +'<div style="padding:4px 6px 4px 9px;height:100%;box-sizing:border-box;overflow:hidden">'+inner+'</div>'
       +'</div>';
 
-    // Per-block start/end time labels — inner lane, closer to the track than the
-    // generic hour-axis. Shown for every study session so you can read exactly
-    // when each block started and ended without counting gridlines.
+    // Per-block start/end time labels — single lane (hour-axis text was removed to
+    // avoid crowding). Shown for every study session so you can read exactly when
+    // each block started and ended. To avoid two labels landing on the same pixel
+    // when sessions are back-to-back with zero gap, each shared boundary gets
+    // exactly ONE label: we always show this block's start, but only show its end
+    // if no OTHER SESSION begins right where it finishes (a touching gap/sleep/
+    // school block doesn't render a label, so there's no actual collision there).
     if(b.type==='session'){
+      var EPS=0.01; // ~36 seconds — treats near-zero gaps as "touching"
+      var nextB=visible[bIdx+1];
+      var touchesNext=nextB&&nextB.type==='session'&&Math.abs(nextB.start-b.end)<EPS;
+      var prevB=visible[bIdx-1];
+      var touchesPrev=prevB&&prevB.type==='session'&&Math.abs(b.start-prevB.end)<EPS;
+
       var stStr=_fmtHourLabel(b.start), enStr=_fmtHourLabel(b.end);
-      html+='<div style="position:absolute;right:calc(100% + 5px);top:'+top+'px;transform:translateY(-50%);'
-        +'font-size:8px;font-weight:700;color:'+col.ac+';white-space:nowrap;font-family:var(--mono);line-height:1">'+stStr+'</div>'
-        +'<div style="position:absolute;right:calc(100% + 5px);top:'+(top+ht)+'px;transform:translateY(-50%);'
-        +'font-size:8px;font-weight:700;color:'+col.ac+';white-space:nowrap;font-family:var(--mono);line-height:1;opacity:.75">'+enStr+'</div>';
+      if(!touchesPrev){
+        html+='<div style="position:absolute;right:calc(100% + 6px);top:'+top+'px;transform:translateY(-50%);'
+          +'font-size:9px;font-weight:700;color:'+col.ac+';white-space:nowrap;font-family:var(--mono);line-height:1">'+stStr+'</div>';
+      }
+      if(!touchesNext){
+        html+='<div style="position:absolute;right:calc(100% + 6px);top:'+(top+ht)+'px;transform:translateY(-50%);'
+          +'font-size:9px;font-weight:700;color:'+col.ac+';white-space:nowrap;font-family:var(--mono);line-height:1;opacity:.7">'+enStr+'</div>';
+      }
     }
   });
 
