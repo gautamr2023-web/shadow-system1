@@ -1142,7 +1142,7 @@ input.fi:focus,select.fi:focus{
 
 /* ── Daily Timeline responsive layout ─────────────────────────────────────── */
 .tl-layout{display:flex;gap:22px;align-items:flex-start}
-.tl-track-col{flex-shrink:0;position:relative;padding-left:50px}
+.tl-track-col{flex-shrink:0;position:relative;padding-left:82px}
 .tl-track-col #tl-track{width:190px}
 .tl-right-col{flex:1;min-width:0;display:flex;flex-direction:column;gap:0}
 .tl-track-wrap{position:relative}
@@ -1150,8 +1150,8 @@ input.fi:focus,select.fi:focus{
 /* Phone: stack columns, track goes full width */
 @media(max-width:680px){
   .tl-layout{flex-direction:column;gap:16px}
-  .tl-track-col{padding-left:44px;width:100%}
-  .tl-track-col #tl-track{width:calc(100vw - 100px)!important;min-width:200px;max-width:420px}
+  .tl-track-col{padding-left:72px;width:100%}
+  .tl-track-col #tl-track{width:calc(100vw - 132px)!important;min-width:170px;max-width:390px}
   .tl-right-col{width:100%;margin-top:0}
   #tl-insights>div{min-width:calc(50% - 4px)!important;flex:1 1 calc(50% - 4px)!important}
   #tl-ai-note{font-size:12px!important}
@@ -1159,7 +1159,8 @@ input.fi:focus,select.fi:focus{
   #tl-patterns .pat-bar-row{font-size:10px!important}
 }
 @media(max-width:420px){
-  .tl-track-col #tl-track{width:calc(100vw - 80px)!important}
+  .tl-track-col{padding-left:64px}
+  .tl-track-col #tl-track{width:calc(100vw - 116px)!important}
   #tl-insights>div{min-width:100%!important;flex:1 1 100%!important}
 }
 </style>
@@ -2527,17 +2528,24 @@ function applyXPDecay(){
   const decayPerDay=200;
   const totalDecay=daysToApply*decayPerDay;
   const before=S.hunter.xp||0;
-  S.hunter.xp=Math.max(0,before-totalDecay);
+  // CRITICAL: decay can erode progress toward the NEXT rank, but must never drop XP
+  // below the floor of the rank already earned. Without this floor, a long absence
+  // (which is exactly when Recovery Mode triggers) could wipe XP to near-zero and
+  // force a demotion all the way back to E-rank — destroying weeks of earned progress
+  // and defeating the entire purpose of Recovery Mode as a forgiving comeback path.
+  const curRankData=RANKS.find(function(r){return r.r===(S.hunter.rank||'E');})||RANKS[0];
+  const rankFloor=curRankData.min||0;
+  S.hunter.xp=Math.max(rankFloor,before-totalDecay);
   S.hunter.lastDecayDate=todayStr;
-  const xpRank=getRankByXPStatic(S.hunter.xp);
-  const curIdx=RANK_ORDER.indexOf(S.hunter.rank||'E');
-  const xpIdx=RANK_ORDER.indexOf(xpRank);
-  if(xpIdx<curIdx){S.hunter.rank=xpRank;}
+  // Rank itself is never auto-demoted by decay — once earned, a rank is kept.
+  // (XP floor clamp above already guarantees this mathematically; capXPToRank below
+  // only ever caps the ceiling, never forces a downward rank change.)
   capXPToRank();
   save();
   if(totalDecay>0){
+    const actualLoss=before-S.hunter.xp;
     setTimeout(function(){
-      showToast('⚠ Decay: -'+totalDecay+' XP ('+daysToApply+' missed day'+(daysToApply>1?'s':'')+') — get back to work!');
+      showToast(actualLoss>0?'⚠ Decay: -'+actualLoss+' XP ('+daysToApply+' missed day'+(daysToApply>1?'s':'')+') — get back to work!':'⚠ '+daysToApply+' missed day'+(daysToApply>1?'s':'')+' — your rank is protected, but XP progress toward promotion has stalled.');
     },2000);
   }
 }
@@ -6648,7 +6656,7 @@ function renderDailyTimeline(){
     var tp=hourToY(hh);
     if(tp===null)continue;
     var lbl=hh===0||hh===24?'12AM':hh<12?hh+'AM':hh===12?'12PM':(hh-12)+'PM';
-    html+='<div style="position:absolute;right:calc(100% + 5px);top:'+tp+'px;transform:translateY(-50%);font-size:9px;color:var(--text2);white-space:nowrap;font-family:var(--mono)">'+lbl+'</div>'
+    html+='<div style="position:absolute;right:calc(100% + 38px);top:'+tp+'px;transform:translateY(-50%);font-size:9px;color:var(--text2);white-space:nowrap;font-family:var(--mono)">'+lbl+'</div>'
       +'<div style="position:absolute;left:0;right:0;top:'+tp+'px;height:1px;background:rgba(255,255,255,.05)"></div>';
   }
 
@@ -6729,6 +6737,17 @@ function renderDailyTimeline(){
       +'<div style="position:absolute;top:0;left:0;bottom:0;width:3px;background:'+col.ac+';opacity:.85;flex-shrink:0"></div>'
       +'<div style="padding:4px 6px 4px 9px;height:100%;box-sizing:border-box;overflow:hidden">'+inner+'</div>'
       +'</div>';
+
+    // Per-block start/end time labels — inner lane, closer to the track than the
+    // generic hour-axis. Shown for every study session so you can read exactly
+    // when each block started and ended without counting gridlines.
+    if(b.type==='session'){
+      var stStr=_fmtHourLabel(b.start), enStr=_fmtHourLabel(b.end);
+      html+='<div style="position:absolute;right:calc(100% + 5px);top:'+top+'px;transform:translateY(-50%);'
+        +'font-size:8px;font-weight:700;color:'+col.ac+';white-space:nowrap;font-family:var(--mono);line-height:1">'+stStr+'</div>'
+        +'<div style="position:absolute;right:calc(100% + 5px);top:'+(top+ht)+'px;transform:translateY(-50%);'
+        +'font-size:8px;font-weight:700;color:'+col.ac+';white-space:nowrap;font-family:var(--mono);line-height:1;opacity:.75">'+enStr+'</div>';
+    }
   });
 
   track.innerHTML=html;
@@ -8399,7 +8418,7 @@ TIER 2 after Tier 1 >30: Intellectual Optimization, Pressure Adaptation, Human P
 TIER 3 after Tier 2 >30: Communication, Manipulation Defense, Social Calibration
 TIER 4 emerges — never forced: Charisma
 
-UPDATE_DIMENSION rules: (1) Only emit during Full Assessments or after dim training exercises. (2) The value you write in your text response MUST equal the value you emit — they are stored directly with no transformation. (3) If hunter asks current score, read from "DIMENSION SCORES (authoritative)" and state that exact value without emitting UPDATE_DIMENSION.
+UPDATE_DIMENSION rules: (1) Only emit during Full Assessments or after dim training exercises. (2) The value you write in your text response MUST equal the value you emit — they are stored directly with no transformation. (3) If hunter asks current score, read from "DIMENSION SCORES (authoritative)" and state that exact value without emitting UPDATE_DIMENSION. (4) CRITICAL: NEVER say a score "increased", "updated", "improved", "went up", or similar in your text response unless you ALSO emit UPDATE_DIMENSION in that exact same response. Saying it changed without emitting the action causes a visible bug where chat and stats disagree — if you are not running a Full Assessment or logging a dim training response right now, do not claim any score moved. Reference the existing stored value as-is instead.
 
 When hunter responds to a training exercise: emit LOG_DIM_RESPONSE with score and precise one-sentence observation about what their answer revealed about that dimension.
 
@@ -8485,10 +8504,11 @@ ABSOLUTE RULES — LLAMA 3.3 70B
 6. SESSION AWARENESS: Before logging a session, check "Sessions today". If data already shows that duration, reference it — do not duplicate.
 7. Log life data the instant it is mentioned.
 8. When behavioral avoidance is visible: name it with the exact count. "You have deleted chemistry tasks 4 times."
-9. UPDATE_DIMENSION — THREE STRICT RULES:
+9. UPDATE_DIMENSION — FOUR STRICT RULES:
    a) WHEN to emit: only during explicit Full Assessments, or after a dim training exercise (LOG_DIM_RESPONSE). Never on regular responses.
    b) CONSISTENCY: The number you write in your response text MUST be the same number you put in UPDATE_DIMENSION. Emit X → say X → stored as X. Any mismatch causes a visible bug.
    c) ASKED ABOUT CURRENT SCORE: If the hunter asks "what is my [dim] score?", read the exact value from the "DIMENSION SCORES (authoritative)" line in context, state THAT number, and do NOT emit UPDATE_DIMENSION (you are reporting, not reassessing).
+   d) NEVER CLAIM A CHANGE YOU DIDN'T MAKE: Do not say a dimension "increased", "updated", "went up", "improved" etc. in your text unless UPDATE_DIMENSION is emitted in that same response. This is the most common bug — narrating a change without emitting the action leaves the stats screen unchanged while chat claims otherwise. If unsure whether this qualifies as a Full Assessment, do not emit and do not claim a change.
 10. When asked for a study plan: design it for their actual adherence rate, not their ideal. If adherence is 40%, give 4 tasks not 10. Emit CREATE_PLAN.
 11. When prediction is made: emit ADD_MEMORY to persist it.
 12. When hunter answers a dimension training question: emit LOG_DIM_RESPONSE with score and precise observation.
